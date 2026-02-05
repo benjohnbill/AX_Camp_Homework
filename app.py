@@ -1,358 +1,371 @@
 """
 app.py
-Narrative Loop - Streamlit 메인 앱
-서사 밀도 그래프 (Contribution Graph) 포함
+Narrative OS: Single Page, Dual View
+PyVis Full-Screen Obsidian Universe
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
 import narrative_logic as logic
+import streamlit as st
+import os
+
+def get_api_key():
+    # 1. 우선순위: 시스템(secrets 또는 .env)에 키가 있는지 먼저 확인
+    # 로컬에서는 secrets.toml을 읽어서 자동으로 작동함
+    system_key = st.secrets.get("OPENAI_API_KEY")
+
+    if system_key:
+        return system_key
+    
+    # 2. 후순위: 시스템에 키가 없다면(배포 서버), 사용자에게 입력창 제시
+    # 사이드바에 입력창을 만듭니다.
+    user_key = st.sidebar.text_input(
+        "OpenAI API Key를 입력하세요 (BYOK)", 
+        type="password",
+        help="본인의 API Key를 사용합니다. 저장되지 않습니다."
+    )
+    
+    if user_key:
+        return user_key
+    
+    # 3. 키가 아예 없으면 멈춤
+    st.info("⚠️ 작동하려면 API Key가 필요합니다. 사이드바에 키를 입력해주세요.")
+    st.stop()
+
+# --- 메인 로직 시작 ---
+api_key = get_api_key()
+
+# 클라이언트 생성 (이제 api_key는 무조건 존재함)
+from openai import OpenAI
+client = OpenAI(api_key=api_key)
 
 # ============================================================
 # 페이지 설정
 # ============================================================
 st.set_page_config(
-    page_title="Narrative Loop",
-    page_icon="🔄",
+    page_title="Narrative OS",
+    page_icon="🧠",
     layout="wide"
 )
 
 # ============================================================
-# 커스텀 스타일 (미니멀 & 차분한 톤)
+# Session State
 # ============================================================
-st.markdown("""
-<style>
-    /* 전체 배경 */
-    .stApp {
-        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-    }
-    
-    /* 카드 스타일 */
-    .echo-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 24px;
-        margin-top: 20px;
-        backdrop-filter: blur(10px);
-    }
-    
-    .echo-card h4 {
-        color: #e94560;
-        margin-bottom: 16px;
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
-    
-    .echo-card p {
-        color: #eaeaea;
-        font-size: 16px;
-        line-height: 1.8;
-    }
-    
-    .echo-card .quote {
-        color: #9ca3af;
-        font-size: 14px;
-        font-style: italic;
-        margin-top: 16px;
-        padding-top: 16px;
-        border-top: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .mode-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        margin-bottom: 12px;
-    }
-    
-    .mode-mirroring {
-        background: rgba(99, 102, 241, 0.2);
-        color: #818cf8;
-        border: 1px solid rgba(99, 102, 241, 0.3);
-    }
-    
-    .mode-nietzsche {
-        background: rgba(239, 68, 68, 0.2);
-        color: #f87171;
-        border: 1px solid rgba(239, 68, 68, 0.3);
-    }
-    
-    .waiting-message {
-        color: #6b7280;
-        font-style: italic;
-        text-align: center;
-        padding: 60px 20px;
-    }
-    
-    /* 헤더 스타일 */
-    .main-header {
-        text-align: center;
-        padding: 20px 0 40px 0;
-    }
-    
-    .main-header h1 {
-        color: #e94560;
-        font-size: 2.5rem;
-        font-weight: 300;
-        letter-spacing: 4px;
-    }
-    
-    .main-header p {
-        color: #6b7280;
-        font-size: 1rem;
-    }
-    
-    /* 섹션 타이틀 */
-    .section-title {
-        color: #9ca3af;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        margin-bottom: 16px;
-        padding-bottom: 8px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    /* 그래프 타이틀 */
-    .graph-title {
-        color: #9ca3af;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 8px;
-    }
-</style>
-""", unsafe_allow_html=True)
+if 'view_mode' not in st.session_state:
+    st.session_state['view_mode'] = "main"
+
+if 'messages' not in st.session_state:
+    saved = logic.load_chat_history()
+    if saved:
+        st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in saved]
+    else:
+        welcome = logic.get_welcome_message()
+        st.session_state.messages = [{"role": "assistant", "content": welcome}]
+        logic.save_chat_message("assistant", welcome)
+
+if 'last_metadata' not in st.session_state:
+    st.session_state['last_metadata'] = {}
 
 
 # ============================================================
-# 서사 밀도 그래프 생성 함수
+# GRAPH VIEW (Full Screen Obsidian Universe)
 # ============================================================
-def create_narrative_density_chart(logs: list) -> go.Figure:
-    """GitHub 잔디 스타일의 서사 밀도 히트맵 생성"""
+if st.session_state['view_mode'] == "graph":
     
-    # 최근 12주(84일) 데이터 준비
-    end_date = datetime.now().date()
-    start_date = end_date - timedelta(days=83)
+    # Full-screen CSS Hack with Radial Gradient Universe
+    st.markdown("""
+    <style>
+        .stApp {
+            background: radial-gradient(circle at center, #1a1a2e 0%, #0d0d15 50%, #000000 100%);
+        }
+        
+        .block-container {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        header {visibility: hidden !important; height: 0 !important;}
+        footer {visibility: hidden !important; height: 0 !important;}
+        .stSidebar {display: none !important;}
+        #MainMenu {visibility: hidden !important;}
+        
+        /* Graph iframe 전체 화면 */
+        iframe {
+            background: transparent !important;
+        }
+        
+        .floating-back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            background: rgba(30, 30, 50, 0.9);
+            border: 1px solid rgba(233, 69, 96, 0.5);
+            color: #e94560;
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .floating-back-btn:hover {
+            background: rgba(233, 69, 96, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.3);
+        }
+        
+        .legend-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 9999;
+            background: rgba(20, 20, 35, 0.9);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 12px 30px;
+            border-radius: 30px;
+            backdrop-filter: blur(15px);
+            display: flex;
+            gap: 25px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ccc;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+        }
+    </style>
+    """, unsafe_allow_html=True)
     
-    # 날짜 범위 생성
-    date_range = pd.date_range(start=start_date, end=end_date, freq='D')
+    # Floating Back Button (Streamlit 버튼 대신 폼 사용)
+    col1, col2, col3 = st.columns([1, 10, 1])
+    with col1:
+        if st.button("⬅️ 복귀", key="back_btn"):
+            st.session_state['view_mode'] = "main"
+            st.rerun()
     
-    # 로그에서 날짜별 카운트 집계
-    date_counts = {}
-    for log in logs:
-        log_date = datetime.fromisoformat(log['timestamp']).date()
-        if start_date <= log_date <= end_date:
-            date_str = str(log_date)
-            date_counts[date_str] = date_counts.get(date_str, 0) + 1
+    # PyVis Graph HTML 렌더링
+    graph_html = logic.generate_graph_html()
+    components.html(graph_html, height=900, scrolling=False)
     
-    # 주 단위로 데이터 구성 (7행 x 12열)
-    weeks = 12
-    days_of_week = 7
+    # Legend Bar
+    legend_html = '<div class="legend-bar">'
+    for dim, color in logic.DIMENSION_COLORS.items():
+        legend_html += f'<div class="legend-item"><div class="legend-dot" style="background:{color};"></div>{dim}</div>'
+    legend_html += '</div>'
+    st.markdown(legend_html, unsafe_allow_html=True)
+
+
+# ============================================================
+# MAIN VIEW (기록 + 채팅)
+# ============================================================
+else:
+    # Main View 스타일
+    st.markdown("""
+    <style>
+        .stApp {
+            background: linear-gradient(180deg, #0a0a12 0%, #12121f 50%, #0f1524 100%);
+        }
+        
+        .main-header {
+            text-align: center;
+            padding: 15px 0 25px 0;
+        }
+        
+        .main-header h1 {
+            background: linear-gradient(90deg, #e94560, #9b59b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+        
+        .section-title {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .keyword-tag {
+            display: inline-block;
+            background: rgba(233, 69, 96, 0.15);
+            color: #e94560;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin: 2px;
+        }
+        
+        .emotion-tag {
+            display: inline-block;
+            background: rgba(155, 89, 182, 0.15);
+            color: #9b59b6;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin: 2px;
+        }
+        
+        .dimension-tag {
+            display: inline-block;
+            background: rgba(52, 152, 219, 0.15);
+            color: #3498db;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin: 2px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
     
-    z_data = []
-    hover_text = []
+    # 사이드바
+    with st.sidebar:
+        st.markdown("### 🧠 Narrative OS")
+        st.markdown("---")
+        
+        logs = logic.load_logs()
+        
+        # Universe 진입 버튼
+        if st.button("🌌 서사 우주 진입", type="primary", use_container_width=True):
+            st.session_state['view_mode'] = "graph"
+            st.rerun()
+        
+        st.markdown("---")
+        
+        # 통계
+        st.markdown("#### 📈 서사 통계")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.metric("서사", f"{len(logs)}개")
+        with c2:
+            st.metric("대화", f"{len(st.session_state.messages)}개")
+        
+        if logs:
+            emotions = [l.get("emotion", "기타") for l in logs]
+            for e, c in pd.Series(emotions).value_counts().head(3).items():
+                st.caption(f"• {e}: {c}개")
+        
+        st.markdown("---")
+        
+        if st.button("🗑️ 전체 초기화", type="secondary", use_container_width=True):
+            logic.save_logs([])
+            logic.clear_chat_history()
+            st.session_state.messages = []
+            st.session_state['last_metadata'] = {}
+            st.rerun()
+        
+        if st.button("💬 대화만 초기화", use_container_width=True):
+            logic.clear_chat_history()
+            w = logic.get_welcome_message()
+            st.session_state.messages = [{"role": "assistant", "content": w}]
+            logic.save_chat_message("assistant", w)
+            st.rerun()
     
-    for day in range(days_of_week):
-        row = []
-        hover_row = []
-        for week in range(weeks):
-            idx = week * 7 + day
-            if idx < len(date_range):
-                current_date = date_range[idx]
-                date_str = str(current_date.date())
-                count = date_counts.get(date_str, 0)
-                row.append(count)
-                hover_row.append(f"{date_str}: {count}개")
+    # 헤더
+    st.markdown("""
+    <div class="main-header">
+        <h1>🧠 NARRATIVE OS</h1>
+        <p style="color: #6b7280;">지능형 서사 연결망</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 2 Column Layout
+    left, right = st.columns([1, 1], gap="large")
+    
+    # Left: 기록
+    with left:
+        st.markdown('<p class="section-title">✍️ 오늘의 기록</p>', unsafe_allow_html=True)
+        
+        text = st.text_area("기록", height=200, placeholder="생각을 적어보세요...", label_visibility="collapsed")
+        tags = st.text_input("태그", placeholder="#의지 #계획 (선택)")
+        
+        if st.button("🔗 기록 및 서사 연결", type="primary", use_container_width=True):
+            if not text.strip():
+                st.warning("내용을 입력하세요.")
             else:
-                row.append(0)
-                hover_row.append("")
-        z_data.append(row)
-        hover_text.append(hover_row)
+                with st.spinner("🧠"):
+                    tag_list = [t.strip() for t in tags.replace("#", " #").split("#") if t.strip()]
+                    saved = logic.save_log(text, tag_list)
+                    
+                    st.session_state.messages.append({"role": "user", "content": text})
+                    logic.save_chat_message("user", text, metadata={
+                        "keywords": saved.get("keywords", []),
+                        "emotion": saved.get("emotion", ""),
+                        "dimension": saved.get("dimension", "")
+                    })
+                    
+                    echo, mode, _, kw = logic.generate_echo(
+                        text, keywords=saved.get("keywords", []), tags=tag_list
+                    )
+                    
+                    st.session_state.messages.append({"role": "assistant", "content": echo})
+                    logic.save_chat_message("assistant", echo)
+                    
+                    st.session_state['last_metadata'] = {
+                        "keywords": saved.get("keywords", []),
+                        "emotion": saved.get("emotion", ""),
+                        "dimension": saved.get("dimension", ""),
+                        "mode": mode
+                    }
+                st.rerun()
     
-    # Plotly 히트맵 생성
-    fig = go.Figure(data=go.Heatmap(
-        z=z_data,
-        text=hover_text,
-        hoverinfo='text',
-        colorscale=[
-            [0, '#1a1a2e'],      # 0개: 어두운 배경
-            [0.25, '#3d1a3d'],   # 낮음
-            [0.5, '#6b1d4a'],    # 중간
-            [0.75, '#a61e4d'],   # 높음
-            [1, '#e94560']       # 최대: 메인 강조색
-        ],
-        showscale=False,
-        xgap=3,
-        ygap=3
-    ))
-    
-    # 레이아웃 설정 (미니멀)
-    fig.update_layout(
-        height=120,
-        margin=dict(l=0, r=0, t=0, b=0),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        xaxis=dict(
-            showgrid=False,
-            showticklabels=False,
-            zeroline=False
-        ),
-        yaxis=dict(
-            showgrid=False,
-            showticklabels=False,
-            zeroline=False,
-            autorange='reversed'
-        )
-    )
-    
-    return fig
-
-
-# ============================================================
-# 사이드바
-# ============================================================
-with st.sidebar:
-    # 서사 밀도 그래프 (최상단)
-    st.markdown('<p class="graph-title">📊 서사의 밀도</p>', unsafe_allow_html=True)
-    
-    logs = logic.load_logs()
-    
-    if logs:
-        density_chart = create_narrative_density_chart(logs)
-        st.plotly_chart(density_chart, use_container_width=True, config={'displayModeBar': False})
-    else:
-        st.caption("기록이 쌓이면 여기에 서사의 밀도가 나타납니다.")
-    
-    st.divider()
-    
-    # 서사 통계
-    st.markdown("### 📈 서사 통계")
-    st.metric(label="축적된 서사 조각", value=f"{len(logs)}개")
-    
-    st.divider()
-    
-    # 개발자 도구
-    st.markdown("### ⚙️ 개발자 도구")
-    if st.button("🗑️ 데이터 초기화", type="secondary"):
-        logic.save_logs([])
-        if 'last_echo' in st.session_state:
-            del st.session_state['last_echo']
-        st.success("모든 데이터가 초기화되었습니다.")
-        st.rerun()
-
-# ============================================================
-# 메인 헤더
-# ============================================================
-st.markdown("""
-<div class="main-header">
-    <h1>🔄 NARRATIVE LOOP</h1>
-    <p>당신의 과거가 현재에게 질문합니다</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ============================================================
-# 메인 레이아웃 (2 컬럼)
-# ============================================================
-left_col, right_col = st.columns([1, 1], gap="large")
-
-# ------------------------------------------------------------
-# Left Column: 오늘의 기록
-# ------------------------------------------------------------
-with left_col:
-    st.markdown('<p class="section-title">✍️ 오늘의 기록</p>', unsafe_allow_html=True)
-    
-    input_text = st.text_area(
-        label="당신의 생각을 기록하세요",
-        height=300,
-        key="input_text",
-        placeholder="오늘 떠오른 생각, 고민, 다짐을 자유롭게 적어보세요...",
-        label_visibility="collapsed"
-    )
-    
-    tags_input = st.text_input(
-        label="태그",
-        placeholder="예: #의지 #계획 #성찰",
-        key="tags_input"
-    )
-    
-    submit_button = st.button(
-        "🔗 기록 및 서사 연결",
-        type="primary",
-        use_container_width=True
-    )
-
-# ------------------------------------------------------------
-# 버튼 클릭 시 처리
-# ------------------------------------------------------------
-if submit_button:
-    if not input_text.strip():
-        st.warning("기록할 내용을 입력해주세요.")
-    else:
-        with st.spinner("서사를 연결하는 중..."):
-            # 태그 파싱
-            tags = [tag.strip() for tag in tags_input.replace("#", " #").split("#") if tag.strip()]
+    # Right: 채팅
+    with right:
+        st.markdown('<p class="section-title">🪞 서사의 메아리</p>', unsafe_allow_html=True)
+        
+        m = st.session_state.get('last_metadata', {})
+        if m.get('keywords') or m.get('emotion') or m.get('dimension'):
+            h = ""
+            for k in m.get('keywords', [])[:4]:
+                h += f'<span class="keyword-tag">{k}</span>'
+            if m.get('emotion'):
+                h += f'<span class="emotion-tag">😶 {m["emotion"]}</span>'
+            if m.get('dimension'):
+                h += f'<span class="dimension-tag">📂 {m["dimension"]}</span>'
+            st.markdown(h, unsafe_allow_html=True)
+            st.markdown("")
+        
+        chat = st.container(height=350)
+        with chat:
+            for msg in st.session_state.messages:
+                with st.chat_message(msg["role"]):
+                    st.markdown(msg["content"])
+        
+        if prompt := st.chat_input("생각을 이어가세요..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            logic.save_chat_message("user", prompt)
             
-            # 1. 로그 저장
-            logic.save_log(input_text, tags)
-            
-            # 2. 에코 생성 (Hybrid Search: 태그 전달)
-            echo_response, mode, past_log = logic.generate_echo(input_text, tags)
-            
-            # 3. 세션에 저장
-            st.session_state['last_echo'] = {
-                "response": echo_response,
-                "mode": mode,
-                "past_log": past_log
-            }
-        
-        st.success("✨ 기록이 서사에 통합되었습니다.")
-        st.rerun()
-
-# ------------------------------------------------------------
-# Right Column: 서사의 메아리
-# ------------------------------------------------------------
-with right_col:
-    st.markdown('<p class="section-title">🪞 서사의 메아리</p>', unsafe_allow_html=True)
-    
-    if 'last_echo' in st.session_state:
-        echo_data = st.session_state['last_echo']
-        mode = echo_data['mode']
-        response = echo_data['response']
-        past_log = echo_data.get('past_log')
-        
-        # 모드에 따른 배지
-        if mode == "mirroring":
-            mode_badge = '<span class="mode-badge mode-mirroring">🪞 거울 모드</span>'
-            mode_title = "과거의 당신이 묻습니다"
-        else:
-            mode_badge = '<span class="mode-badge mode-nietzsche">🔥 니체 모드</span>'
-            mode_title = "철학자가 묻습니다"
-        
-        # 과거 인용문 표시 (거울 모드일 때만)
-        quote_html = ""
-        if mode == "mirroring" and past_log:
-            past_date = past_log['timestamp'][:10]
-            past_text = past_log['text'][:100] + "..." if len(past_log['text']) > 100 else past_log['text']
-            quote_html = f'<p class="quote">📜 "{past_text}" — {past_date}</p>'
-        
-        st.markdown(f"""
-        <div class="echo-card">
-            {mode_badge}
-            <h4>{mode_title}</h4>
-            <p>{response}</p>
-            {quote_html}
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <div class="waiting-message">
-            <p>🌙</p>
-            <p>당신의 기록을 기다리고 있습니다...</p>
-        </div>
-        """, unsafe_allow_html=True)
+            with st.spinner("🧠"):
+                meta = logic.extract_metadata(prompt)
+                echo, mode, _, _ = logic.generate_echo(prompt, keywords=meta.get("keywords", []))
+                st.session_state.messages.append({"role": "assistant", "content": echo})
+                logic.save_chat_message("assistant", echo)
+                st.session_state['last_metadata'] = {
+                    "keywords": meta.get("keywords", []),
+                    "emotion": meta.get("emotion", ""),
+                    "dimension": meta.get("dimension", ""),
+                    "mode": mode
+                }
+            st.rerun()

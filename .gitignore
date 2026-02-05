@@ -1,5 +1,5 @@
 # .gitignore 내용
-.env
+.streamlit/secrets.toml
 data/
 __pycache__/
 .streamlit/

@@ -1,7 +1,7 @@
 """
 narrative_logic.py
-앱의 핵심 로직: 데이터 저장, 검색, AI 생성
-업그레이드: Hybrid Search + Temporal Awareness
+Narrative OS: The Brain
+PyVis 기반 Knowledge Graph + Narrative Maieutics
 """
 
 import os
@@ -11,9 +11,11 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 from openai import OpenAI
+import networkx as nx
+from pyvis.network import Network
 
 # ============================================================
-# API Key 로드 (하이브리드 방식: Streamlit Cloud → 로컬 .env)
+# API Key
 # ============================================================
 try:
     api_key = st.secrets["OPENAI_API_KEY"]
@@ -25,228 +27,407 @@ except Exception:
 client = OpenAI(api_key=api_key)
 
 # ============================================================
-# 상수 정의
+# 상수
 # ============================================================
 DATA_FILE = "data/user_logs.json"
-SIMILARITY_THRESHOLD = 0.6
+CHAT_HISTORY_FILE = "data/chat_history.json"
+SIMILARITY_THRESHOLD = 0.55
 SELF_SIMILARITY_THRESHOLD = 0.99
-TAG_MATCH_BONUS = 0.15  # 태그 일치 시 가산점
+KEYWORD_MATCH_BONUS = 0.12
+TAG_MATCH_BONUS = 0.08
+MAX_CONTEXT_TURNS = 10
+
+# 차원별 색상 (Neon/Dark Universe Style)
+DIMENSION_COLORS = {
+    "일상": "#00FFFF",    # Neon Cyan
+    "철학": "#FFD700",    # Golden Amber
+    "감정": "#FF007F",    # Deep Magenta
+    "계획": "#00FF7F",    # Spring Green
+    "성찰": "#FF6B35",    # Neon Orange
+    "관계": "#FF1493",    # Deep Pink
+    "기타": "#C0C0C0"     # Silver
+}
 
 
+# ============================================================
+# 데이터 I/O
+# ============================================================
 def load_logs() -> list:
-    """저장된 로그를 불러온다. 파일이 없으면 빈 리스트 반환."""
     if not os.path.exists(DATA_FILE):
         return []
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, list) else []
+    except:
+        return []
 
 
 def save_logs(logs: list) -> None:
-    """로그 리스트를 JSON 파일에 저장한다."""
     os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(logs, f, ensure_ascii=False, indent=2)
 
 
+def load_chat_history() -> list:
+    if not os.path.exists(CHAT_HISTORY_FILE):
+        return []
+    try:
+        with open(CHAT_HISTORY_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, list) else []
+    except:
+        return []
+
+
+def save_chat_history(history: list) -> None:
+    os.makedirs(os.path.dirname(CHAT_HISTORY_FILE), exist_ok=True)
+    with open(CHAT_HISTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(history, f, ensure_ascii=False, indent=2)
+
+
+def save_chat_message(role: str, content: str, metadata: dict = None) -> dict:
+    history = load_chat_history()
+    message = {"timestamp": datetime.now().isoformat(), "role": role, "content": content}
+    if metadata:
+        message["metadata"] = metadata
+    history.append(message)
+    save_chat_history(history)
+    return message
+
+
+def clear_chat_history() -> None:
+    save_chat_history([])
+
+
+def get_recent_context(max_turns: int = MAX_CONTEXT_TURNS) -> list:
+    history = load_chat_history()
+    recent = history[-max_turns:] if len(history) > max_turns else history
+    return [{"role": m["role"], "content": m["content"]} for m in recent]
+
+
+def get_conversation_summary() -> str:
+    history = load_chat_history()
+    if len(history) < 4:
+        return ""
+    user_msgs = [m["content"] for m in history if m["role"] == "user"]
+    if len(user_msgs) < 2:
+        return ""
+    recent = user_msgs[-3:]
+    return "[이전 발언]\n" + "\n".join([f'- "{s[:80]}..."' if len(s) > 80 else f'- "{s}"' for s in recent])
+
+
+# ============================================================
+# 임베딩 & 메타데이터
+# ============================================================
 def get_embedding(text: str) -> list:
-    """OpenAI 임베딩 API를 사용하여 텍스트의 벡터를 반환한다."""
-    response = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=text
-    )
+    response = client.embeddings.create(model="text-embedding-3-small", input=text)
     return response.data[0].embedding
 
 
-# ============================================================
-# 핵심 함수: save_log
-# ============================================================
-def save_log(text: str, tags: list) -> dict:
-    """입력된 텍스트를 임베딩하고 JSON에 저장한다."""
+def extract_metadata(text: str) -> dict:
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": '{"keywords":["명사3개"],"emotion":"감정","dimension":"일상/철학/감정/계획/성찰/관계"}'},
+                {"role": "user", "content": text}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.3, max_tokens=150
+        )
+        r = json.loads(response.choices[0].message.content)
+        return {"keywords": r.get("keywords", []), "emotion": r.get("emotion", "기타"), "dimension": r.get("dimension", "기타")}
+    except:
+        return {"keywords": [], "emotion": "기타", "dimension": "기타"}
+
+
+def save_log(text: str, user_tags: list = None) -> dict:
     embedding = get_embedding(text)
-    
+    metadata = extract_metadata(text)
     log_entry = {
         "timestamp": datetime.now().isoformat(),
-        "text": text,
-        "tags": tags,
-        "embedding": embedding
+        "text": text, "tags": user_tags or [],
+        "keywords": metadata["keywords"], "emotion": metadata["emotion"],
+        "dimension": metadata["dimension"], "embedding": embedding
     }
-    
     logs = load_logs()
     logs.append(log_entry)
     save_logs(logs)
-    
     return log_entry
 
 
 # ============================================================
-# Hybrid Search: 태그 가중치 계산
+# PyVis Graph HTML Generator (Obsidian Living Universe)
 # ============================================================
-def calculate_tag_bonus(current_tags: list, past_tags: list) -> float:
+def generate_graph_html() -> str:
     """
-    현재 입력 태그와 과거 로그 태그 비교 후 가산점 반환.
-    하나라도 일치하면 TAG_MATCH_BONUS 반환.
+    Obsidian 스타일의 '살아있는 우주' 그래프 생성
+    - 무중력 물리엔진 (stabilization OFF)
+    - 네온 노드 + 은은한 엣지
+    - 투명 배경 (CSS Gradient용)
     """
-    if not current_tags or not past_tags:
-        return 0.0
-    
-    current_set = set(tag.lower() for tag in current_tags)
-    past_set = set(tag.lower() for tag in past_tags)
-    
-    if current_set & past_set:  # 교집합이 있으면
-        return TAG_MATCH_BONUS
-    return 0.0
-
-
-# ============================================================
-# Temporal Awareness: 시간 경과 계산
-# ============================================================
-def calculate_days_diff(past_timestamp: str) -> int:
-    """과거 로그의 timestamp와 현재 시간 차이를 일(days) 단위로 반환."""
-    past_dt = datetime.fromisoformat(past_timestamp)
-    now_dt = datetime.now()
-    diff = now_dt - past_dt
-    return diff.days
-
-
-def get_temporal_context(days_diff: int) -> str:
-    """시간 경과에 따른 AI 지침 반환."""
-    if days_diff <= 7:
-        return "이 고민은 최근(7일 이내)의 것이다. 그 감정이 여전히 지속되고 있는지, 아니면 이미 변화가 시작되었는지 물어라."
-    elif days_diff <= 30:
-        return "이 고민은 약 한 달 이내의 것이다. 그때의 결심이 지금까지 유지되고 있는지 확인하라."
-    else:
-        return "이것은 오래된 기록이다. 이 고민이 당신의 삶에서 반복되는 '영원회귀'의 패턴인지, 아니면 그때와 지금은 어떤 점에서 근본적으로 달라졌는지 질문하라."
-
-
-# ============================================================
-# 페르소나 함수 (Temporal Awareness 적용)
-# ============================================================
-def run_mirroring_mode(current: str, past_log: dict, current_tags: list) -> str:
-    """
-    서사적 거울 모드: 과거 기록을 인용하여 현재와의 모순/변화를 질문한다.
-    시간 경과를 인지하여 맥락에 맞는 질문을 던진다.
-    """
-    days_diff = calculate_days_diff(past_log['timestamp'])
-    temporal_context = get_temporal_context(days_diff)
-    
-    system_prompt = f"""너는 서사적 거울이다. 과거의 기록을 인용하여 현재와의 모순이나 변화를 질문하라. 위로하지 마라.
-
-[시간 경과: {days_diff}일 전]
-[시간 맥락 지침]: {temporal_context}
-
-[강력한 제약조건]
-1. 답변은 총 3문장 이내로 제한한다.
-2. 질문은 단 하나(One single question)만 던진다. 여러 질문 나열 절대 금지.
-3. 짧고, 묵직하고, 날카롭게 찌르는 톤을 유지한다.
-4. 시간의 흐름을 반드시 언급하라."""
-    
-    past_date = past_log['timestamp'][:10]
-    user_prompt = f"""과거 기록 ({past_date}, {days_diff}일 전):
-"{past_log['text']}"
-
-현재 고민:
-"{current}"
-
-시간의 흐름을 고려하여 단 하나의 날카로운 질문을 던져라."""
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.7,
-        max_tokens=200
-    )
-    
-    return response.choices[0].message.content
-
-
-def run_nietzsche_fallback(current: str) -> str:
-    """
-    니체 모드: 관련 데이터가 없을 때 본질을 찌르는 철학적 질문을 던진다.
-    """
-    system_prompt = """너는 니체다. 관련된 과거 데이터가 없다. 현재 고민의 본질을 찌르는 철학적 질문을 던져라.
-
-[강력한 제약조건]
-1. 답변은 총 3문장 이내로 제한한다.
-2. 질문은 단 하나(One single question)만 던진다. 여러 질문 나열 절대 금지.
-3. 짧고, 묵직하고, 날카롭게 찌르는 톤을 유지한다."""
-    
-    user_prompt = f"""현재 고민:
-"{current}"
-
-이 고민의 본질을 파고드는 단 하나의 철학적 질문을 던져라."""
-
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        temperature=0.8,
-        max_tokens=150
-    )
-    
-    return response.choices[0].message.content
-
-
-# ============================================================
-# 핵심 함수: generate_echo (Hybrid Search + 자기 복제 방지)
-# ============================================================
-def generate_echo(current_input: str, current_tags: list = None) -> tuple[str, str, dict | None]:
-    """
-    현재 입력과 과거 로그를 비교하여 적절한 응답을 생성한다.
-    Hybrid Search: 코사인 유사도 + 태그 가중치
-    
-    Returns:
-        (응답 텍스트, 모드 이름, 참조된 과거 로그 또는 None)
-    """
-    if current_tags is None:
-        current_tags = []
-    
     logs = load_logs()
     
-    # 저장된 로그가 없거나 1개만 있는 경우 → 니체 모드
+    if not logs:
+        return """
+        <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:transparent;">
+            <div style="text-align:center;color:#6b7280;">
+                <p style="font-size:64px;">🌑</p>
+                <p style="font-size:20px;">아직 서사가 없습니다</p>
+                <p style="font-size:14px;">기록을 남기면 별들이 나타납니다</p>
+            </div>
+        </div>
+        """
+    
+    # PyVis Network (투명 배경)
+    net = Network(
+        height="100vh",
+        width="100%",
+        bgcolor="transparent",
+        font_color="#ffffff",
+        directed=False
+    )
+    
+    # 극한 튜닝: Obsidian Style Living Universe
+    # - 작은 노드 (Stars)
+    # - 아주 얇은 엣지 (Gravity Lines)
+    # - 광활한 물리 엔진 (Expanding Universe)
+    net.set_options("""
+    {
+        "nodes": {
+            "shape": "dot",
+            "scaling": {
+                "min": 4,
+                "max": 12,
+                "label": {
+                    "enabled": true,
+                    "min": 10,
+                    "max": 20,
+                    "maxVisible": 20,
+                    "drawThreshold": 8
+                }
+            },
+            "font": {
+                "size": 12,
+                "face": "Inter, sans-serif",
+                "color": "rgba(255, 255, 255, 0.6)",
+                "strokeWidth": 0
+            },
+            "borderWidth": 0,
+            "shadow": {
+                "enabled": true,
+                "color": "rgba(255,255,255,0.1)",
+                "size": 5,
+                "x": 0,
+                "y": 0
+            }
+        },
+        "edges": {
+            "color": {
+                "color": "rgba(100, 100, 100, 0.15)",
+                "highlight": "rgba(255, 255, 255, 0.4)",
+                "hover": "rgba(255, 255, 255, 0.2)",
+                "inherit": false
+            },
+            "smooth": {
+                "enabled": true,
+                "type": "continuous",
+                "roundness": 0.5
+            },
+            "width": 0.5,
+            "selectionWidth": 1.5,
+            "hoverWidth": 1.0
+        },
+        "physics": {
+            "enabled": true,
+            "solver": "forceAtlas2Based",
+            "forceAtlas2Based": {
+                "gravitationalConstant": -40,
+                "centralGravity": 0.003,
+                "springLength": 120,
+                "springConstant": 0.04,
+                "damping": 0.4,
+                "avoidOverlap": 0.2
+            },
+            "stabilization": {
+                "enabled": true,
+                "iterations": 80,
+                "updateInterval": 20
+            },
+            "minVelocity": 0.75,
+            "maxVelocity": 30
+        },
+        "interaction": {
+            "hover": true,
+            "hoverConnectedEdges": true,
+            "tooltipDelay": 200,
+            "zoomView": true,
+            "dragView": true,
+            "dragNodes": true,
+            "navigationButtons": false,
+            "keyboard": {
+                "enabled": true
+            },
+            "multiselect": true
+        }
+    }
+    """)
+    
+    # NetworkX로 연결성 계산
+    G = nx.Graph()
+    for i, log in enumerate(logs):
+        G.add_node(i, keywords=set(log.get("keywords", [])))
+    
+    for i in range(len(logs)):
+        for j in range(i + 1, len(logs)):
+            common = G.nodes[i]["keywords"] & G.nodes[j]["keywords"]
+            if common:
+                G.add_edge(i, j, weight=len(common))
+    
+    degrees = dict(G.degree())
+    max_degree = max(degrees.values()) if degrees else 1
+    
+    # 노드 추가
+    for i, log in enumerate(logs):
+        dimension = log.get("dimension", "기타")
+        node_color = DIMENSION_COLORS.get(dimension, DIMENSION_COLORS["기타"])
+        
+        # Scaling을 위한 Value 설정 (연결성에 비례)
+        degree = degrees.get(i, 0)
+        value = 2 + (degree / max_degree) * 8 if max_degree > 0 else 3
+        
+        net.add_node(
+            i,
+            label=label,
+            # title 제거: 호버 시 툴팁 없음
+            color={
+                "background": node_color,
+                "border": node_color,
+                "highlight": {"background": node_color, "border": "#ffffff"},
+                "hover": {"background": node_color, "border": "#ffffff"}
+            },
+            value=value, # size 대신 value 사용해야 scaling 작동
+            shape="dot"
+        )
+    
+    # 엣지 추가
+    for u, v, data in G.edges(data=True):
+        net.add_edge(u, v, width=1)
+    
+    # HTML 생성
+    html = net.generate_html()
+    
+    # 투명 배경 강제 적용
+    html = html.replace(
+        '<body>',
+        '<body style="margin:0;padding:0;background:transparent;overflow:hidden;">'
+    )
+    
+    # canvas 배경도 투명하게
+    html = html.replace(
+        'background-color: #ffffff',
+        'background-color: transparent'
+    )
+    
+    return html
+
+
+# ============================================================
+# Hybrid Search
+# ============================================================
+def calculate_keyword_bonus(c: list, p: list) -> float:
+    if not c or not p:
+        return 0.0
+    inter = set(k.lower() for k in c) & set(k.lower() for k in p)
+    return min(len(inter) * KEYWORD_MATCH_BONUS, 0.20) if inter else 0.0
+
+
+def calculate_tag_bonus(c: list, p: list) -> float:
+    if not c or not p:
+        return 0.0
+    return TAG_MATCH_BONUS if set(t.lower().strip() for t in c) & set(t.lower().strip() for t in p) else 0.0
+
+
+def calculate_days_diff(ts: str) -> int:
+    return (datetime.now() - datetime.fromisoformat(ts)).days
+
+
+def get_temporal_context(d: int) -> str:
+    if d < 7:
+        return "최근 기록. 감정 지속성 확인."
+    elif d <= 30:
+        return "한 달 이내. 패턴 반복 확인."
+    elif d <= 365:
+        return "오래된 기록. 근본적 변화 확인."
+    return "1년+. 영원회귀 질문."
+
+
+# ============================================================
+# Maieutics
+# ============================================================
+MAIEUTICS_PROMPT = """너는 "Narrative Maieutician" (서사적 산파술사)이다.
+
+[판단] 매 응답마다 선택:
+1. 해석: 모순/패턴 지적
+2. 질문: 필요시 1개만
+3. 종결: 행동 유도
+
+[연결] 이전 맥락과 연결. 모순 직접 지적.
+[톤] 직설적. 3문장 이내. 빈말 금지."""
+
+
+def get_welcome_message() -> str:
+    return "나는 서사적 산파다. 당신의 생각을 꺼내는 것이 내 일이다. 무엇이 당신을 여기로 데려왔는가?"
+
+
+def run_maieutics_mode(current: str, past_log: dict = None, days_diff: int = 0, keywords: list = None) -> str:
+    kw_str = ", ".join((keywords or [])[:3]) or "삶"
+    ctx = get_recent_context()
+    summary = get_conversation_summary()
+    
+    extra = ""
+    if past_log:
+        extra = f"\n\n[과거 기록: {days_diff}일 전]\n\"{past_log['text'][:150]}...\"\n[맥락]: {get_temporal_context(days_diff)}"
+    if summary:
+        extra += f"\n\n{summary}"
+
+    sys = f"{MAIEUTICS_PROMPT}\n\n[키워드]: {kw_str}{extra}"
+    msgs = [{"role": "system", "content": sys}] + ctx + [{"role": "user", "content": current}]
+    
+    r = client.chat.completions.create(model="gpt-4o-mini", messages=msgs, temperature=0.75, max_tokens=200)
+    return r.choices[0].message.content
+
+
+# ============================================================
+# generate_echo
+# ============================================================
+def generate_echo(text: str, keywords: list = None, tags: list = None) -> tuple[str, str, dict | None, list]:
+    keywords = keywords or []
+    tags = tags or []
+    logs = load_logs()
+    
     if len(logs) <= 1:
-        response = run_nietzsche_fallback(current_input)
-        return response, "nietzsche", None
+        return run_maieutics_mode(text, keywords=keywords), "maieutics", None, keywords
     
-    # 현재 입력의 임베딩 계산
-    current_embedding = np.array(get_embedding(current_input)).reshape(1, -1)
-    
-    # Hybrid Search: 코사인 유사도 + 태그 가산점
-    similarity_scores = []
+    emb = np.array(get_embedding(text)).reshape(1, -1)
+    scores = []
     for log in logs:
-        log_embedding = np.array(log["embedding"]).reshape(1, -1)
-        cosine_score = cosine_similarity(current_embedding, log_embedding)[0][0]
-        
-        # 태그 가산점 계산
-        tag_bonus = calculate_tag_bonus(current_tags, log.get("tags", []))
-        
-        # 최종 점수 (최대 1.0)
-        final_score = min(cosine_score + tag_bonus, 1.0)
-        
-        similarity_scores.append((final_score, cosine_score, log))
+        log_emb = np.array(log["embedding"]).reshape(1, -1)
+        cos = cosine_similarity(emb, log_emb)[0][0]
+        final = min(cos + calculate_keyword_bonus(keywords, log.get("keywords", [])) + calculate_tag_bonus(tags, log.get("tags", [])), 1.0)
+        scores.append((final, cos, log))
     
-    # 최종 점수 내림차순 정렬
-    similarity_scores.sort(key=lambda x: x[0], reverse=True)
+    scores.sort(key=lambda x: x[0], reverse=True)
     
-    # 자기 자신(코사인 유사도 0.99 이상) 제외하고 가장 유사한 항목 찾기
-    best_log = None
-    best_score = 0.0
-    
-    for final_score, cosine_score, log in similarity_scores:
-        if cosine_score < SELF_SIMILARITY_THRESHOLD:  # 자기 자신 제외 (원본 코사인 점수 기준)
-            best_score = final_score
-            best_log = log
+    best_log, best_score = None, 0.0
+    for f, c, log in scores:
+        if c < SELF_SIMILARITY_THRESHOLD:
+            best_score, best_log = f, log
             break
     
-    # 차선책이 없거나 임계값 미만이면 니체 모드
-    if best_log is None or best_score < SIMILARITY_THRESHOLD:
-        response = run_nietzsche_fallback(current_input)
-        return response, "nietzsche", None
+    if not best_log or best_score < SIMILARITY_THRESHOLD:
+        return run_maieutics_mode(text, keywords=keywords), "maieutics", None, keywords
     
-    # 유사한 과거 로그 발견 → 거울 모드
-    response = run_mirroring_mode(current_input, best_log, current_tags)
-    return response, "mirroring", best_log
+    days = calculate_days_diff(best_log['timestamp'])
+    return run_maieutics_mode(text, past_log=best_log, days_diff=days, keywords=keywords), "mirroring", best_log, keywords
