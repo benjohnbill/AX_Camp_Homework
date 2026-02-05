@@ -1,0 +1,7 @@
+# .gitignore 내용
+.env
+data/
+__pycache__/
+.streamlit/
+venv/
+.DS_Store
