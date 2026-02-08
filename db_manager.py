@@ -1,14 +1,15 @@
 """
-database.py
-Antigravity: SQLite Database Layer
+db_manager.py
+Antigravity v4: SQLite Database Layer
+3-Body Hierarchy: Constitution (Sun) / Apology (Planet) / Fragment (Dust)
 """
 
 import sqlite3
 import uuid
 import json
 import numpy as np
-from datetime import datetime
-from typing import Optional, List, Tuple
+from datetime import datetime, date, timedelta
+from typing import Optional, List
 import os
 
 # ============================================================
@@ -16,29 +17,22 @@ import os
 # ============================================================
 DB_PATH = "data/narrative.db"
 
-# Genesis Data (Seed)
+# Genesis Data (Seed for Testing Red Protocol)
 GENESIS_DATA = [
     {
         "meta_type": "Constitution",
-        "content": "순간의 열정이나 강렬한 욕망을 통한 동기부여를 지속가능하게 만들고 싶다.",
-        "status": "active"
+        "content": "순간의 열정이나 강렬한 욕망을 통한 동기부여를 지속가능하게 만들고 싶다."
     },
     {
         "meta_type": "Fragment",
-        "content": "사실, 플래너에 독일어 공부/일기 쓰기/태블릿에 4K Berlin View 깔기 등의 과업이 있었지만, 오늘은 하루종일 Antigravity와 코딩하느라, 하지 못했다. 아니, 아마도 안한 것일 것이다.",
-        "status": "active"
+        "content": "플래너에 적힌 과업을 무시하고 하루종일 코딩만 했다."
     },
     {
         "meta_type": "Fragment",
-        "content": "며칠 전에, 수면의 중요성에 관한 글을 읽으며 정리했다. 그리고, 반드시 12시에 자겠다고 생각했다. ... 지금, 코딩하다보니 12시 39분이다.",
-        "status": "active"
-    },
-    {
-        "meta_type": "Thirst",
-        "content": "나는 왜 글쓰기를 하지? 나의 글쓰기는 자위행위와 같은가? 넘치는 실재의 흐름을 분출해버리는 일종의 증상적인 행위인가?",
-        "status": "active"
+        "content": "12시에 자겠다고 했지만 지금 12시 39분이다."
     }
 ]
+
 
 # ============================================================
 # Database Initialization
@@ -56,34 +50,40 @@ def init_database():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Logs table
+    # Logs table (3-Body Hierarchy)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS logs (
             id TEXT PRIMARY KEY,
             content TEXT NOT NULL,
             meta_type TEXT DEFAULT 'Fragment',
-            status TEXT DEFAULT 'active',
             parent_id TEXT REFERENCES logs(id),
+            action_plan TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            embedding BLOB,
             emotion TEXT,
             dimension TEXT,
-            keywords TEXT,
-            vector_embedding BLOB,
-            is_virtual INTEGER DEFAULT 0,
-            virtual_type TEXT,
-            amendment_reason TEXT,
-            pending_proof_count INTEGER DEFAULT 0
+            keywords TEXT
         )
     """)
     
-    # Tags table (Many-to-Many)
+    # User stats table (Streak & Debt)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS tags (
-            id TEXT PRIMARY KEY,
-            log_id TEXT REFERENCES logs(id),
-            name TEXT NOT NULL
+        CREATE TABLE IF NOT EXISTS user_stats (
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            last_login DATE,
+            current_streak INTEGER DEFAULT 0,
+            longest_streak INTEGER DEFAULT 0,
+            debt_count INTEGER DEFAULT 0
         )
     """)
+    
+    # Initialize user_stats if empty
+    cursor.execute("SELECT COUNT(*) FROM user_stats")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO user_stats (id, last_login, current_streak, longest_streak, debt_count)
+            VALUES (1, NULL, 0, 0, 0)
+        """)
     
     # Chat history table
     cursor.execute("""
@@ -93,20 +93,6 @@ def init_database():
             role TEXT NOT NULL,
             content TEXT NOT NULL,
             metadata TEXT
-        )
-    """)
-    
-    # Debts table (Strategic Sacrifice - Constitution violations)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS debts (
-            id TEXT PRIMARY KEY,
-            constitution_id TEXT REFERENCES logs(id),
-            fragment_id TEXT REFERENCES logs(id),
-            debt_type TEXT NOT NULL,
-            reason TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            repaid_at TIMESTAMP,
-            is_repaid INTEGER DEFAULT 0
         )
     """)
     
@@ -128,7 +114,6 @@ def inject_genesis_data(embedding_func):
             log_id = str(uuid.uuid4())
             content = data["content"]
             
-            # Get embedding
             try:
                 embedding = embedding_func(content)
                 embedding_blob = np.array(embedding).tobytes()
@@ -136,20 +121,123 @@ def inject_genesis_data(embedding_func):
                 embedding_blob = None
             
             cursor.execute("""
-                INSERT INTO logs (id, content, meta_type, status, created_at, vector_embedding)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                log_id,
-                content,
-                data["meta_type"],
-                data["status"],
-                datetime.now().isoformat(),
-                embedding_blob
-            ))
+                INSERT INTO logs (id, content, meta_type, created_at, embedding)
+                VALUES (?, ?, ?, ?, ?)
+            """, (log_id, content, data["meta_type"], datetime.now().isoformat(), embedding_blob))
+        
+        # Set initial debt for testing Red Protocol
+        cursor.execute("UPDATE user_stats SET debt_count = 1 WHERE id = 1")
         
         conn.commit()
-        print(f"✅ Injected {len(GENESIS_DATA)} genesis records")
+        print(f"✅ Injected {len(GENESIS_DATA)} genesis records + debt_count=1 for testing")
     
+    conn.close()
+
+
+# ============================================================
+# Streak System
+# ============================================================
+def update_streak() -> dict:
+    """Check and update streak on login. Returns streak info."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT last_login, current_streak, longest_streak FROM user_stats WHERE id = 1")
+    row = cursor.fetchone()
+    
+    today = date.today()
+    last_login = None
+    if row['last_login']:
+        try:
+            last_login = datetime.strptime(row['last_login'], "%Y-%m-%d").date()
+        except:
+            last_login = None
+    
+    current_streak = row['current_streak'] or 0
+    longest_streak = row['longest_streak'] or 0
+    streak_broken = False
+    
+    if last_login is None:
+        # First login ever
+        current_streak = 1
+    elif last_login == today:
+        # Already logged in today
+        pass
+    elif last_login == today - timedelta(days=1):
+        # Consecutive day
+        current_streak += 1
+    else:
+        # Streak broken
+        streak_broken = True
+        current_streak = 1
+    
+    # Update longest streak
+    if current_streak > longest_streak:
+        longest_streak = current_streak
+    
+    # Save updates
+    cursor.execute("""
+        UPDATE user_stats 
+        SET last_login = ?, current_streak = ?, longest_streak = ?
+        WHERE id = 1
+    """, (today.isoformat(), current_streak, longest_streak))
+    
+    conn.commit()
+    conn.close()
+    
+    return {
+        "current_streak": current_streak,
+        "longest_streak": longest_streak,
+        "streak_broken": streak_broken
+    }
+
+
+def get_current_streak() -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT current_streak FROM user_stats WHERE id = 1")
+    result = cursor.fetchone()
+    conn.close()
+    return result['current_streak'] if result else 0
+
+
+def get_longest_streak() -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT longest_streak FROM user_stats WHERE id = 1")
+    result = cursor.fetchone()
+    conn.close()
+    return result['longest_streak'] if result else 0
+
+
+# ============================================================
+# Debt System (Red Protocol)
+# ============================================================
+def get_debt_count() -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT debt_count FROM user_stats WHERE id = 1")
+    result = cursor.fetchone()
+    conn.close()
+    return result['debt_count'] if result else 0
+
+
+def increment_debt(amount: int = 1) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE user_stats SET debt_count = debt_count + ? WHERE id = 1", (amount,))
+    conn.commit()
+    cursor.execute("SELECT debt_count FROM user_stats WHERE id = 1")
+    result = cursor.fetchone()
+    conn.close()
+    return result['debt_count']
+
+
+def reset_debt() -> None:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE user_stats SET debt_count = 0 WHERE id = 1")
+    conn.commit()
     conn.close()
 
 
@@ -163,9 +251,8 @@ def create_log(
     emotion: str = None,
     dimension: str = None,
     keywords: list = None,
-    tags: list = None,
-    is_virtual: bool = False,
-    virtual_type: str = None
+    parent_id: str = None,
+    action_plan: str = None
 ) -> dict:
     """Create a new log entry"""
     conn = get_connection()
@@ -176,24 +263,13 @@ def create_log(
     keywords_json = json.dumps(keywords or [], ensure_ascii=False)
     
     cursor.execute("""
-        INSERT INTO logs (id, content, meta_type, status, created_at, 
-                          emotion, dimension, keywords, vector_embedding,
-                          is_virtual, virtual_type)
-        VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO logs (id, content, meta_type, parent_id, action_plan, 
+                         created_at, embedding, emotion, dimension, keywords)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
-        log_id, content, meta_type, datetime.now().isoformat(),
-        emotion, dimension, keywords_json, embedding_blob,
-        1 if is_virtual else 0, virtual_type
+        log_id, content, meta_type, parent_id, action_plan,
+        datetime.now().isoformat(), embedding_blob, emotion, dimension, keywords_json
     ))
-    
-    # Insert tags
-    if tags:
-        for tag in tags:
-            tag_id = str(uuid.uuid4())
-            cursor.execute(
-                "INSERT INTO tags (id, log_id, name) VALUES (?, ?, ?)",
-                (tag_id, log_id, tag.strip())
-            )
     
     conn.commit()
     conn.close()
@@ -201,37 +277,80 @@ def create_log(
     return get_log_by_id(log_id)
 
 
+def create_apology(content: str, constitution_id: str, action_plan: str, embedding: list = None) -> dict:
+    """Create an Apology linked to a Constitution"""
+    return create_log(
+        content=content,
+        meta_type="Apology",
+        embedding=embedding,
+        parent_id=constitution_id,
+        action_plan=action_plan
+    )
+
+
 def get_log_by_id(log_id: str) -> Optional[dict]:
     """Get a single log by ID"""
     conn = get_connection()
     cursor = conn.cursor()
-    
     cursor.execute("SELECT * FROM logs WHERE id = ?", (log_id,))
     row = cursor.fetchone()
     conn.close()
-    
-    if row:
-        return _row_to_dict(row)
-    return None
+    return _row_to_dict(row) if row else None
 
 
-def get_all_logs(include_virtual: bool = True, include_archived: bool = True) -> List[dict]:
+def get_all_logs() -> List[dict]:
     """Get all logs"""
     conn = get_connection()
     cursor = conn.cursor()
-    
-    query = "SELECT * FROM logs WHERE 1=1"
-    if not include_virtual:
-        query += " AND is_virtual = 0"
-    if not include_archived:
-        query += " AND status != 'archived'"
-    query += " ORDER BY created_at DESC"
-    
-    cursor.execute(query)
+    cursor.execute("SELECT * FROM logs ORDER BY created_at DESC")
     rows = cursor.fetchall()
     conn.close()
-    
     return [_row_to_dict(row) for row in rows]
+
+
+def get_logs_by_type(meta_type: str) -> List[dict]:
+    """Get logs by meta_type"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM logs WHERE meta_type = ? ORDER BY created_at DESC", (meta_type,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [_row_to_dict(row) for row in rows]
+
+
+def get_constitutions() -> List[dict]:
+    """Get all Constitution logs"""
+    return get_logs_by_type("Constitution")
+
+
+def get_apologies() -> List[dict]:
+    """Get all Apology logs"""
+    return get_logs_by_type("Apology")
+
+
+def get_fragments() -> List[dict]:
+    """Get all Fragment logs"""
+    return get_logs_by_type("Fragment")
+
+
+def get_yesterday_apology() -> Optional[dict]:
+    """Get the most recent Apology from yesterday"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    today = date.today().isoformat()
+    
+    cursor.execute("""
+        SELECT * FROM logs 
+        WHERE meta_type = 'Apology' 
+        AND date(created_at) >= ? AND date(created_at) < ?
+        ORDER BY created_at DESC LIMIT 1
+    """, (yesterday, today))
+    
+    row = cursor.fetchone()
+    conn.close()
+    return _row_to_dict(row) if row else None
 
 
 def update_log(log_id: str, **kwargs) -> bool:
@@ -244,7 +363,7 @@ def update_log(log_id: str, **kwargs) -> bool:
     
     for key, value in kwargs.items():
         if key == "embedding":
-            updates.append("vector_embedding = ?")
+            updates.append("embedding = ?")
             values.append(np.array(value).tobytes() if value else None)
         elif key == "keywords":
             updates.append("keywords = ?")
@@ -257,10 +376,7 @@ def update_log(log_id: str, **kwargs) -> bool:
         return False
     
     values.append(log_id)
-    cursor.execute(
-        f"UPDATE logs SET {', '.join(updates)} WHERE id = ?",
-        values
-    )
+    cursor.execute(f"UPDATE logs SET {', '.join(updates)} WHERE id = ?", values)
     
     conn.commit()
     success = cursor.rowcount > 0
@@ -272,55 +388,11 @@ def delete_log(log_id: str) -> bool:
     """Delete a log"""
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # Delete tags first
-    cursor.execute("DELETE FROM tags WHERE log_id = ?", (log_id,))
     cursor.execute("DELETE FROM logs WHERE id = ?", (log_id,))
-    
     conn.commit()
     success = cursor.rowcount > 0
     conn.close()
     return success
-
-
-def get_logs_by_type(meta_type: str) -> List[dict]:
-    """Get logs by meta_type"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT * FROM logs WHERE meta_type = ? AND status = 'active' ORDER BY created_at DESC",
-        (meta_type,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    
-    return [_row_to_dict(row) for row in rows]
-
-
-def get_virtual_nodes() -> List[dict]:
-    """Get all ghost/virtual nodes"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM logs WHERE is_virtual = 1")
-    rows = cursor.fetchall()
-    conn.close()
-    
-    return [_row_to_dict(row) for row in rows]
-
-
-def clear_virtual_nodes() -> int:
-    """Delete all virtual nodes"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("DELETE FROM logs WHERE is_virtual = 1")
-    count = cursor.rowcount
-    
-    conn.commit()
-    conn.close()
-    return count
 
 
 # ============================================================
@@ -329,12 +401,10 @@ def clear_virtual_nodes() -> int:
 def save_chat_message(role: str, content: str, metadata: dict = None) -> None:
     conn = get_connection()
     cursor = conn.cursor()
-    
     cursor.execute("""
         INSERT INTO chat_history (role, content, metadata)
         VALUES (?, ?, ?)
     """, (role, content, json.dumps(metadata) if metadata else None))
-    
     conn.commit()
     conn.close()
 
@@ -342,14 +412,9 @@ def save_chat_message(role: str, content: str, metadata: dict = None) -> None:
 def get_chat_history(limit: int = 50) -> List[dict]:
     conn = get_connection()
     cursor = conn.cursor()
-    
-    cursor.execute(
-        "SELECT * FROM chat_history ORDER BY timestamp DESC LIMIT ?",
-        (limit,)
-    )
+    cursor.execute("SELECT * FROM chat_history ORDER BY timestamp DESC LIMIT ?", (limit,))
     rows = cursor.fetchall()
     conn.close()
-    
     return [dict(row) for row in reversed(rows)]
 
 
@@ -359,75 +424,6 @@ def clear_chat_history() -> None:
     cursor.execute("DELETE FROM chat_history")
     conn.commit()
     conn.close()
-
-
-# ============================================================
-# Strategic Sacrifice (Debt System)
-# ============================================================
-def record_strategic_sacrifice(constitution_id: str, fragment_id: str, debt_type: str, reason: str = None) -> dict:
-    """
-    Record a Strategic Sacrifice - user consciously violates Constitution.
-    Creates a 'Debt' that must be repaid later.
-    """
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    debt_id = str(uuid.uuid4())
-    cursor.execute("""
-        INSERT INTO debts (id, constitution_id, fragment_id, debt_type, reason, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (debt_id, constitution_id, fragment_id, debt_type, reason, datetime.now().isoformat()))
-    
-    conn.commit()
-    conn.close()
-    
-    return {
-        "id": debt_id,
-        "constitution_id": constitution_id,
-        "fragment_id": fragment_id,
-        "debt_type": debt_type,
-        "reason": reason,
-        "is_repaid": False
-    }
-
-
-def get_unpaid_debts() -> List[dict]:
-    """Get all unpaid debts"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM debts WHERE is_repaid = 0 ORDER BY created_at DESC")
-    rows = cursor.fetchall()
-    conn.close()
-    
-    return [dict(row) for row in rows]
-
-
-def repay_debt(debt_id: str) -> bool:
-    """Mark a debt as repaid"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute(
-        "UPDATE debts SET is_repaid = 1, repaid_at = ? WHERE id = ?",
-        (datetime.now().isoformat(), debt_id)
-    )
-    
-    conn.commit()
-    success = cursor.rowcount > 0
-    conn.close()
-    return success
-
-
-def get_debt_count() -> int:
-    """Get count of unpaid debts"""
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT COUNT(*) FROM debts WHERE is_repaid = 0")
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count
 
 
 # ============================================================
@@ -447,23 +443,33 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
         d["keywords"] = []
     
     # Convert embedding blob to list
-    if d.get("vector_embedding"):
+    if d.get("embedding"):
         try:
-            d["embedding"] = np.frombuffer(d["vector_embedding"], dtype=np.float64).tolist()
+            d["embedding"] = np.frombuffer(d["embedding"], dtype=np.float64).tolist()
         except:
             d["embedding"] = []
-        del d["vector_embedding"]
     else:
         d["embedding"] = []
-    
-    # Convert is_virtual to bool
-    d["is_virtual"] = bool(d.get("is_virtual", 0))
     
     # Ensure timestamp field exists
     if "created_at" in d:
         d["timestamp"] = d["created_at"]
     
+    # Add 'text' alias for compatibility
+    d["text"] = d.get("content", "")
+    
     return d
+
+
+def reset_database() -> None:
+    """Reset database for testing (deletes all data)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM logs")
+    cursor.execute("DELETE FROM chat_history")
+    cursor.execute("UPDATE user_stats SET last_login = NULL, current_streak = 0, longest_streak = 0, debt_count = 0")
+    conn.commit()
+    conn.close()
 
 
 # Initialize on import
