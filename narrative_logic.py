@@ -16,14 +16,29 @@ from openai import OpenAI
 # ============================================================
 # API Key
 # ============================================================
-try:
-    api_key = st.secrets["OPENAI_API_KEY"]
-except Exception:
-    from dotenv import load_dotenv
-    load_dotenv()
-    api_key = os.getenv("OPENAI_API_KEY")
+api_key = None
 
-client = OpenAI(api_key=api_key)
+# Try Streamlit secrets first
+try:
+    api_key = st.secrets.get("OPENAI_API_KEY")
+except Exception:
+    pass
+
+# Fallback to .env file
+if not api_key:
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+    except Exception:
+        pass
+
+# Initialize OpenAI client (will be None if no API key)
+client = None
+if api_key:
+    client = OpenAI(api_key=api_key)
+else:
+    st.warning("⚠️ OPENAI_API_KEY가 설정되지 않았습니다. Streamlit Cloud의 Secrets에 추가해주세요.")
 
 # ============================================================
 # Constants
@@ -50,13 +65,15 @@ META_TYPE_STYLES = {
 # Embedding & Metadata
 # ============================================================
 def get_embedding(text: str) -> list:
+    if not client:
+        return []  # Return empty if no API key
     response = client.embeddings.create(model="text-embedding-3-small", input=text)
     return response.data[0].embedding
 
 
 def extract_metadata(text: str) -> dict:
     """Extract keywords, emotion, dimension using AI"""
-    if len(text.strip()) < 20:
+    if len(text.strip()) < 20 or not client:
         return {"keywords": [], "emotion": "기타", "dimension": "기타"}
     
     try:
@@ -293,6 +310,8 @@ def generate_response(user_input: str, past_logs: list = None) -> str:
         system_prompt += f"\n\n[과거 기록 - Raw Quotes로 인용하라]\n{context_str}"
     
     try:
+        if not client:
+            return "⚠️ API 키가 설정되지 않았습니다. Streamlit Cloud Secrets에 OPENAI_API_KEY를 추가해주세요."
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
