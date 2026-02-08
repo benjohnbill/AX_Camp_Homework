@@ -298,6 +298,24 @@ with st.sidebar:
     
     st.markdown("---")
     
+    # API Key Configuration
+    if not logic.is_api_key_configured():
+        st.warning("🔑 API 키 필요")
+        api_key_input = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            placeholder="sk-proj-...",
+            help="OpenAI API 키를 입력하세요"
+        )
+        if api_key_input:
+            logic.set_api_key(api_key_input)
+            st.success("✅ API 키 설정됨")
+            st.rerun()
+    else:
+        st.success("🔑 API 연결됨")
+    
+    st.markdown("---")
+    
     # Reset button
     if st.button("🔄 대화 초기화", use_container_width=True):
         logic.clear_chat_history()

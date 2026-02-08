@@ -14,31 +14,55 @@ import streamlit as st
 from openai import OpenAI
 
 # ============================================================
-# API Key
+# API Key & Client Management
 # ============================================================
-api_key = None
-
-# Try Streamlit secrets first
-try:
-    api_key = st.secrets.get("OPENAI_API_KEY")
-except Exception:
-    pass
-
-# Fallback to .env file
-if not api_key:
+def get_api_key():
+    """Get API key from secrets, env, or session_state"""
+    # 1. Check session_state first (user-entered key)
+    if 'openai_api_key' in st.session_state and st.session_state['openai_api_key']:
+        return st.session_state['openai_api_key']
+    
+    # 2. Try Streamlit secrets
+    try:
+        key = st.secrets.get("OPENAI_API_KEY")
+        if key:
+            return key
+    except Exception:
+        pass
+    
+    # 3. Fallback to .env file
     try:
         from dotenv import load_dotenv
         load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
+        key = os.getenv("OPENAI_API_KEY")
+        if key:
+            return key
     except Exception:
         pass
+    
+    return None
 
-# Initialize OpenAI client (will be None if no API key)
-client = None
-if api_key:
-    client = OpenAI(api_key=api_key)
-else:
-    st.warning("⚠️ OPENAI_API_KEY가 설정되지 않았습니다. Streamlit Cloud의 Secrets에 추가해주세요.")
+
+def get_client():
+    """Get OpenAI client (lazy initialization)"""
+    api_key = get_api_key()
+    if api_key:
+        return OpenAI(api_key=api_key)
+    return None
+
+
+def set_api_key(key: str):
+    """Set API key from user input"""
+    st.session_state['openai_api_key'] = key
+
+
+def is_api_key_configured() -> bool:
+    """Check if API key is available"""
+    return get_api_key() is not None
+
+
+# For backward compatibility
+client = None  # Will be set dynamically via get_client()
 
 # ============================================================
 # Constants
@@ -65,6 +89,7 @@ META_TYPE_STYLES = {
 # Embedding & Metadata
 # ============================================================
 def get_embedding(text: str) -> list:
+    client = get_client()
     if not client:
         return []  # Return empty if no API key
     response = client.embeddings.create(model="text-embedding-3-small", input=text)
@@ -73,6 +98,7 @@ def get_embedding(text: str) -> list:
 
 def extract_metadata(text: str) -> dict:
     """Extract keywords, emotion, dimension using AI"""
+    client = get_client()
     if len(text.strip()) < 20 or not client:
         return {"keywords": [], "emotion": "기타", "dimension": "기타"}
     
@@ -310,8 +336,9 @@ def generate_response(user_input: str, past_logs: list = None) -> str:
         system_prompt += f"\n\n[과거 기록 - Raw Quotes로 인용하라]\n{context_str}"
     
     try:
+        client = get_client()
         if not client:
-            return "⚠️ API 키가 설정되지 않았습니다. Streamlit Cloud Secrets에 OPENAI_API_KEY를 추가해주세요."
+            return "⚠️ API 키가 설정되지 않았습니다. 사이드바에서 API 키를 입력해주세요."
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
