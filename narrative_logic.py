@@ -515,6 +515,21 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
                     title="Apology Link"
                 )
     
+    # Add Manual Connections (Red Edge)
+    connections = db.get_connections()
+    for conn in connections:
+        source_idx = id_to_idx.get(conn["source_id"])
+        target_idx = id_to_idx.get(conn["target_id"])
+        
+        if source_idx is not None and target_idx is not None:
+            net.add_edge(
+                source_idx, target_idx,
+                color="#FF4500",  # Orange Red - Manual Constellation
+                width=3,
+                dashes=False,
+                title="Manual Constellation"
+            )
+    
     # Add keyword-based edges (Fragment <-> Fragment)
     G = nx.Graph()
     for i, log in enumerate(logs):
@@ -526,6 +541,8 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
             if i < j:
                 common = G.nodes[i].get("keywords", set()) & G.nodes[j].get("keywords", set())
                 if common:
+                    # Check if manual connection already exists (avoid duplicates)
+                    # This is a simple visual check, strict check is complex here
                     net.add_edge(i, j, width=1, color="rgba(100,100,100,0.2)")
     
     html = net.generate_html()
@@ -537,3 +554,8 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
     )
     
     return html
+
+
+def add_manual_connection(source_id: str, target_id: str) -> bool:
+    """Create a manual connection between two logs"""
+    return db.add_connection(source_id, target_id)

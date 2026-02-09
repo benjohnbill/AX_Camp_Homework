@@ -96,6 +96,20 @@ def init_database():
         )
     """)
     
+    # Manual Connections table (Constellations)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS connections (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_id TEXT NOT NULL,
+            target_id TEXT NOT NULL,
+            type TEXT DEFAULT 'manual',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(source_id) REFERENCES logs(id),
+            FOREIGN KEY(target_id) REFERENCES logs(id),
+            UNIQUE(source_id, target_id)
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
@@ -424,6 +438,76 @@ def clear_chat_history() -> None:
     cursor.execute("DELETE FROM chat_history")
     conn.commit()
     conn.close()
+
+
+# ============================================================
+# Manual Connections (Constellations)
+# ============================================================
+def add_connection(source_id: str, target_id: str) -> bool:
+    """Add a manual connection between two logs"""
+    if source_id == target_id:
+        return False
+        
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        # Check bidirectional
+        cursor.execute("""
+            SELECT id FROM connections 
+            WHERE (source_id = ? AND target_id = ?) 
+            OR (source_id = ? AND target_id = ?)
+        """, (source_id, target_id, target_id, source_id))
+        
+        if cursor.fetchone():
+            return False  # Already exists
+            
+        cursor.execute("""
+            INSERT INTO connections (source_id, target_id)
+            VALUES (?, ?)
+        """, (source_id, target_id))
+        conn.commit()
+        success = True
+    except Exception as e:
+        success = False
+    finally:
+        conn.close()
+    return success
+
+
+def get_connections() -> List[dict]:
+    """Get all manual connections"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Check if table exists first (migration support)
+    try:
+        cursor.execute("SELECT * FROM connections")
+        rows = cursor.fetchall()
+    except:
+        return []
+    finally:
+        conn.close()
+        
+    return [dict(row) for row in rows]
+
+
+def delete_connection(source_id: str, target_id: str) -> bool:
+    """Delete a manual connection"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            DELETE FROM connections 
+            WHERE (source_id = ? AND target_id = ?) 
+            OR (source_id = ? AND target_id = ?)
+        """, (source_id, target_id, target_id, source_id))
+        conn.commit()
+        success = True
+    except:
+        success = False
+    finally:
+        conn.close()
+    return success
 
 
 # ============================================================

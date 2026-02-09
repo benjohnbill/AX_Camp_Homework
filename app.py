@@ -447,13 +447,61 @@ elif st.session_state['mode'] == "universe":
     
     # Legend
     st.markdown("""
-    <div style="display:flex;gap:20px;justify-content:center;margin-top:15px;">
+    <div style="display:flex;gap:20px;justify-content:center;margin-top:15px;margin-bottom:30px;">
         <span style="color:#FFD700;">⭐ Constitution</span>
         <span style="color:#00FF7F;">🩹 Apology</span>
         <span style="color:#FFFFFF;">💫 Fragment</span>
-        <span style="color:#00FFFF;">━ Constellation Link</span>
+        <span style="color:#00FFFF;">━ Apology Link</span>
+        <span style="color:#FF4500;">━ Manual Constellation</span>
     </div>
     """, unsafe_allow_html=True)
+    
+    # 🔭 Telescope (Observation & Connection)
+    st.markdown("### 🔭 Telescope")
+    st.caption("관측할 별을 선택하고, 새로운 별자리를 연결하세요.")
+    
+    logs = logic.load_logs()
+    
+    # Selectbox for Source Node
+    # Format: [Type] Content... (Date)
+    options = {
+        f"[{l.get('meta_type','?')}] {l.get('content','...')[:20]}... ({l.get('created_at','')[:10]})": l['id'] 
+        for l in logs
+    }
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        selected_label = st.selectbox("관측 대상 (Source)", options=list(options.keys()), key="telescope_source")
+        
+        if selected_label:
+            source_id = options[selected_label]
+            log = logic.get_log_by_id(source_id)
+            
+            with st.expander("📄 상세 내용 보기", expanded=True):
+                st.markdown(f"**{log.get('meta_type')}** | {log.get('created_at')[:16]}")
+                st.markdown("---")
+                st.markdown(log.get('content'))
+                if log.get('action_plan'):
+                    st.info(f"Action Plan: {log.get('action_plan')}")
+
+    with col2:
+        st.markdown("#### 🔗 Constellation 연결")
+        target_label = st.selectbox("연결 대상 (Target)", options=list(options.keys()), key="telescope_target")
+        
+        if st.button("✨ 별자리 연결하기", use_container_width=True, type="primary"):
+            target_id = options[target_label]
+            source_id = options[selected_label]
+            
+            if source_id == target_id:
+                st.error("자기 자신과 연결할 수 없습니다.")
+            else:
+                success = logic.add_manual_connection(source_id, target_id)
+                if success:
+                    st.success("새로운 별자리가 연결되었습니다! 🌌")
+                    st.rerun()
+                else:
+                    st.warning("이미 연결되어 있거나 연결할 수 없습니다.")
 
 
 # ============================================================
