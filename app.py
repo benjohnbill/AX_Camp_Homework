@@ -472,31 +472,85 @@ elif st.session_state['mode'] == "desk":
     with left_col:
         st.markdown("### 📚 Cards")
         
-        logs = [l for l in logic.load_logs() if l.get("meta_type") == "Fragment"]
+    with left_col:
+        st.markdown("### 📚 Cards")
         
-        for log in logs[:15]:
-            full_content = log.get("content", log.get("text", ""))
-            preview = full_content[:50] + "..." if len(full_content) > 50 else full_content
+        # 1. 데이터 로드 및 분류
+        all_logs = logic.load_logs()
+        constitutions = [l for l in all_logs if l.get("meta_type") == "Constitution"]
+        apologies = [l for l in all_logs if l.get("meta_type") == "Apology"]
+        fragments = [l for l in all_logs if l.get("meta_type") == "Fragment"]
+        
+        # Apology를 Constitution에 매핑
+        const_map = {c["id"]: [] for c in constitutions}
+        unlinked_apologies = []
+        
+        for apology in apologies:
+            parent_id = apology.get("parent_id")
+            if parent_id in const_map:
+                const_map[parent_id].append(apology)
+            else:
+                unlinked_apologies.append(apology)
+        
+        # 공통 카드 렌더링 함수
+        def render_card(log, icon="📄", indent=0):
             log_id = log.get("id")
+            content = log.get("content", log.get("text", ""))
+            created_at = log.get("created_at", "")[:10]
             is_selected = log_id in st.session_state['selected_cards']
-            created_at = log.get("created_at", "")[:10]  # 날짜만 추출
             
-            # Expander로 전체 내용 표시
-            with st.expander(f"💫 {preview}", expanded=False):
-                st.markdown(f"**📅 {created_at}**")
-                st.markdown("---")
-                st.markdown(full_content)
-                st.markdown("---")
+            # 들여쓰기 스타일
+            margin_left = f"{indent * 20}px"
+            
+            with st.container():
+                st.markdown(f'<div style="margin-left: {margin_left}; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 10px; margin-bottom: 10px;">', unsafe_allow_html=True)
                 
-                # 선택 버튼
-                if is_selected:
-                    if st.button("➖ 선택 해제", key=f"d_{log_id}", use_container_width=True):
-                        st.session_state['selected_cards'].remove(log_id)
-                        st.rerun()
-                else:
-                    if st.button("➕ 에세이에 추가", key=f"s_{log_id}", use_container_width=True):
-                        st.session_state['selected_cards'].append(log_id)
-                        st.rerun()
+                # 헤더 (아이콘 + 내용 미리보기)
+                preview = content[:40] + "..." if len(content) > 40 else content
+                
+                with st.expander(f"{icon} {preview}", expanded=False):
+                    st.caption(f"📅 {created_at} | {log.get('meta_type', 'Unknown')}")
+                    st.markdown(content)
+                    
+                    if log.get('action_plan'):
+                        st.info(f"📝 **Action Plan:** {log['action_plan']}")
+                    
+                    if is_selected:
+                        if st.button("➖ 선택 해제", key=f"btn_{log_id}", use_container_width=True):
+                            st.session_state['selected_cards'].remove(log_id)
+                            st.rerun()
+                    else:
+                        if st.button("➕ 에세이에 추가", key=f"btn_{log_id}", use_container_width=True):
+                            st.session_state['selected_cards'].append(log_id)
+                            st.rerun()
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # 2. 계층형 렌더링
+        
+        # Level 1: Constitutions (Stars)
+        if constitutions:
+            st.markdown("#### ⭐ Contitutions")
+            for const in constitutions:
+                render_card(const, icon="⭐", indent=0)
+                
+                # Level 2: Linked Apologies
+                linked_apologies = const_map.get(const["id"], [])
+                if linked_apologies:
+                    for apology in linked_apologies:
+                        render_card(apology, icon="🩹", indent=1)
+
+        # Level 2: Unlinked Apologies
+        if unlinked_apologies:
+            st.markdown("#### 🩹 Other Apologies")
+            for apology in unlinked_apologies:
+                render_card(apology, icon="🩹", indent=0)
+        
+        # Level 3: Fragments (Dust)
+        if fragments:
+            st.markdown("#### 💫 Fragments")
+            for frag in fragments[:20]:  # 최신 20개만 표시
+                render_card(frag, icon="💫", indent=0)
     
     with right_col:
         st.markdown("### ✍️ Essay")
