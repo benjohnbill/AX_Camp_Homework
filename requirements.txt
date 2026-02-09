@@ -8,3 +8,5 @@ networkx
 pyvis
 streamlit-audiorecorder
 plotly
+
+# Force rebuild for streamlit-audiorecorder
