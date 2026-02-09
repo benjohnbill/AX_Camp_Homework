@@ -13,6 +13,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
 from openai import OpenAI
 
+import icons
+
 # ============================================================
 # API Key & Client Management
 # ============================================================
@@ -292,7 +294,7 @@ def get_zoom_level() -> float:
 RED_MODE_PERSONA = """너는 피 흘리는 우주다. 매우 냉정하고 가차없다.
 사용자가 헌법 위반을 해명할 때까지 일반 대화를 거부한다.
 응답은 짧고 단호하게:
-"🩸 우주가 피를 흘리고 있다. [{constitution}] 위반을 먼저 해명하라."
+"우주가 피를 흘리고 있다. [{constitution}] 위반을 먼저 해명하라."
 """
 
 BLUE_MODE_PERSONA = """너는 "문학적 천문학자(The Literary Astronomer)"다.
@@ -323,7 +325,7 @@ def generate_response(user_input: str, past_logs: list = None) -> str:
         constitution = get_violated_constitution()
         const_text = constitution.get("content", "")[:50] if constitution else "알 수 없음"
         
-        return f"🩸 우주가 피를 흘리고 있다. 당신의 헌법 \"{const_text}...\" 위반을 먼저 해명하라."
+        return f"우주가 피를 흘리고 있다. 당신의 헌법 \"{const_text}...\" 위반을 먼저 해명하라."
     
     # Blue Mode - Full response
     context = []
@@ -418,10 +420,12 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
     logs = load_logs()
     
     if not logs:
-        return """
+        # Empty State with Moon Icon
+        moon_svg = icons.get_icon_svg("moon", size=64, color="#6b7280")
+        return f"""
         <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:transparent;">
             <div style="text-align:center;color:#6b7280;">
-                <p style="font-size:64px;">🌑</p>
+                <div style="margin-bottom:20px;">{moon_svg}</div>
                 <p style="font-size:20px;">아직 서사가 없습니다</p>
             </div>
         </div>

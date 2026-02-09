@@ -10,13 +10,14 @@ import streamlit.components.v1 as components
 from datetime import datetime
 import narrative_logic as logic
 import db_manager as db
+import icons
 
 # ============================================================
 # Page Config (MUST be first)
 # ============================================================
 st.set_page_config(
     page_title="Antigravity",
-    page_icon="🌌",
+    page_icon=icons.get_icon("galaxy"),
     layout="wide"
 )
 
@@ -205,6 +206,12 @@ st.markdown(f"""
         margin: 50px auto;
         max-width: 600px;
     }}
+    
+    /* Icons alignment */
+    svg {{
+        vertical-align: text-bottom;
+        margin-right: 6px;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -216,13 +223,13 @@ if not st.session_state.get('gatekeeper_dismissed'):
     report = logic.run_gatekeeper()
     
     if report['conflicts'] or report.get('broken_promise'):
-        st.markdown("""
+        st.markdown(f"""
         <div class="gatekeeper-modal">
-            <h2 style="color: #ff4444; text-align: center;">⚠️ DREAM REPORT</h2>
+            <h2 style="color: #ff4444; text-align: center;">{icons.get_icon("alert-triangle", color="#ff4444")} DREAM REPORT</h2>
         </div>
         """, unsafe_allow_html=True)
         
-        st.error(f"🌙 시스템이 당신이 자는 동안 {len(report['conflicts'])}개의 모순을 발견했습니다.")
+        st.error(f"{icons.get_icon('moon')} 시스템이 당신이 자는 동안 {len(report['conflicts'])}개의 모순을 발견했습니다.")
         
         # Show conflicts
         for conflict in report['conflicts'][:3]:
@@ -232,13 +239,13 @@ if not st.session_state.get('gatekeeper_dismissed'):
         # Show broken promise if exists
         if report.get('broken_promise'):
             promise = report['broken_promise']
-            st.warning(f"📝 **어제의 약속:** {promise.get('action_plan', '없음')}")
+            st.warning(f"{icons.get_icon('pencil')} **어제의 약속:** {promise.get('action_plan', '없음')}")
             st.error("왜 또 여기 있는가?")
         
         # Burn & Enter button
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            if st.button("🔥 Burn & Enter", use_container_width=True, type="primary"):
+            if st.button("Burn & Enter", use_container_width=True, type="primary"):
                 st.session_state['gatekeeper_dismissed'] = True
                 st.rerun()
         
@@ -257,7 +264,7 @@ with st.sidebar:
     
     st.markdown(f"""
     <div class="streak-counter">
-        🔥 {streak}일 연속
+        {icons.get_icon("flame", color="#FFD700")} {streak}일 연속
     </div>
     """, unsafe_allow_html=True)
     
@@ -267,7 +274,7 @@ with st.sidebar:
     # Mode Selection
     st.markdown("---")
     
-    options = {"stream": "🌊 Stream", "universe": "🌌 Universe", "desk": "🖊️ Desk"}
+    options = {"stream": "Stream", "universe": "Universe", "desk": "Desk"}
     
     mode = st.radio(
         "Navigation",
@@ -287,20 +294,20 @@ with st.sidebar:
     frag_count = len([l for l in logs if l.get("meta_type") == "Fragment"])
     
     c1, c2, c3 = st.columns(3)
-    c1.metric("⭐", const_count, help="Constitution")
-    c2.metric("🩹", apology_count, help="Apology")
-    c3.metric("💫", frag_count, help="Fragment")
+    c1.metric("Const", const_count)
+    c2.metric("Apol", apology_count)
+    c3.metric("Frag", frag_count)
     
     # Debt Counter (Red Protocol)
     debt = db.get_debt_count()
     if debt > 0:
-        st.error(f"🩸 빚: {debt}")
+        st.error(f"{icons.get_icon('droplet')} Debt: {debt}")
     
     st.markdown("---")
     
     # API Key Configuration
     if not logic.is_api_key_configured():
-        st.warning("🔑 API 키 필요")
+        st.warning(f"{icons.get_icon('key')} API 키 필요")
         api_key_input = st.text_input(
             "OpenAI API Key",
             type="password",
@@ -309,15 +316,15 @@ with st.sidebar:
         )
         if api_key_input:
             logic.set_api_key(api_key_input)
-            st.success("✅ API 키 설정됨")
+            st.success(f"{icons.get_icon('check')} API 키 설정됨")
             st.rerun()
     else:
-        st.success("🔑 API 연결됨")
+        st.success(f"{icons.get_icon('key')} API 연결됨")
     
     st.markdown("---")
     
     # Reset button
-    if st.button("🔄 대화 초기화", use_container_width=True):
+    if st.button("대화 초기화", use_container_width=True):
         logic.clear_chat_history()
         st.session_state.messages = [{"role": "assistant", "content": logic.get_welcome_message()}]
         st.session_state['first_input_of_session'] = True
@@ -328,19 +335,19 @@ with st.sidebar:
 # RED MODE: Apology Form
 # ============================================================
 if red_mode:
-    st.markdown("""
+    st.markdown(f"""
     <div class="red-warning">
-        <h2 style="color: #ff4444; text-align: center;">🩸 우주가 피를 흘리고 있습니다</h2>
+        <h2 style="color: #ff4444; text-align: center;">{icons.get_icon("alert-triangle", size=32)} 우주가 피를 흘리고 있습니다</h2>
     </div>
     """, unsafe_allow_html=True)
     
     constitution = logic.get_violated_constitution()
     if constitution:
         st.markdown(f"**위반된 헌법:**")
-        st.info(f"⭐ {constitution.get('content', '')}")
+        st.info(f"{icons.get_icon('star')} {constitution.get('content', '')}")
     
     st.markdown("---")
-    st.markdown("### 📝 해명서 작성")
+    st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성")
     st.caption("최소 100자 이상의 해명 + 내일의 약속이 필요합니다")
     
     apology_text = st.text_area(
@@ -361,7 +368,7 @@ if red_mode:
     if char_count < 100:
         st.warning(f"해명 글자 수: {char_count}/100")
     
-    if st.button("🩹 제출하고 속죄하기", disabled=not is_valid, use_container_width=True, type="primary"):
+    if st.button("제출하고 속죄하기", disabled=not is_valid, use_container_width=True, type="primary"):
         # Process apology
         logic.process_apology(
             content=apology_text,
@@ -371,7 +378,7 @@ if red_mode:
         
         # Catharsis!
         st.balloons()
-        st.success("✨ 우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
+        st.success(f"{icons.get_icon('sparkles')} 우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
         st.session_state['first_input_of_session'] = True
         st.rerun()
     
@@ -382,9 +389,9 @@ if red_mode:
 # MODE 1: THE STREAM
 # ============================================================
 if st.session_state['mode'] == "stream":
-    st.markdown("""
+    st.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px;">
-        <h1>🌊 THE STREAM</h1>
+        <h1>{icons.get_icon("waves", size=40)} THE STREAM</h1>
         <p style="color: #6b7280;">Atomic thoughts. Hot state. Think aloud.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -408,7 +415,7 @@ if st.session_state['mode'] == "stream":
         
         # First input = Silent Save + Meteor Effect
         if st.session_state.get('first_input_of_session'):
-            st.toast("💫 저장됨. Meteor Effect.", icon="☄️")
+            st.toast("저장됨. Meteor Effect.", icon="meteor")
             st.session_state['first_input_of_session'] = False
         else:
             # Subsequent inputs = AI Response with Raw Quotes
@@ -428,9 +435,9 @@ if st.session_state['mode'] == "stream":
 # MODE 2: THE UNIVERSE
 # ============================================================
 elif st.session_state['mode'] == "universe":
-    st.markdown("""
+    st.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px;">
-        <h1>🌌 THE UNIVERSE</h1>
+        <h1>{icons.get_icon("orbit", size=40)} THE UNIVERSE</h1>
         <p style="color: #6b7280;">Contemplation. Timeless. See the whole.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -439,25 +446,25 @@ elif st.session_state['mode'] == "universe":
     zoom = logic.get_zoom_level()
     
     if zoom < 1.0:
-        st.warning("🌑 Streak이 끊겼습니다. 우주가 멀어집니다...")
+        st.warning("Streak이 끊겼습니다. 우주가 멀어집니다...")
     
     # Generate graph
     graph_html = logic.generate_graph_html(zoom_level=zoom)
     components.html(graph_html, height=650, scrolling=False)
     
     # Legend
-    st.markdown("""
+    st.markdown(f"""
     <div style="display:flex;gap:20px;justify-content:center;margin-top:15px;margin-bottom:30px;">
-        <span style="color:#FFD700;">⭐ Constitution</span>
-        <span style="color:#00FF7F;">🩹 Apology</span>
-        <span style="color:#FFFFFF;">💫 Fragment</span>
-        <span style="color:#00FFFF;">━ Apology Link</span>
-        <span style="color:#FF4500;">━ Manual Constellation</span>
+        <span style="color:#FFD700;">{icons.get_icon("star", size=16)} Constitution</span>
+        <span style="color:#00FF7F;">{icons.get_icon("activity", size=16)} Apology</span>
+        <span style="color:#FFFFFF;">{icons.get_icon("sparkles", size=16)} Fragment</span>
+        <span style="color:#00FFFF;">{icons.get_icon("link", size=16)} Apology Link</span>
+        <span style="color:#FF4500;">{icons.get_icon("link", size=16)} Manual Constellation</span>
     </div>
     """, unsafe_allow_html=True)
     
     # 🔭 Telescope (Observation & Connection)
-    st.markdown("### 🔭 Telescope")
+    st.markdown(f"### {icons.get_icon('telescope')} Telescope")
     st.caption("관측할 별을 선택하고, 새로운 별자리를 연결하세요.")
     
     logs = logic.load_logs()
@@ -486,10 +493,10 @@ elif st.session_state['mode'] == "universe":
                     st.info(f"Action Plan: {log.get('action_plan')}")
 
     with col2:
-        st.markdown("#### 🔗 Constellation 연결")
+        st.markdown(f"#### {icons.get_icon('link')} Constellation 연결")
         target_label = st.selectbox("연결 대상 (Target)", options=list(options.keys()), key="telescope_target")
         
-        if st.button("✨ 별자리 연결하기", use_container_width=True, type="primary"):
+        if st.button("별자리 연결하기", use_container_width=True, type="primary"):
             target_id = options[target_label]
             source_id = options[selected_label]
             
@@ -508,9 +515,9 @@ elif st.session_state['mode'] == "universe":
 # MODE 3: THE DESK
 # ============================================================
 elif st.session_state['mode'] == "desk":
-    st.markdown("""
+    st.markdown(f"""
     <div style="text-align: center; margin-bottom: 20px;">
-        <h1>🖊️ THE DESK</h1>
+        <h1>{icons.get_icon("book-open", size=40)} THE DESK</h1>
         <p style="color: #6b7280;">Narrative creation. Cool state. Write essays.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -518,11 +525,6 @@ elif st.session_state['mode'] == "desk":
     left_col, right_col = st.columns([1, 1.5])
     
     with left_col:
-        st.markdown("### 📚 Cards")
-        
-    with left_col:
-        st.markdown("### 📚 Cards")
-        
         # 1. 데이터 로드 및 분류
         all_logs = logic.load_logs()
         constitutions = [l for l in all_logs if l.get("meta_type") == "Constitution"]
@@ -541,7 +543,7 @@ elif st.session_state['mode'] == "desk":
                 unlinked_apologies.append(apology)
         
         # 공통 카드 렌더링 함수
-        def render_card(log, icon="📄", indent=0):
+        def render_card(log, icon_name="star", indent=0):
             log_id = log.get("id")
             content = log.get("content", log.get("text", ""))
             created_at = log.get("created_at", "")[:10]
@@ -555,20 +557,21 @@ elif st.session_state['mode'] == "desk":
                 
                 # 헤더 (아이콘 + 내용 미리보기)
                 preview = content[:40] + "..." if len(content) > 40 else content
+                icon_html = icons.get_icon(icon_name, size=18)
                 
-                with st.expander(f"{icon} {preview}", expanded=False):
-                    st.caption(f"📅 {created_at} | {log.get('meta_type', 'Unknown')}")
+                with st.expander(f"{icon_html} {preview}", expanded=False):
+                    st.caption(f"{icons.get_icon('calendar')} {created_at} | {log.get('meta_type', 'Unknown')}")
                     st.markdown(content)
                     
                     if log.get('action_plan'):
-                        st.info(f"📝 **Action Plan:** {log['action_plan']}")
+                        st.info(f"{icons.get_icon('pencil')} **Action Plan:** {log['action_plan']}")
                     
                     if is_selected:
-                        if st.button("➖ 선택 해제", key=f"btn_{log_id}", use_container_width=True):
+                        if st.button("선택 해제", key=f"btn_{log_id}", use_container_width=True):
                             st.session_state['selected_cards'].remove(log_id)
                             st.rerun()
                     else:
-                        if st.button("➕ 에세이에 추가", key=f"btn_{log_id}", use_container_width=True):
+                        if st.button("에세이에 추가", key=f"btn_{log_id}", use_container_width=True):
                             st.session_state['selected_cards'].append(log_id)
                             st.rerun()
                 
@@ -578,40 +581,40 @@ elif st.session_state['mode'] == "desk":
         
         # Level 1: Constitutions (Stars)
         if constitutions:
-            st.markdown("#### ⭐ Contitutions")
+            st.markdown(f"#### {icons.get_icon('star')} Constitutions")
             for const in constitutions:
-                render_card(const, icon="⭐", indent=0)
+                render_card(const, icon_name="star", indent=0)
                 
                 # Level 2: Linked Apologies
                 linked_apologies = const_map.get(const["id"], [])
                 if linked_apologies:
                     for apology in linked_apologies:
-                        render_card(apology, icon="🩹", indent=1)
+                        render_card(apology, icon_name="activity", indent=1)
 
         # Level 2: Unlinked Apologies
         if unlinked_apologies:
-            st.markdown("#### 🩹 Other Apologies")
+            st.markdown(f"#### {icons.get_icon('activity')} Apologies")
             for apology in unlinked_apologies:
-                render_card(apology, icon="🩹", indent=0)
+                render_card(apology, icon_name="activity", indent=0)
         
         # Level 3: Fragments (Dust)
         if fragments:
-            st.markdown("#### 💫 Fragments")
+            st.markdown(f"#### {icons.get_icon('sparkles')} Fragments")
             for frag in fragments[:20]:  # 최신 20개만 표시
-                render_card(frag, icon="💫", indent=0)
+                render_card(frag, icon_name="sparkles", indent=0)
     
     with right_col:
-        st.markdown("### ✍️ Essay")
+        st.markdown(f"### {icons.get_icon('pen-tool')} Essay")
         
         if st.session_state['selected_cards']:
             st.caption(f"{len(st.session_state['selected_cards'])} cards selected")
         
         essay = st.text_area("Write your narrative", height=400, placeholder="Connect your fragments into a story...")
         
-        if st.button("💾 Save Essay", use_container_width=True):
+        if st.button("Save Essay", use_container_width=True):
             if essay.strip():
                 logic.save_log(essay)
-                st.toast("💾 Essay saved!", icon="✍️")
+                st.toast("Essay saved!", icon="pen-tool")
                 st.session_state['selected_cards'] = []
                 st.rerun()
 
@@ -619,7 +622,7 @@ elif st.session_state['mode'] == "desk":
 # ============================================================
 # Mode Indicator
 # ============================================================
-mode_names = {"stream": "🌊 STREAM", "universe": "🌌 UNIVERSE", "desk": "🖊️ DESK"}
+mode_names = {"stream": "STREAM", "universe": "UNIVERSE", "desk": "DESK"}
 st.markdown(f"""
 <div style="position:fixed;bottom:20px;right:20px;padding:8px 16px;border-radius:20px;
     font-size:12px;background:rgba(0,0,0,0.6);color:#fff;border:1px solid rgba(255,255,255,0.1);">
