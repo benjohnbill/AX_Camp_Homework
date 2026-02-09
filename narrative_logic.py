@@ -219,7 +219,13 @@ def run_gatekeeper() -> dict:
         return result
     
     constitution = constitutions[0]
-    const_emb = np.array(constitution.get("embedding", [])).reshape(1, -1)
+    const_emb_raw = constitution.get("embedding", [])
+    
+    # Check if constitution embedding is empty or invalid
+    if not const_emb_raw or len(const_emb_raw) == 0:
+        return result
+    
+    const_emb = np.array(const_emb_raw).reshape(1, -1)
     
     # Check recent fragments for conflicts
     recent_fragments = fragments[:10]  # Last 10 fragments
