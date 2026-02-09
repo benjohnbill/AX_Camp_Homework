@@ -274,6 +274,7 @@ with st.sidebar:
     # Mode Selection
     st.markdown("---")
     
+    # Radio options cannot render HTML SVG. Using text only.
     options = {"stream": "Stream", "universe": "Universe", "desk": "Desk"}
     
     mode = st.radio(
@@ -301,13 +302,13 @@ with st.sidebar:
     # Debt Counter (Red Protocol)
     debt = db.get_debt_count()
     if debt > 0:
-        st.error(f"{icons.get_icon('droplet')} Debt: {debt}")
+        st.error(f"Debt: {debt}")
     
     st.markdown("---")
     
     # API Key Configuration
     if not logic.is_api_key_configured():
-        st.warning(f"{icons.get_icon('key')} API 키 필요")
+        st.warning("API 키 필요")
         api_key_input = st.text_input(
             "OpenAI API Key",
             type="password",
@@ -316,10 +317,10 @@ with st.sidebar:
         )
         if api_key_input:
             logic.set_api_key(api_key_input)
-            st.success(f"{icons.get_icon('check')} API 키 설정됨")
+            st.success("API 키 설정됨")
             st.rerun()
     else:
-        st.success(f"{icons.get_icon('key')} API 연결됨")
+        st.success("API 연결됨")
     
     st.markdown("---")
     
@@ -344,10 +345,11 @@ if red_mode:
     constitution = logic.get_violated_constitution()
     if constitution:
         st.markdown(f"**위반된 헌법:**")
-        st.info(f"{icons.get_icon('star')} {constitution.get('content', '')}")
+        # Markdown allows SVG
+        st.markdown(f"{icons.get_icon('star')} {constitution.get('content', '')}", unsafe_allow_html=True)
     
     st.markdown("---")
-    st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성")
+    st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성", unsafe_allow_html=True)
     st.caption("최소 100자 이상의 해명 + 내일의 약속이 필요합니다")
     
     apology_text = st.text_area(
@@ -378,7 +380,7 @@ if red_mode:
         
         # Catharsis!
         st.balloons()
-        st.success(f"{icons.get_icon('sparkles')} 우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
+        st.success("우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
         st.session_state['first_input_of_session'] = True
         st.rerun()
     
@@ -415,7 +417,7 @@ if st.session_state['mode'] == "stream":
         
         # First input = Silent Save + Meteor Effect
         if st.session_state.get('first_input_of_session'):
-            st.toast("저장됨. Meteor Effect.", icon="meteor")
+            st.toast("저장됨. Meteor Effect.", icon="☄️")
             st.session_state['first_input_of_session'] = False
         else:
             # Subsequent inputs = AI Response with Raw Quotes
@@ -464,7 +466,7 @@ elif st.session_state['mode'] == "universe":
     """, unsafe_allow_html=True)
     
     # 🔭 Telescope (Observation & Connection)
-    st.markdown(f"### {icons.get_icon('telescope')} Telescope")
+    st.markdown(f"### {icons.get_icon('telescope')} Telescope", unsafe_allow_html=True)
     st.caption("관측할 별을 선택하고, 새로운 별자리를 연결하세요.")
     
     logs = logic.load_logs()
@@ -493,7 +495,7 @@ elif st.session_state['mode'] == "universe":
                     st.info(f"Action Plan: {log.get('action_plan')}")
 
     with col2:
-        st.markdown(f"#### {icons.get_icon('link')} Constellation 연결")
+        st.markdown(f"#### {icons.get_icon('link')} Constellation 연결", unsafe_allow_html=True)
         target_label = st.selectbox("연결 대상 (Target)", options=list(options.keys()), key="telescope_target")
         
         if st.button("별자리 연결하기", use_container_width=True, type="primary"):
@@ -560,17 +562,19 @@ elif st.session_state['mode'] == "desk":
             with st.container():
                 st.markdown(f'<div style="margin-left: {margin_left}; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 10px; margin-bottom: 10px;">', unsafe_allow_html=True)
                 
-                # 헤더: [날짜] 아이콘 + 내용 미리보기
+                # 헤더: [날짜] 내용 미리보기 (Expander Label Cannot have SVG)
                 preview = content[:30] + "..." if len(content) > 30 else content
-                icon_html = icons.get_icon(icon_name, size=18)
-                header_text = f"[{created_at}] {icon_html} {preview}"
+                # icon_html = icons.get_icon(icon_name, size=18)
+                header_text = f"[{created_at}] {preview}"
                 
                 with st.expander(header_text, expanded=False):
-                    st.caption(f"{icons.get_icon('calendar')} {created_at} | {log.get('meta_type', 'Unknown')}")
+                    # Show icon inside content instead
+                    st.markdown(f"{icons.get_icon(icon_name)} **{log.get('meta_type')}**", unsafe_allow_html=True)
+                    st.caption(f"📅 {created_at}")
                     st.markdown(content)
                     
                     if log.get('action_plan'):
-                        st.info(f"{icons.get_icon('pencil')} **Action Plan:** {log['action_plan']}")
+                        st.info(f"Action Plan: {log['action_plan']}")
                     
                     if is_selected:
                         if st.button("선택 해제", key=f"btn_{log_id}", use_container_width=True):
@@ -587,7 +591,7 @@ elif st.session_state['mode'] == "desk":
         
         # Level 1: Constitutions (Stars)
         if constitutions:
-            st.markdown(f"#### {icons.get_icon('star')} Constitutions")
+            st.markdown(f"#### {icons.get_icon('star')} Constitutions", unsafe_allow_html=True)
             for const in constitutions:
                 render_card(const, icon_name="star", indent=0)
                 
@@ -599,12 +603,12 @@ elif st.session_state['mode'] == "desk":
 
         # Level 2: Unlinked Apologies
         if unlinked_apologies:
-            st.markdown(f"#### {icons.get_icon('activity')} Apologies")
+            st.markdown(f"#### {icons.get_icon('activity')} Apologies", unsafe_allow_html=True)
             for apology in unlinked_apologies:
                 render_card(apology, icon_name="activity", indent=0)
         
         # Level 3: Fragments (Dust) with Pagination
-        st.markdown(f"#### {icons.get_icon('sparkles')} Fragments")
+        st.markdown(f"#### {icons.get_icon('sparkles')} Fragments", unsafe_allow_html=True)
         
         # Get paginated text
         p_fragments, total_count = logic.get_fragments_paginated(
@@ -638,7 +642,8 @@ elif st.session_state['mode'] == "desk":
                         st.rerun()
     
     with right_col:
-        st.markdown(f"### {icons.get_icon('pen-tool')} Essay")
+        st.markdown(f"### {icons.get_icon('pen-tool')} Essay", unsafe_allow_html=True)
+
         
         if st.session_state['selected_cards']:
             st.caption(f"{len(st.session_state['selected_cards'])} cards selected")
