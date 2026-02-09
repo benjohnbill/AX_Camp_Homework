@@ -11,6 +11,7 @@ from datetime import datetime, date, timedelta
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import streamlit as st
+import pandas as pd
 from openai import OpenAI
 
 import icons
