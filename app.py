@@ -40,13 +40,14 @@ if 'mode' not in st.session_state:
     st.session_state['mode'] = "stream"
 
 if 'messages' not in st.session_state:
-    saved = logic.load_chat_history()
-    if saved:
-        st.session_state.messages = [{"role": m["role"], "content": m["content"]} for m in saved]
-    else:
-        welcome = logic.get_welcome_message()
-        st.session_state.messages = [{"role": "assistant", "content": welcome}]
-        logic.save_chat_message("assistant", welcome)
+    # [Changed] Clean Slate: Do not load past history automatically.
+    # Start fresh every time.
+    welcome = logic.get_welcome_message()
+    st.session_state.messages = [{"role": "assistant", "content": welcome}]
+    # logic.save_chat_message("assistant", welcome)
+
+if 'current_echo' not in st.session_state:
+    st.session_state['current_echo'] = logic.get_current_echo()
 
 if 'gatekeeper_dismissed' not in st.session_state:
     st.session_state['gatekeeper_dismissed'] = False
@@ -397,6 +398,31 @@ if st.session_state['mode'] == "stream":
         <p style="color: #6b7280;">Atomic thoughts. Hot state. Think aloud.</p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # [Echo System] Display random past memory
+    echo = st.session_state.get('current_echo')
+    if echo:
+        echo_content = echo.get('content', echo.get('text', ''))
+        echo_date = echo.get('created_at', '')[:10]
+        echo_type = echo.get('meta_type', 'Fragment')
+        
+        st.markdown(f"""
+        <div style="
+            background: rgba(255, 255, 255, 0.05); 
+            border-left: 3px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 20px; 
+            margin: 0 auto 30px auto; 
+            max_width: 700px;
+            border-radius: 4px;
+            font-style: italic;
+            color: #ccc;
+        ">
+            <div style="font-size: 0.9em; margin-bottom: 8px; color: #888;">
+                {icons.get_icon("sparkles", size=14)} Echo from {echo_date}
+            </div>
+            "{echo_content}"
+        </div>
+        """, unsafe_allow_html=True)
     
     # Display chat messages
     for message in st.session_state.messages:

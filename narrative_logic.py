@@ -155,6 +155,11 @@ def get_fragments_paginated(page: int = 1, per_page: int = 10) -> tuple[list, in
     return fragments, total_count
 
 
+def get_current_echo() -> dict:
+    """Get a random echo for the session"""
+    return db.get_random_echo()
+
+
 # ============================================================
 # Red Protocol: Debt System
 # ============================================================

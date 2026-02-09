@@ -347,6 +347,17 @@ def get_fragment_count() -> int:
     return count
 
 
+def get_random_echo() -> dict:
+    """Get a random log for Echo System (Prioritize meaningful ones if possible)"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    # Simple random selection for now
+    cursor.execute("SELECT * FROM logs ORDER BY RANDOM() LIMIT 1")
+    row = cursor.fetchone()
+    conn.close()
+    return _row_to_dict(row) if row else None
+
+
 def get_logs_by_type(meta_type: str) -> List[dict]:
     """Get logs by meta_type"""
     conn = get_connection()
