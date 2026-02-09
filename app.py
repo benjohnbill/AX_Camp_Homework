@@ -660,9 +660,6 @@ elif st.session_state['mode'] == "universe":
             st.plotly_chart(fig_pulse, use_container_width=True)
         else:
             st.info("데이터가 충분하지 않습니다. 기록을 시작하세요.")
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("아직 분석할 Apology 데이터가 충분하지 않습니다.")
             
         st.markdown("---")
         
