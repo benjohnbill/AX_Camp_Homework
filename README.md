@@ -1,4 +1,4 @@
-# 🌌 Antigravity
+# Antigravity
 
 **AI-Powered Self-Reflection & Narrative Tracking System**
 
@@ -10,37 +10,37 @@
 
 ---
 
-## ✨ 주요 기능
+## 주요 기능
 
-### 🌊 **Stream Mode (채팅)**
+### [Waves] Stream Mode (채팅)
 - 실시간으로 생각을 기록하는 채팅 인터페이스
 - AI "문학적 천문학자"가 과거 기록을 인용하여 응답
 - 첫 입력은 조용히 저장 (Meteor Effect)
 - 이후 입력부터 AI가 관련 기록을 찾아 연결
 
-### 🌌 **Universe Mode (시각화)**
+### [Orbit] Universe Mode (시각화)
 - 모든 기록을 별자리처럼 시각화
-- 3-Body Hierarchy: ⭐ Constitution (헌법) → 🩹 Apology (사과) → 💫 Fragment (단편)
+- 3-Body Hierarchy: [Star] Constitution (헌법) → [Activity] Apology (사과) → [Sparkles] Fragment (단편)
 - PyVis 기반 인터랙티브 그래프
 - 연속 기록(Streak)에 따른 줌 레벨 변화
 
-### 🖊️ **Desk Mode (에세이)**
+### [Book-Open] Desk Mode (에세이)
 - Fragment 카드를 선택하여 에세이 작성
 - 단편적 기록들을 하나의 서사로 연결
 
-### 🩸 **Red Protocol (위반 시스템)**
+### [Droplet] Red Protocol (위반 시스템)
 - 헌법(Constitution) 위반 시 "Red Mode" 활성화
 - 100자 이상의 해명서 + 내일의 약속 필요
 - 해명 완료 시 "Catharsis" 효과와 함께 정상 모드 복귀
 
-### 🌙 **Dream Report (Gatekeeper)**
+### [Moon] Dream Report (Gatekeeper)
 - 앱 시작 시 과거 기록에서 모순 탐지
 - 어제의 약속 이행 여부 확인
 - 벡터 유사도 기반 지능형 분석
 
 ---
 
-## 🚀 설치 방법
+## 설치 방법
 
 ### 1. 저장소 클론
 ```bash
@@ -82,7 +82,7 @@ streamlit run app.py
 
 ---
 
-## 📁 프로젝트 구조
+## 프로젝트 구조
 
 ```
 Narrative_Loop/
@@ -100,7 +100,7 @@ Narrative_Loop/
 
 ---
 
-## 🛠️ 기술 스택
+## 기술 스택
 
 | 분류 | 기술 |
 |------|------|
@@ -113,19 +113,19 @@ Narrative_Loop/
 
 ---
 
-## 📊 데이터 구조
+## 데이터 구조
 
 ### 3-Body Hierarchy
 
 | Type | 설명 | 시각화 |
 |------|------|--------|
-| **Constitution** | 핵심 가치/원칙 | ⭐ 황금색 별 (고정) |
-| **Apology** | 위반에 대한 해명 | 🩹 녹색 사각형 |
-| **Fragment** | 일상적 기록/생각 | 💫 흰색 점 |
+| **Constitution** | 핵심 가치/원칙 | [Star] 황금색 별 (고정) |
+| **Apology** | 위반에 대한 해명 | [Activity] 녹색 사각형 |
+| **Fragment** | 일상적 기록/생각 | [Sparkles] 흰색 점 |
 
 ---
 
-## ⚙️ 환경 설정
+## 환경 설정
 
 ### Streamlit 설정 (.streamlit/config.toml)
 ```toml
@@ -139,7 +139,7 @@ headless = true
 
 ---
 
-## 🌐 배포
+## 배포
 
 ### Streamlit Cloud
 1. GitHub에 코드 Push
@@ -149,7 +149,7 @@ headless = true
 
 ---
 
-## 🔒 보안 주의사항
+## 보안 주의사항
 
 - `.streamlit/secrets.toml`은 절대 Git에 커밋하지 마세요
 - `.gitignore`에 민감한 파일들이 포함되어 있는지 확인하세요
@@ -157,18 +157,18 @@ headless = true
 
 ---
 
-## 📝 라이선스
+## 라이선스
 
 이 프로젝트는 개인 학습 및 자기 성찰 목적으로 제작되었습니다.
 
 ---
 
-## 🤝 기여
+## 기여
 
 버그 리포트, 기능 제안, PR 모두 환영합니다!
 
 ---
 
 <div align="center">
-  <sub>Built with ❤️ and 🌌 for self-reflection</sub>
+  <sub>Built with Love and Gravity for self-reflection</sub>
 </div>
