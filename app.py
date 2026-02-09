@@ -475,20 +475,26 @@ elif st.session_state['mode'] == "desk":
         logs = [l for l in logic.load_logs() if l.get("meta_type") == "Fragment"]
         
         for log in logs[:15]:
-            content = log.get("content", log.get("text", ""))[:60]
+            full_content = log.get("content", log.get("text", ""))
+            preview = full_content[:50] + "..." if len(full_content) > 50 else full_content
             log_id = log.get("id")
             is_selected = log_id in st.session_state['selected_cards']
+            created_at = log.get("created_at", "")[:10]  # 날짜만 추출
             
-            col1, col2 = st.columns([5, 1])
-            with col1:
-                st.markdown(f"💫 {content}...")
-            with col2:
+            # Expander로 전체 내용 표시
+            with st.expander(f"💫 {preview}", expanded=False):
+                st.markdown(f"**📅 {created_at}**")
+                st.markdown("---")
+                st.markdown(full_content)
+                st.markdown("---")
+                
+                # 선택 버튼
                 if is_selected:
-                    if st.button("➖", key=f"d_{log_id}"):
+                    if st.button("➖ 선택 해제", key=f"d_{log_id}", use_container_width=True):
                         st.session_state['selected_cards'].remove(log_id)
                         st.rerun()
                 else:
-                    if st.button("➕", key=f"s_{log_id}"):
+                    if st.button("➕ 에세이에 추가", key=f"s_{log_id}", use_container_width=True):
                         st.session_state['selected_cards'].append(log_id)
                         st.rerun()
     
