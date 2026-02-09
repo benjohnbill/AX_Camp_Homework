@@ -11,6 +11,9 @@ from datetime import datetime
 import narrative_logic as logic
 import db_manager as db
 import icons
+from streamlit_audiorecorder import audiorecorder
+import plotly.express as px
+import plotly.graph_objects as go
 
 # ============================================================
 # Page Config (MUST be first)
@@ -251,8 +254,34 @@ if not st.session_state.get('gatekeeper_dismissed'):
                 st.rerun()
         
         st.stop()  # Block the rest of the app
+        st.stop()  # Block the rest of the app
     else:
-        st.session_state['gatekeeper_dismissed'] = True
+        # [V6] The Mirror of the Week (Weekly Summary)
+        # Show only on Monday or if not shown today (simplified: always show if dismissed is false)
+        st.markdown(f"""
+        <div style="
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max_width: 600px;
+        ">
+            <h3 style="color: #00BFFF; margin-top:0;">{icons.get_icon("sparkles")} The Mirror of the Week</h3>
+            <p style="font-style: italic; color: #ccc;">이번 주, 당신의 궤적은 어디로 향했습니까?</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.spinner("별들이 당신의 일주일을 회고하고 있습니다..."):
+            weekly_summary = logic.get_weekly_summary()
+        
+        st.info(weekly_summary)
+        
+        if st.button("Enter the Void", use_container_width=True, type="primary"):
+            st.session_state['gatekeeper_dismissed'] = True
+            st.rerun()
+            
+        st.stop() # Wait for user to click button
 
 
 # ============================================================
@@ -350,40 +379,76 @@ if red_mode:
         st.markdown(f"{icons.get_icon('star')} {constitution.get('content', '')}", unsafe_allow_html=True)
     
     st.markdown("---")
-    st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성", unsafe_allow_html=True)
-    st.caption("최소 100자 이상의 해명 + 내일의 약속이 필요합니다")
+    st.markdown("---")
     
-    apology_text = st.text_area(
-        "해명 (Explanation)",
-        placeholder="왜 헌법을 위반했는가? 무슨 일이 있었는가?",
-        height=150
-    )
+    # Tabs for Hybrid Confessional
+    tab_type, tab_speak = st.tabs(["✍️ Type (Standard)", "🎙️ Speak (Courage)"])
     
-    action_plan = st.text_input(
-        "내일의 약속 (Action Plan)",
-        placeholder="내일은 무엇을 다르게 할 것인가?"
-    )
-    
-    # Validation
-    is_valid = len(apology_text.strip()) >= 100 and len(action_plan.strip()) > 0
-    char_count = len(apology_text.strip())
-    
-    if char_count < 100:
-        st.warning(f"해명 글자 수: {char_count}/100")
-    
-    if st.button("제출하고 속죄하기", disabled=not is_valid, use_container_width=True, type="primary"):
-        # Process apology
-        logic.process_apology(
-            content=apology_text,
-            constitution_id=constitution['id'] if constitution else None,
-            action_plan=action_plan
+    with tab_type:
+        st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성", unsafe_allow_html=True)
+        st.caption("최소 100자 이상의 해명 + 내일의 약속이 필요합니다")
+        
+        apology_text = st.text_area(
+            "해명 (Explanation)",
+            placeholder="왜 헌법을 위반했는가? 무슨 일이 있었는가?",
+            height=150
         )
         
-        # Catharsis!
-        st.balloons()
-        st.success("우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
-        st.session_state['first_input_of_session'] = True
-        st.rerun()
+        action_plan = st.text_input(
+            "내일의 약속 (Action Plan)",
+            placeholder="내일은 무엇을 다르게 할 것인가?"
+        )
+        
+        # Validation
+        is_valid = len(apology_text.strip()) >= 100 and len(action_plan.strip()) > 0
+        char_count = len(apology_text.strip())
+        
+        if char_count < 100:
+            st.warning(f"해명 글자 수: {char_count}/100")
+        
+        if st.button("제출하고 속죄하기", disabled=not is_valid, use_container_width=True, type="primary"):
+            logic.process_apology(
+                content=apology_text,
+                constitution_id=constitution['id'] if constitution else None,
+                action_plan=action_plan,
+                is_voice=False
+            )
+            st.balloons()
+            st.success("우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
+            st.session_state['first_input_of_session'] = True
+            st.rerun()
+
+    with tab_speak:
+        st.markdown(f"### {icons.get_icon('mic')} Voice of Courage", unsafe_allow_html=True)
+        st.caption("목소리에는 영혼의 진동이 담겨 있습니다. 말하는 용기는 **2배의 속죄** 효과가 있습니다.")
+        
+        audio = audiorecorder("🎤 Click to Record", "⏹️ Recording...")
+        
+        if len(audio) > 0:
+            st.audio(audio.export().read())
+            
+            if st.button("Transcribe & Redeem", use_container_width=True, type="primary"):
+                with st.spinner("Transcribing soul vibration..."):
+                    text = logic.transcribe_audio(audio.export().read())
+                
+                if text:
+                    st.success("Transcribed!")
+                    st.info(f"🗣️ \"{text}\"")
+                    
+                    # Auto-submit if text is valid (Length waived for voice, but check empty)
+                    if len(text.strip()) > 10:
+                        logic.process_apology(
+                            content=text,
+                            constitution_id=constitution['id'] if constitution else None,
+                            action_plan="Voice Pledge", # Placeholder for voice flow simplicity
+                            is_voice=True
+                        )
+                        st.balloons()
+                        st.success("당신의 용기가 우주를 치유했습니다. (Debt -2)")
+                        st.session_state['first_input_of_session'] = True
+                        st.rerun()
+                    else:
+                        st.warning("음성이 너무 짧거나 명확하지 않습니다.")
     
     st.stop()  # Block normal chat in Red Mode
 
@@ -470,73 +535,154 @@ elif st.session_state['mode'] == "universe":
     </div>
     """, unsafe_allow_html=True)
     
-    # Get zoom level based on streak
-    zoom = logic.get_zoom_level()
+    # Tabs for Universe (Graph vs Analytics vs Pulse)
+    tab_cosmos, tab_rhythm, tab_pulse = st.tabs(["🌌 Constellation", "⏳ Rhythm of Will", "📈 The Pulse"])
     
-    if zoom < 1.0:
-        st.warning("Streak이 끊겼습니다. 우주가 멀어집니다...")
-    
-    # Generate graph
-    graph_html = logic.generate_graph_html(zoom_level=zoom)
-    components.html(graph_html, height=650, scrolling=False)
-    
-    # Legend
-    st.markdown(f"""
-    <div style="display:flex;gap:20px;justify-content:center;margin-top:15px;margin-bottom:30px;">
-        <span style="color:#FFD700;">{icons.get_icon("star", size=16)} Constitution</span>
-        <span style="color:#00FF7F;">{icons.get_icon("activity", size=16)} Apology</span>
-        <span style="color:#FFFFFF;">{icons.get_icon("sparkles", size=16)} Fragment</span>
-        <span style="color:#00FFFF;">{icons.get_icon("link", size=16)} Apology Link</span>
-        <span style="color:#FF4500;">{icons.get_icon("link", size=16)} Manual Constellation</span>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # 🔭 Telescope (Observation & Connection)
-    st.markdown(f"### {icons.get_icon('telescope')} Telescope", unsafe_allow_html=True)
-    st.caption("관측할 별을 선택하고, 새로운 별자리를 연결하세요.")
-    
-    logs = logic.load_logs()
-    
-    # Selectbox for Source Node
-    # Format: [Type] Content... (Date)
-    options = {
-        f"[{l.get('meta_type','?')}] {l.get('content','...')[:20]}... ({l.get('created_at','')[:10]})": l['id'] 
-        for l in logs
-    }
-    
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        selected_label = st.selectbox("관측 대상 (Source)", options=list(options.keys()), key="telescope_source")
+    with tab_cosmos:
+        # Get zoom level based on streak
+        zoom = logic.get_zoom_level()
         
-        if selected_label:
-            source_id = options[selected_label]
-            log = logic.get_log_by_id(source_id)
+        if zoom < 1.0:
+            st.warning("Streak이 끊겼습니다. 우주가 멀어집니다...")
+        
+        # Generate graph
+        graph_html = logic.generate_graph_html(zoom_level=zoom)
+        components.html(graph_html, height=650, scrolling=False)
+        
+        # Legend
+        st.markdown(f"""
+        <div style="display:flex;gap:20px;justify-content:center;margin-top:15px;margin-bottom:30px;">
+            <span style="color:#FFD700;">{icons.get_icon("star", size=16)} Constitution</span>
+            <span style="color:#00FF7F;">{icons.get_icon("activity", size=16)} Apology</span>
+            <span style="color:#FFFFFF;">{icons.get_icon("sparkles", size=16)} Fragment</span>
+            <span style="color:#00FFFF;">{icons.get_icon("link", size=16)} Apology Link</span>
+            <span style="color:#FF4500;">{icons.get_icon("link", size=16)} Manual Constellation</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 🔭 Telescope (Observation & Connection)
+        st.markdown(f"### {icons.get_icon('telescope')} Telescope", unsafe_allow_html=True)
+        st.caption("관측할 별을 선택하고, 새로운 별자리를 연결하세요.")
+        
+        logs = logic.load_logs()
+        
+        # Selectbox for Source Node
+        # Format: [Type] Content... (Date)
+        options = {
+            f"[{l.get('meta_type','?')}] {l.get('content','...')[:20]}... ({l.get('created_at','')[:10]})": l['id'] 
+            for l in logs
+        }
+        
+        col1, col2 = st.columns([2, 1])
+        
+        with col1:
+            selected_label = st.selectbox("관측 대상 (Source)", options=list(options.keys()), key="telescope_source")
             
-            with st.expander("📄 상세 내용 보기", expanded=True):
-                st.markdown(f"**{log.get('meta_type')}** | {log.get('created_at')[:16]}")
-                st.markdown("---")
-                st.markdown(log.get('content'))
-                if log.get('action_plan'):
-                    st.info(f"Action Plan: {log.get('action_plan')}")
+            if selected_label:
+                source_id = options[selected_label]
+                log = logic.get_log_by_id(source_id)
+                
+                with st.expander("📄 상세 내용 보기", expanded=True):
+                    st.markdown(f"**{log.get('meta_type')}** | {log.get('created_at')[:16]}")
+                    st.markdown("---")
+                    st.markdown(log.get('content'))
+                    if log.get('action_plan'):
+                        st.info(f"Action Plan: {log.get('action_plan')}")
 
-    with col2:
-        st.markdown(f"#### {icons.get_icon('link')} Constellation 연결", unsafe_allow_html=True)
-        target_label = st.selectbox("연결 대상 (Target)", options=list(options.keys()), key="telescope_target")
-        
-        if st.button("별자리 연결하기", use_container_width=True, type="primary"):
-            target_id = options[target_label]
-            source_id = options[selected_label]
+        with col2:
+            st.markdown(f"#### {icons.get_icon('link')} Constellation 연결", unsafe_allow_html=True)
+            target_label = st.selectbox("연결 대상 (Target)", options=list(options.keys()), key="telescope_target")
             
-            if source_id == target_id:
-                st.error("자기 자신과 연결할 수 없습니다.")
-            else:
-                success = logic.add_manual_connection(source_id, target_id)
-                if success:
-                    st.success("새로운 별자리가 연결되었습니다! 🌌")
-                    st.rerun()
+            if st.button("별자리 연결하기", use_container_width=True, type="primary"):
+                target_id = options[target_label]
+                source_id = options[selected_label]
+                
+                if source_id == target_id:
+                    st.error("자기 자신과 연결할 수 없습니다.")
                 else:
-                    st.warning("이미 연결되어 있거나 연결할 수 없습니다.")
+                    success = logic.add_manual_connection(source_id, target_id)
+                    if success:
+                        st.success("새로운 별자리가 연결되었습니다! 🌌")
+                        st.rerun()
+                    else:
+                        st.warning("이미 연결되어 있거나 연결할 수 없습니다.")
+
+    with tab_rhythm:
+        st.markdown(f"### {icons.get_icon('activity')} The Rhythm of Will", unsafe_allow_html=True)
+        st.caption("당신의 의지가 언제 무너지는지, 시간의 패턴을 분석합니다.")
+        
+        # 1. Heatmap (Day x Hour)
+        st.subheader("🔥 Conflict Heatmap (요일/시간별 위반 빈도)")
+        heatmap_data = logic.get_temporal_patterns()
+        
+        if not heatmap_data.empty:
+            fig = px.imshow(
+                heatmap_data,
+                labels=dict(x="Hour of Day", y="Day of Week", color="Conflict Count"),
+                x=[str(i) for i in range(24)],
+                y=heatmap_data.index,
+                color_continuous_scale="Reds"
+            )
+            fig.update_layout(height=400)
+            st.plotly_chart(fig, use_container_width=True)
+            
+        # 2. Daily Trend (Line Chart)
+        st.subheader("📉 Apology Trend (최근 30일)")
+        trend_data = logic.get_daily_apology_trend()
+        
+        if not trend_data.empty:
+            fig2 = px.line(
+                trend_data,
+                x='date',
+                y='count',
+                markers=True,
+                line_shape='spline',
+                color_discrete_sequence=['#ff4444']
+            )
+            fig2.update_layout(height=300)
+            st.plotly_chart(fig2, use_container_width=True)
+
+    with tab_pulse:
+        st.markdown(f"### {icons.get_icon('activity')} The Pulse", unsafe_allow_html=True)
+        st.caption("생각을 멈추지 않았다는 시각적 증명. (Fragments vs Apologies)")
+        
+        pulse_data = logic.get_activity_pulse()
+        
+        if not pulse_data.empty:
+            fig_pulse = px.imshow(
+                pulse_data,
+                labels=dict(x="Date", y="Type", color="Count"),
+                x=pulse_data.columns,
+                y=pulse_data.index,
+                color_continuous_scale="Viridis" # Green/Blue for life
+            )
+            fig_pulse.update_layout(height=300)
+            st.plotly_chart(fig_pulse, use_container_width=True)
+        else:
+            st.info("데이터가 충분하지 않습니다. 기록을 시작하세요.")
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("아직 분석할 Apology 데이터가 충분하지 않습니다.")
+            
+        st.markdown("---")
+        
+        # 2. Line Chart (Trend)
+        st.subheader("🌊 Apology Trend (최근 30일)")
+        trend_data = logic.get_daily_apology_trend()
+        
+        if not trend_data.empty:
+            fig2 = px.line(
+                trend_data, 
+                x='date', 
+                y='count', 
+                title='Daily Apology Count',
+                markers=True,
+                line_shape='spline'
+            )
+            fig2.update_traces(line_color='#FF4500')
+            st.plotly_chart(fig2, use_container_width=True)
+        else:
+            st.info("데이터가 없습니다.")
 
 
 # ============================================================

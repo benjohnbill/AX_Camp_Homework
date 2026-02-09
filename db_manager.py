@@ -220,39 +220,98 @@ def get_longest_streak() -> int:
     cursor = conn.cursor()
     cursor.execute("SELECT longest_streak FROM user_stats WHERE id = 1")
     result = cursor.fetchone()
+    row = cursor.fetchone()
     conn.close()
-    return result['longest_streak'] if result else 0
+    return row[0] if row else 0
 
 
-# ============================================================
-# Debt System (Red Protocol)
-# ============================================================
 def get_debt_count() -> int:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT debt_count FROM user_stats WHERE id = 1")
-    result = cursor.fetchone()
+    row = cursor.fetchone()
     conn.close()
-    return result['debt_count'] if result else 0
+    return row[0] if row else 0
 
 
-def increment_debt(amount: int = 1) -> int:
+def increment_debt(amount: int = 1) -> None:
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE user_stats SET debt_count = debt_count + ? WHERE id = 1", (amount,))
     conn.commit()
-    cursor.execute("SELECT debt_count FROM user_stats WHERE id = 1")
-    result = cursor.fetchone()
     conn.close()
-    return result['debt_count']
+
+
+def decrement_debt(amount: int = 1) -> int:
+    """Decrement debt by amount, ensuring it doesn't go below 0. Returns new debt count."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Get current debt
+    cursor.execute("SELECT debt_count FROM user_stats WHERE id = 1")
+    current = cursor.fetchone()[0]
+    
+    new_debt = max(0, current - amount)
+    
+    cursor.execute("UPDATE user_stats SET debt_count = ? WHERE id = 1", (new_debt,))
+    conn.commit()
+    conn.close()
+    return new_debt
 
 
 def reset_debt() -> None:
+    """Reset debt to 0 (Catharsis) - Legacy/Special Use"""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("UPDATE user_stats SET debt_count = 0 WHERE id = 1")
     conn.commit()
     conn.close()
+
+
+def update_streak() -> dict:
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT last_login, current_streak, longest_streak FROM user_stats WHERE id = 1")
+    row = cursor.fetchone()
+    
+    if not row:
+        return {"streak": 0, "longest": 0, "status": "new"}
+        
+    last_login = row["last_login"]
+    current_streak = row["current_streak"]
+    longest_streak = row["longest_streak"]
+    
+    today = date.today().isoformat()
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    
+    status = "kept"
+    
+    if last_login == today:
+        status = "same_day"
+    elif last_login == yesterday:
+        current_streak += 1
+        if current_streak > longest_streak:
+            longest_streak = current_streak
+        status = "increased"
+    else:
+        current_streak = 1 # Reset if missed a day
+        status = "broken"
+        
+    cursor.execute("""
+        UPDATE user_stats 
+        SET last_login = ?, current_streak = ?, longest_streak = ?
+        WHERE id = 1
+    """, (today, current_streak, longest_streak))
+    
+    conn.commit()
+    conn.close()
+    
+    return {
+        "streak": current_streak,
+        "longest": longest_streak,
+        "status": status
+    }
 
 
 # ============================================================
@@ -291,15 +350,66 @@ def create_log(
     return get_log_by_id(log_id)
 
 
+def get_logs_for_analytics() -> List[dict]:
+    """Get all logs with created_at and meta_type for analytics"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, meta_type, created_at FROM logs")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 def create_apology(content: str, constitution_id: str, action_plan: str, embedding: list = None) -> dict:
     """Create an Apology linked to a Constitution"""
     return create_log(
         content=content,
         meta_type="Apology",
         embedding=embedding,
-        parent_id=constitution_id,
         action_plan=action_plan
     )
+
+
+def get_logs_last_7_days() -> List[dict]:
+    """Get logs created in the last 7 days for Weekly Summary"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    seven_days_ago = (date.today() - timedelta(days=7)).isoformat()
+    
+    cursor.execute("""
+        SELECT * FROM logs 
+        WHERE created_at >= ? 
+        ORDER BY created_at ASC
+    """, (seven_days_ago,))
+    
+    rows = cursor.fetchall()
+    conn.close()
+    return [_row_to_dict(row) for row in rows]
+
+
+def get_connection_counts() -> dict:
+    """
+    Get connection counts for each log ID (Node Growth Physics).
+    Returns: {log_id: count, ...}
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Count connections where log is source or target
+    cursor.execute("""
+        SELECT id, 
+        (SELECT COUNT(*) FROM logs l2 WHERE l2.parent_id = logs.id) as child_count
+        FROM logs
+    """)
+    
+    # Note: We also need to count manual connections if implemented fully
+    # For now, base growth on parent-child hierarchy (Constitution -> Apology/Fragment)
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Dictionary mapping ID to count
+    return {row['id']: row['child_count'] for row in rows}
 
 
 def get_log_by_id(log_id: str) -> Optional[dict]:

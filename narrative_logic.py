@@ -196,8 +196,34 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
     return True, score
 
 
-def process_apology(content: str, constitution_id: str, action_plan: str) -> dict:
-    """Process and save an Apology, reset debt"""
+import io
+import pandas as pd
+
+# ... (imports remain)
+
+def transcribe_audio(audio_bytes: bytes) -> str:
+    """Transcribe audio using OpenAI Whisper"""
+    client = get_client()
+    if not client:
+        return ""
+    
+    try:
+        # Create a file-like object
+        audio_file = io.BytesIO(audio_bytes)
+        audio_file.name = "audio.wav" # Important for API
+        
+        transcript = client.audio.transcriptions.create(
+            model="whisper-1", 
+            file=audio_file
+        )
+        return transcript.text
+    except Exception as e:
+        st.error(f"Transcription failed: {e}")
+        return ""
+
+
+def process_apology(content: str, constitution_id: str, action_plan: str, is_voice: bool = False) -> dict:
+    """Process and save an Apology, decrement debt (Hybrid Confessional)"""
     embedding = get_embedding(content)
     
     apology = db.create_apology(
@@ -207,10 +233,144 @@ def process_apology(content: str, constitution_id: str, action_plan: str) -> dic
         embedding=embedding
     )
     
-    # Reset debt - Catharsis!
-    db.reset_debt()
+    # Hybrid Confessional Logic
+    # Voice = High Courage = 2x Repayment
+    # Text = Standard = 1x Repayment
+    decrement_amount = 2 if is_voice else 1
+    db.decrement_debt(decrement_amount)
     
     return apology
+
+
+def get_temporal_patterns() -> pd.DataFrame:
+    """
+    Generate Day x Hour heatmap data for Apologies (Conflicts).
+    Returns a DataFrame suitable for Plotly Heatmap.
+    """
+    logs = db.get_logs_for_analytics()
+    
+    # Filter for Apologies (Failures)
+    data = [l for l in logs if l['meta_type'] == 'Apology']
+    
+    if not data:
+        return pd.DataFrame()
+        
+    df = pd.DataFrame(data)
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    
+    # Extract Day of Week (0=Mon, 6=Sun) and Hour (0-23)
+    df['day_of_week'] = df['created_at'].dt.day_name()
+    df['hour'] = df['created_at'].dt.hour
+    
+    # Group by Day and Hour
+    heatmap_data = df.groupby(['day_of_week', 'hour']).size().reset_index(name='count')
+    
+    # Ensure all days and hours are present for the grid
+    days_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    
+    # Pivot for Heatmap (Y=Day, X=Hour)
+    pivot_df = heatmap_data.pivot(index='day_of_week', columns='hour', values='count').fillna(0)
+    
+    # Reindex to ensure correct order
+    pivot_df = pivot_df.reindex(days_order)
+    
+    return pivot_df
+
+
+def get_activity_pulse() -> pd.DataFrame:
+    """
+    Generate Date x Type (Fragment/Apology) heatmap for 'The Pulse'.
+    Shows intensity of activity over time.
+    """
+    logs = db.get_logs_for_analytics()
+    if not logs:
+        return pd.DataFrame()
+        
+    df = pd.DataFrame(logs)
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    df['date'] = df['created_at'].dt.date
+    
+    # Filter for relevant types
+    df = df[df['meta_type'].isin(['Fragment', 'Apology'])]
+    
+    # Group by Date and Type
+    pulse_data = df.groupby(['date', 'meta_type']).size().reset_index(name='count')
+    
+    # Pivot (Y=Type, X=Date)
+    pivot_df = pulse_data.pivot(index='meta_type', columns='date', values='count').fillna(0)
+    
+    return pivot_df
+
+
+def get_weekly_summary() -> str:
+    """
+    Generate 3-sentence summary of the week using AI (The Mirror).
+    """
+    logs = db.get_logs_last_7_days()
+    if not logs:
+        return "데이터가 부족하여 주간 회고를 생성할 수 없습니다. 생각을 더 기록해보세요."
+        
+    # Prepare context
+    context = []
+    for log in logs:
+        date_str = log.get('created_at', '')[:10]
+        type_str = log.get('meta_type', 'Log')
+        content = log.get('content', '')[:100]
+        context.append(f"[{date_str}] {type_str}: {content}")
+        
+    context_str = "\n".join(context)
+    
+    prompt = f"""
+    The following are the user's logs from the last 7 days.
+    Summarize their narrative journey in exactly 3 bullet points.
+    Focus on:
+    1. Key themes or recurring thoughts (Growth).
+    2. Internal conflicts or struggles (Apologies).
+    3. Trajectory of will.
+    
+    Keep it insightful, poetic, and encouraging. Use Korean.
+    
+    Logs:
+    {context_str}
+    """
+    
+    client = get_client()
+    if not client:
+        return "API 키가 없어 주간 회고를 생성할 수 없습니다."
+        
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"문학적 천문학자가 회고 중 길을 잃었습니다. ({e})"
+
+
+def get_daily_apology_trend(days: int = 30) -> pd.DataFrame:
+    """
+    Get daily count of Apologies for the last N days.
+    """
+    logs = db.get_logs_for_analytics()
+    data = [l for l in logs if l['meta_type'] == 'Apology']
+    
+    if not data:
+        return pd.DataFrame()
+        
+    df = pd.DataFrame(data)
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    df['date'] = df['created_at'].dt.date
+    
+    # Filter last N days
+    cutoff_date = date.today() - timedelta(days=days)
+    df = df[df['date'] >= cutoff_date]
+    
+    # Group by Date
+    daily_counts = df.groupby('date').size().reset_index(name='count')
+    
+    return daily_counts
 
 
 # ============================================================
@@ -496,6 +656,9 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
     
     id_to_idx = {}
     
+    # Get connection counts for The Evolution (Growth)
+    connection_counts = db.get_connection_counts()
+    
     # Add nodes
     for i, log in enumerate(logs):
         log_id = log.get("id")
@@ -509,7 +672,16 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
         
         # Type-specific styling
         node_color = style["color"]
-        node_size = style["size"]
+        
+        # Dynamic Size Calculation (The Evolution)
+        base_size = style["size"]
+        if meta_type in ["Constitution", "Apology"]:
+            # Grow based on connections
+            count = connection_counts.get(log_id, 0)
+            node_size = base_size + (count * 2)
+        else:
+            node_size = base_size
+            
         node_shape = style["shape"]
         
         net.add_node(
