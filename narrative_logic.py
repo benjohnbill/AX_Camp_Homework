@@ -246,8 +246,8 @@ def get_temporal_patterns() -> pd.DataFrame:
     # Pivot for Heatmap (Y=Day, X=Hour)
     pivot_df = heatmap_data.pivot(index='day_of_week', columns='hour', values='count').fillna(0)
     
-    # Reindex to ensure correct order
-    pivot_df = pivot_df.reindex(days_order)
+    # Reindex to ensure correct order of days and full 24 hours
+    pivot_df = pivot_df.reindex(index=days_order, columns=range(24), fill_value=0)
     
     return pivot_df
 
