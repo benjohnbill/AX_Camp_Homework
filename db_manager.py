@@ -312,14 +312,39 @@ def get_log_by_id(log_id: str) -> Optional[dict]:
     return _row_to_dict(row) if row else None
 
 
-def get_all_logs() -> List[dict]:
-    """Get all logs"""
+def get_all_logs() -> list:
+    """Get all logs ordered by creation time (desc)"""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM logs ORDER BY created_at DESC")
     rows = cursor.fetchall()
     conn.close()
     return [_row_to_dict(row) for row in rows]
+
+
+def get_fragments_paginated(limit: int = 10, offset: int = 0) -> list:
+    """Get fragments with pagination"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT * FROM logs 
+        WHERE meta_type = 'Fragment' 
+        ORDER BY created_at DESC 
+        LIMIT ? OFFSET ?
+    """, (limit, offset))
+    rows = cursor.fetchall()
+    conn.close()
+    return [_row_to_dict(row) for row in rows]
+
+
+def get_fragment_count() -> int:
+    """Get total count of fragments"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM logs WHERE meta_type = 'Fragment'")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
 
 
 def get_logs_by_type(meta_type: str) -> List[dict]:

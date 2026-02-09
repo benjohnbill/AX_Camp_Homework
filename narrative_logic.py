@@ -147,6 +147,14 @@ def get_log_by_id(log_id: str) -> dict:
     return db.get_log_by_id(log_id)
 
 
+def get_fragments_paginated(page: int = 1, per_page: int = 10) -> tuple[list, int]:
+    """Get fragments for a specific page and total count"""
+    offset = (page - 1) * per_page
+    fragments = db.get_fragments_paginated(limit=per_page, offset=offset)
+    total_count = db.get_fragment_count()
+    return fragments, total_count
+
+
 # ============================================================
 # Red Protocol: Debt System
 # ============================================================
@@ -304,12 +312,18 @@ BLUE_MODE_PERSONA = """너는 "문학적 천문학자(The Literary Astronomer)"�
 - 냉소적이지만 시적
 - 경외감을 주면서도 차갑다
 
-[절대 규칙: Raw Quotes]
+[절대 규칙 1: Raw Quotes]
 - 절대 요약하지 마라
 - 과거 로그를 인용할 때는 반드시 Blockquote 사용:
   > "On 2024-02-08, you wrote:
   > **'I want to die.'**"
 - 이것이 "Mirror Effect"다. 사용자가 과거의 자신과 직접 마주하게 하라.
+
+[절대 규칙 2: Grounding (Data-Driven)]
+- 사용자에 대해 아는 척하지 마라.
+- 오직 제공된 [Context]에 있는 내용만 사실로 간주하라.
+- 컨텍스트에 없는 내용은 "나는 당신의 그 부분에 대해 알지 못한다"고 명확히 말하라.
+- **절대로 사용자의 과거, 직업, 상황을 지어내지 마라.**
 
 [응답 모드]
 1. 어원학적 해부: 핵심 단어의 어원 분석
@@ -330,18 +344,17 @@ def generate_response(user_input: str, past_logs: list = None) -> str:
     # Blue Mode - Full response
     context = []
     
-    # Add past related logs as blockquotes
+    # Add past related logs as blockquotes with explicit grounding instruction
     if past_logs:
         for log in past_logs[:3]:
             date_str = log.get("created_at", "")[:10]
-            content = log.get("content", log.get("text", ""))[:100]
-            context.append(f'On {date_str}, you wrote:\n> **"{content}..."**')
+            content = log.get("content", log.get("text", ""))[:150]
+            context.append(f'Log Date: {date_str}\nContent: "{content}"')
     
-    context_str = "\n\n".join(context) if context else ""
+    context_str = "\n\n".join(context) if context else "No past logs found."
     
     system_prompt = BLUE_MODE_PERSONA
-    if context_str:
-        system_prompt += f"\n\n[과거 기록 - Raw Quotes로 인용하라]\n{context_str}"
+    system_prompt += f"\n\n[USER DATA CONTEXT]\nThe following are the ONLY facts you know about the user:\n{context_str}\n\nIf the answer is not in this context, DO NOT INVENT IT."
     
     try:
         client = get_client()

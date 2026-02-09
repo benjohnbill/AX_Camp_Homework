@@ -542,6 +542,11 @@ elif st.session_state['mode'] == "desk":
             else:
                 unlinked_apologies.append(apology)
         
+        if 'desk_page' not in st.session_state:
+            st.session_state['desk_page'] = 1
+            
+        FRAGMENTS_PER_PAGE = 10
+        
         # 공통 카드 렌더링 함수
         def render_card(log, icon_name="star", indent=0):
             log_id = log.get("id")
@@ -555,11 +560,12 @@ elif st.session_state['mode'] == "desk":
             with st.container():
                 st.markdown(f'<div style="margin-left: {margin_left}; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 10px; margin-bottom: 10px;">', unsafe_allow_html=True)
                 
-                # 헤더 (아이콘 + 내용 미리보기)
-                preview = content[:40] + "..." if len(content) > 40 else content
+                # 헤더: [날짜] 아이콘 + 내용 미리보기
+                preview = content[:30] + "..." if len(content) > 30 else content
                 icon_html = icons.get_icon(icon_name, size=18)
+                header_text = f"[{created_at}] {icon_html} {preview}"
                 
-                with st.expander(f"{icon_html} {preview}", expanded=False):
+                with st.expander(header_text, expanded=False):
                     st.caption(f"{icons.get_icon('calendar')} {created_at} | {log.get('meta_type', 'Unknown')}")
                     st.markdown(content)
                     
@@ -597,11 +603,39 @@ elif st.session_state['mode'] == "desk":
             for apology in unlinked_apologies:
                 render_card(apology, icon_name="activity", indent=0)
         
-        # Level 3: Fragments (Dust)
-        if fragments:
-            st.markdown(f"#### {icons.get_icon('sparkles')} Fragments")
-            for frag in fragments[:20]:  # 최신 20개만 표시
-                render_card(frag, icon_name="sparkles", indent=0)
+        # Level 3: Fragments (Dust) with Pagination
+        st.markdown(f"#### {icons.get_icon('sparkles')} Fragments")
+        
+        # Get paginated text
+        p_fragments, total_count = logic.get_fragments_paginated(
+            page=st.session_state['desk_page'], 
+            per_page=FRAGMENTS_PER_PAGE
+        )
+        
+        total_pages = max(1, (total_count + FRAGMENTS_PER_PAGE - 1) // FRAGMENTS_PER_PAGE)
+        
+        for frag in p_fragments:
+            render_card(frag, icon_name="sparkles", indent=0)
+            
+        # Pagination Controls
+        if total_pages > 1:
+            st.markdown("---")
+            c1, c2, c3 = st.columns([1, 2, 1])
+            
+            with c1:
+                if st.session_state['desk_page'] > 1:
+                    if st.button("◀ 이전", use_container_width=True):
+                        st.session_state['desk_page'] -= 1
+                        st.rerun()
+            
+            with c2:
+                st.markdown(f"<div style='text-align:center; padding-top:5px;'>Page {st.session_state['desk_page']} / {total_pages}</div>", unsafe_allow_html=True)
+                
+            with c3:
+                if st.session_state['desk_page'] < total_pages:
+                    if st.button("다음 ▶", use_container_width=True):
+                        st.session_state['desk_page'] += 1
+                        st.rerun()
     
     with right_col:
         st.markdown(f"### {icons.get_icon('pen-tool')} Essay")
