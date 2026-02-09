@@ -196,34 +196,11 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
     return True, score
 
 
-import io
-import pandas as pd
-
-# ... (imports remain)
-
-def transcribe_audio(audio_bytes: bytes) -> str:
-    """Transcribe audio using OpenAI Whisper"""
-    client = get_client()
-    if not client:
-        return ""
-    
-    try:
-        # Create a file-like object
-        audio_file = io.BytesIO(audio_bytes)
-        audio_file.name = "audio.wav" # Important for API
-        
-        transcript = client.audio.transcriptions.create(
-            model="whisper-1", 
-            file=audio_file
-        )
-        return transcript.text
-    except Exception as e:
-        st.error(f"Transcription failed: {e}")
-        return ""
 
 
-def process_apology(content: str, constitution_id: str, action_plan: str, is_voice: bool = False) -> dict:
-    """Process and save an Apology, decrement debt (Hybrid Confessional)"""
+
+def process_apology(content: str, constitution_id: str, action_plan: str) -> dict:
+    """Process and save an Apology, decrement debt"""
     embedding = get_embedding(content)
     
     apology = db.create_apology(
@@ -233,11 +210,8 @@ def process_apology(content: str, constitution_id: str, action_plan: str, is_voi
         embedding=embedding
     )
     
-    # Hybrid Confessional Logic
-    # Voice = High Courage = 2x Repayment
-    # Text = Standard = 1x Repayment
-    decrement_amount = 2 if is_voice else 1
-    db.decrement_debt(decrement_amount)
+    # Standard Repayment = 1
+    db.decrement_debt(1)
     
     return apology
 

@@ -11,7 +11,7 @@ from datetime import datetime
 import narrative_logic as logic
 import db_manager as db
 import icons
-from streamlit_audiorecorder import audiorecorder
+
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -381,75 +381,39 @@ if red_mode:
     st.markdown("---")
     st.markdown("---")
     
-    # Tabs for Hybrid Confessional
-    tab_type, tab_speak = st.tabs(["✍️ Type (Standard)", "🎙️ Speak (Courage)"])
+    # Tabs for Hybrid Confessional (Simplified to just Type)
+    st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성", unsafe_allow_html=True)
+    st.caption("최소 100자 이상의 해명 + 내일의 약속이 필요합니다")
     
-    with tab_type:
-        st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성", unsafe_allow_html=True)
-        st.caption("최소 100자 이상의 해명 + 내일의 약속이 필요합니다")
-        
-        apology_text = st.text_area(
-            "해명 (Explanation)",
-            placeholder="왜 헌법을 위반했는가? 무슨 일이 있었는가?",
-            height=150
+    apology_text = st.text_area(
+        "해명 (Explanation)",
+        placeholder="왜 헌법을 위반했는가? 무슨 일이 있었는가?",
+        height=150
+    )
+    
+    action_plan = st.text_input(
+        "내일의 약속 (Action Plan)",
+        placeholder="내일은 무엇을 다르게 할 것인가?"
+    )
+    
+    # Validation
+    is_valid = len(apology_text.strip()) >= 100 and len(action_plan.strip()) > 0
+    char_count = len(apology_text.strip())
+    
+    if char_count < 100:
+        st.warning(f"해명 글자 수: {char_count}/100")
+    
+    if st.button("제출하고 속죄하기", disabled=not is_valid, use_container_width=True, type="primary"):
+        logic.process_apology(
+            content=apology_text,
+            constitution_id=constitution['id'] if constitution else None,
+            action_plan=action_plan
         )
-        
-        action_plan = st.text_input(
-            "내일의 약속 (Action Plan)",
-            placeholder="내일은 무엇을 다르게 할 것인가?"
-        )
-        
-        # Validation
-        is_valid = len(apology_text.strip()) >= 100 and len(action_plan.strip()) > 0
-        char_count = len(apology_text.strip())
-        
-        if char_count < 100:
-            st.warning(f"해명 글자 수: {char_count}/100")
-        
-        if st.button("제출하고 속죄하기", disabled=not is_valid, use_container_width=True, type="primary"):
-            logic.process_apology(
-                content=apology_text,
-                constitution_id=constitution['id'] if constitution else None,
-                action_plan=action_plan,
-                is_voice=False
-            )
-            st.balloons()
-            st.success("우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
-            st.session_state['first_input_of_session'] = True
-            st.rerun()
+        st.balloons()
+        st.success("우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
+        st.session_state['first_input_of_session'] = True
+        st.rerun()
 
-    with tab_speak:
-        st.markdown(f"### {icons.get_icon('mic')} Voice of Courage", unsafe_allow_html=True)
-        st.caption("목소리에는 영혼의 진동이 담겨 있습니다. 말하는 용기는 **2배의 속죄** 효과가 있습니다.")
-        
-        audio = audiorecorder("🎤 Click to Record", "⏹️ Recording...")
-        
-        if len(audio) > 0:
-            st.audio(audio.export().read())
-            
-            if st.button("Transcribe & Redeem", use_container_width=True, type="primary"):
-                with st.spinner("Transcribing soul vibration..."):
-                    text = logic.transcribe_audio(audio.export().read())
-                
-                if text:
-                    st.success("Transcribed!")
-                    st.info(f"🗣️ \"{text}\"")
-                    
-                    # Auto-submit if text is valid (Length waived for voice, but check empty)
-                    if len(text.strip()) > 10:
-                        logic.process_apology(
-                            content=text,
-                            constitution_id=constitution['id'] if constitution else None,
-                            action_plan="Voice Pledge", # Placeholder for voice flow simplicity
-                            is_voice=True
-                        )
-                        st.balloons()
-                        st.success("당신의 용기가 우주를 치유했습니다. (Debt -2)")
-                        st.session_state['first_input_of_session'] = True
-                        st.rerun()
-                    else:
-                        st.warning("음성이 너무 짧거나 명확하지 않습니다.")
-    
     st.stop()  # Block normal chat in Red Mode
 
 
