@@ -521,6 +521,8 @@ if st.session_state['mode'] == "stream":
             st.session_state.messages.append({"role": "assistant", "content": response})
             logic.save_chat_message("assistant", response)
         
+        # [P2] Refresh Echo based on new input
+        st.session_state['current_echo'] = logic.get_current_echo(reference_text=user_input)
         st.rerun()
 
 

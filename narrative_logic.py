@@ -157,8 +157,16 @@ def get_fragments_paginated(page: int = 1, per_page: int = 10) -> tuple[list, in
     return fragments, total_count
 
 
-def get_current_echo() -> dict:
-    """Get a random echo for the session"""
+def get_current_echo(reference_text: str = None) -> dict:
+    """
+    [P2] Smart Echo: pick the most relevant past log based on reference_text.
+    Falls back to random if no reference_text or no embeddings available.
+    """
+    if reference_text:
+        related = find_related_logs(reference_text, limit=1)
+        if related:
+            return related[0]
+    # Fallback: random echo
     return db.get_random_echo()
 
 
@@ -513,7 +521,10 @@ def generate_response(user_input: str, past_logs: list = None) -> str:
 
 
 def find_related_logs(text: str, limit: int = 3) -> list:
-    """Find past logs related to the input text"""
+    """
+    [P3] Hybrid Search: vector similarity (70%) + keyword overlap (30%).
+    Finds past logs related to the input text using both semantic and keyword matching.
+    """
     logs = [l for l in load_logs() if l.get("meta_type") == "Fragment"]
     
     if not logs:
@@ -524,6 +535,10 @@ def find_related_logs(text: str, limit: int = 3) -> list:
     except:
         return []
     
+    # Extract input keywords for keyword overlap scoring
+    input_metadata = extract_metadata(text)
+    input_keywords = set(input_metadata.get("keywords", []))
+    
     scored = []
     for log in logs:
         log_emb = np.array(log.get("embedding", []))
@@ -531,9 +546,23 @@ def find_related_logs(text: str, limit: int = 3) -> list:
             continue
         log_emb = log_emb.reshape(1, -1)
         
-        sim = cosine_similarity(input_emb, log_emb)[0][0]
-        if sim > SIMILARITY_THRESHOLD and sim < 0.99:  # Exclude self
-            scored.append((sim, log))
+        # Vector similarity score
+        vector_sim = cosine_similarity(input_emb, log_emb)[0][0]
+        if vector_sim > 0.99:  # Exclude self
+            continue
+        
+        # Keyword overlap score
+        log_keywords = set(log.get("keywords", []))
+        if input_keywords and log_keywords:
+            keyword_score = len(input_keywords & log_keywords) / max(len(input_keywords), 1)
+        else:
+            keyword_score = 0.0
+        
+        # Hybrid score = vector (70%) + keyword (30%)
+        hybrid_score = (vector_sim * 0.7) + (keyword_score * 0.3)
+        
+        if hybrid_score > SIMILARITY_THRESHOLD * 0.7:  # Adjusted threshold for hybrid
+            scored.append((hybrid_score, log))
     
     scored.sort(key=lambda x: x[0], reverse=True)
     return [log for _, log in scored[:limit]]
