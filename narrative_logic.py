@@ -11,11 +11,26 @@ import uuid
 from datetime import datetime, date, timedelta
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 import pandas as pd
 from openai import OpenAI
+import sqlite3
 
-import icons
+# [NEW v5.1] Optional Vector Search Libraries
+try:
+    import faiss
+    HAS_FAISS = True
+except ImportError:
+    HAS_FAISS = False
+
+try:
+    from annoy import AnnoyIndex
+    HAS_ANNOY = True
+except ImportError:
+    HAS_ANNOY = False
+
 
 # ============================================================
 # API Key & Client Management
@@ -67,6 +82,149 @@ def is_api_key_configured() -> bool:
 
 # For backward compatibility
 client = None  # Will be set dynamically via get_client()
+
+# ============================================================
+# [NEW v5.1] Advanced Search & Caching
+# ============================================================
+# Cache embeddings to avoid DB hits on every rerun
+@st.cache_resource(ttl=3600)
+def load_embeddings_cache():
+    ids, X = db.get_all_embeddings_as_float32()
+    # Normalize for cosine similarity if using raw numpy
+    if X.shape[0] > 0:
+        norms = np.linalg.norm(X, axis=1, keepdims=True)
+        norms[norms == 0] = 1.0
+        X_normed = X / norms
+    else:
+        X_normed = X
+    return ids, X, X_normed
+
+@st.cache_resource(ttl=3600)
+def load_or_build_index():
+    # Attempt to load FAISS
+    if HAS_FAISS and os.path.exists("data/index.faiss") and os.path.exists("data/index_ids.json"):
+        try:
+            index = faiss.read_index("data/index.faiss")
+            with open("data/index_ids.json", "r") as f:
+                ids = json.load(f)
+            return "faiss", index, ids
+        except Exception as e:
+            print(f"FAISS load failed: {e}")
+            
+    # Attempt to load Annoy
+    if HAS_ANNOY and os.path.exists("data/index.ann") and os.path.exists("data/index_ids.json"):
+        try:
+            idx = AnnoyIndex(1536, "angular")
+            idx.load("data/index.ann")
+            with open("data/index_ids.json", "r") as f:
+                ids = json.load(f)
+            return "annoy", idx, ids
+        except Exception as e:
+            print(f"Annoy load failed: {e}")
+            
+    return None, None, None
+
+def ann_query(q_emb: np.ndarray, top_k=100):
+    typ, index, ids_map = load_or_build_index()
+    
+    if typ == "faiss":
+        q = q_emb.astype(np.float32).reshape(1, -1)
+        # FAISS IndexFlatIP expects normalized vectors for cosine sim
+        faiss.normalize_L2(q)
+        D, I = index.search(q, top_k)
+        out_ids = [ids_map[i] for i in I[0] if i != -1 and i < len(ids_map)]
+        out_scores = D[0].tolist()
+        return out_ids, out_scores
+        
+    elif typ == "annoy":
+        idxs, dists = index.get_nns_by_vector(q_emb.tolist(), top_k, include_distances=True)
+        out_ids = [ids_map[i] for i in idxs if i < len(ids_map)]
+        # Convert angular distance to similarity score approx
+        out_scores = [1.0 - (d * 0.5) for d in dists] 
+        return out_ids, out_scores
+        
+    return [], []
+
+def simple_keyword_search(query_text, limit=100):
+    conn = db.get_connection()
+    conn.row_factory = sqlite3.Row
+    cur = conn.cursor()
+    try:
+        # Match using FTS5
+        # Note: bm25() is built-in to FTS5
+        cur.execute("SELECT rowid, bm25(logs_fts) as score FROM logs_fts WHERE logs_fts MATCH ? ORDER BY score LIMIT ?", (query_text, limit))
+        rows = cur.fetchall()
+        
+        ids = []
+        scores = []
+        
+        # Map rowid back to log id
+        for r in rows:
+            rowid = r["rowid"]
+            cur2 = conn.cursor()
+            cur2.execute("SELECT id FROM logs WHERE rowid=?", (rowid,))
+            res = cur2.fetchone()
+            if res:
+                ids.append(res[0])
+                # Invert BM25 score for similarity-like ranking (lower usually better in FTS)
+                # But bm25 return negative of score sometimes? SQLite FTS5 bm25 is positive, lower is better?
+                # Actually SQLite docs say: "The lower the value, the better the match."
+                # We want higher = better.
+                s = r["score"]
+                scores.append(1.0 / (1.0 + abs(s)))
+                
+        return ids, scores
+    except Exception as e:
+        # Fallback to naive LIKE search
+        print(f"FTS search failed: {e}")
+        return [], []
+    finally:
+        conn.close()
+
+def hybrid_search(query_text, top_k=10, alpha=0.7):
+    # 1. Vector Search
+    q_emb = get_embedding(query_text)
+    if q_emb is None:
+        return [], []
+    q_emb = np.array(q_emb, dtype=np.float32)
+    
+    ann_ids, ann_scores = ann_query(q_emb, top_k=top_k*5)
+    
+    # 2. Keyword Search
+    kw_ids, kw_scores = simple_keyword_search(query_text, limit=top_k*5)
+    
+    # 3. Fallback if ANN failed (Brute Force)
+    if not ann_ids:
+        ids, X, X_normed = load_embeddings_cache()
+        if len(ids) > 0:
+            from sklearn.metrics.pairwise import cosine_similarity
+            # Reshape for sklearn
+            q_reshaped = q_emb.reshape(1, -1)
+            sims = cosine_similarity(q_reshaped, X).flatten()
+            # Top K
+            top_indices = np.argsort(sims)[::-1][:top_k*5]
+            ann_ids = [ids[i] for i in top_indices]
+            ann_scores = sims[top_indices].tolist()
+    
+    # 4. RRF / Weighted Combination (Simplified)
+    # Normalize scores to 0-1 range locally
+    
+    # Map all candidates
+    all_candidates = list(set(ann_ids + kw_ids))
+    final_scores = {}
+    
+    ann_map = dict(zip(ann_ids, ann_scores))
+    kw_map = dict(zip(kw_ids, kw_scores))
+    
+    for cid in all_candidates:
+        s_vec = ann_map.get(cid, 0.0)
+        s_kw = kw_map.get(cid, 0.0)
+        final_scores[cid] = (s_vec * alpha) + (s_kw * (1.0 - alpha))
+    
+    # Sort
+    sorted_candidates = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
+    
+    return [x[0] for x in sorted_candidates[:top_k]], [x[1] for x in sorted_candidates[:top_k]]
 
 # ============================================================
 # Constants
@@ -358,71 +516,104 @@ def get_daily_apology_trend(days: int = 30) -> pd.DataFrame:
 # Gatekeeper: Dream Report
 # ============================================================
 def run_gatekeeper() -> dict:
-    """
-    Run on app launch. Detect conflicts between Fragments and Constitution.
-    Returns: {"conflicts": [...], "broken_promise": {...} or None}
-    """
-    logs = load_logs()
-    constitutions = [l for l in logs if l.get("meta_type") == "Constitution"]
-    fragments = [l for l in logs if l.get("meta_type") == "Fragment"]
+    """Run entry checks (Conflicts & Broken Promises)"""
+    # 1. Check for Broken Promise from yesterday
+    broken_promise_log = check_yesterday_promise()
     
-    result = {
-        "conflicts": [],
-        "broken_promise": None
+    # 2. Check for Conflicts with Constitution
+    # [UPDATED v5.1] LLM-based Contradiction Check
+    conflicts = []
+    
+    # Get recent fragments (last 24h) to check against Constitution
+    # For now, just check specific recent logs if needed, or simply return empty if no trigger
+    # But usually, Gatekeeper checks if *current state* violates *constitution*.
+    # Let's check the *last written fragment* against Constitution.
+    
+    all_logs = load_logs()
+    fragments = [l for l in all_logs if l.get('meta_type') == 'Fragment']
+    constitutions = [l for l in all_logs if l.get('meta_type') == 'Constitution']
+    
+    if fragments and constitutions:
+        latest_fragment = fragments[-1] # The most recent thought
+        
+        # Check against all constitutions
+        for const in constitutions:
+            # 1. Similarity Check (Fast filter)
+            sim = 0.0
+            if latest_fragment.get('embedding') and const.get('embedding'):
+                v1 = np.array(latest_fragment['embedding'])
+                v2 = np.array(const['embedding'])
+                sim = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+                
+            # If high similarity (related topic), check logic
+            if sim > 0.4:
+                # LLM Check
+                is_violation, reason = check_contradiction(const.get('content'), latest_fragment.get('content'))
+                if is_violation:
+                    conflicts.append({
+                        "content": const.get('content'),
+                        "violation": latest_fragment.get('content'),
+                        "reason": reason
+                    })
+
+    return {
+        "conflicts": conflicts,
+        "broken_promise": broken_promise_log
     }
-    
-    if not constitutions:
-        return result
-    
-    constitution = constitutions[0]
-    const_emb_raw = constitution.get("embedding", [])
-    
-    # Check if constitution embedding is empty or invalid
-    if not const_emb_raw or len(const_emb_raw) == 0:
-        return result
-    
-    const_emb = np.array(const_emb_raw).reshape(1, -1)
-    
-    # Check recent fragments for conflicts
-    recent_fragments = fragments[:10]  # Last 10 fragments
-    
-    for frag in recent_fragments:
-        frag_emb = np.array(frag.get("embedding", []))
-        if len(frag_emb) == 0:
-            continue
-        frag_emb = frag_emb.reshape(1, -1)
+
+def check_contradiction(constitution_text, fragment_text):
+    """Use LLM to check if fragment contradicts constitution"""
+    if not is_api_key_configured():
+        return False, ""
         
-        # High similarity = potential conflict (same topic, different action)
-        sim = cosine_similarity(const_emb, frag_emb)[0][0]
-        
-        if sim > 0.5:  # Related to constitution
-            result["conflicts"].append({
-                "id": frag["id"],
-                "content": frag.get("content", frag.get("text", "")),
-                "similarity": sim
-            })
-    
-    # Check yesterday's Apology (Dreaming Integration)
-    yesterday_apology = db.get_yesterday_apology()
-    if yesterday_apology and len(result["conflicts"]) > 0:
-        result["broken_promise"] = {
-            "action_plan": yesterday_apology.get("action_plan", ""),
-            "apology_content": yesterday_apology.get("content", "")[:100]
-        }
-    
-    return result
+    client = get_client()
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a precise logical judge. Determine if the NEW statement contradicts the CONSTITUTION. Reply with JSON: {\"contradiction\": true/false, \"reason\": \"short explanation\"}."},
+                {"role": "user", "content": f"CONSTITUTION: {constitution_text}\nNEW: {fragment_text}"}
+            ],
+            response_format={"type": "json_object"}
+        )
+        result = json.loads(completion.choices[0].message.content)
+        return result.get("contradiction", False), result.get("reason", "")
+    except Exception as e:
+        print(f"Contradiction check failed: {e}")
+        return False, ""
 
 
 def check_yesterday_promise() -> dict:
-    """Check if yesterday's promise was broken"""
-    apology = db.get_yesterday_apology()
-    if not apology:
-        return None
+    """
+    Check if yesterday's apology (if any) was followed up.
+    Returns the apology/promise details if found.
+    """
+    # 1. Get yesterday's date
+    yesterday = datetime.now() - timedelta(days=1)
+    y_str = yesterday.strftime('%Y-%m-%d')
     
-    return {
-        "action_plan": apology.get("action_plan", ""),
-        "date": apology.get("created_at", "")[:10]
-    }
+    # 2. Find Apology from yesterday
+    logs = load_logs()
+    
+    # Filter for Apology
+    apologies = [l for l in logs 
+                 if l.get('meta_type') == 'Apology' 
+                 and l.get('created_at', '').startswith(y_str)]
+    
+    if apologies:
+        # Just return the fast one found
+        latest = apologies[-1]
+        return {
+            "id": latest['id'],
+            "content": latest.get('content'),
+            "action_plan": latest.get('action_plan'),
+            "date": y_str
+        }
+    
+    return None
+
+
+
 
 
 # ============================================================
@@ -520,52 +711,28 @@ def generate_response(user_input: str, past_logs: list = None) -> str:
         return "문학적 천문학자가 잠시 별을 관측 중입니다..."
 
 
-def find_related_logs(text: str, limit: int = 3) -> list:
-    """
-    [P3] Hybrid Search: vector similarity (70%) + keyword overlap (30%).
-    Finds past logs related to the input text using both semantic and keyword matching.
-    """
-    logs = [l for l in load_logs() if l.get("meta_type") == "Fragment"]
-    
-    if not logs:
-        return []
-    
+def find_related_logs(query_text: str, top_k: int = 5) -> list:
+    """Find related logs using Hybrid Search (Vector + Keyword)"""
     try:
-        input_emb = np.array(get_embedding(text)).reshape(1, -1)
-    except:
+        # Ensure FTS is up to date (lightweight check)
+        db.ensure_fts_index()
+        
+        # Use Hybrid Search
+        ids, scores = hybrid_search(query_text, top_k=top_k)
+        
+        # Bulk load logs
+        logs = db.load_logs_by_ids(ids)
+        
+        # Attach scores
+        score_map = dict(zip(ids, scores))
+        for log in logs:
+            log['similarity'] = score_map.get(log['id'], 0.0)
+            
+        return logs
+        
+    except Exception as e:
+        print(f"Hybrid search failed: {e}. Falling back to basic search.")
         return []
-    
-    # Extract input keywords for keyword overlap scoring
-    input_metadata = extract_metadata(text)
-    input_keywords = set(input_metadata.get("keywords", []))
-    
-    scored = []
-    for log in logs:
-        log_emb = np.array(log.get("embedding", []))
-        if len(log_emb) == 0:
-            continue
-        log_emb = log_emb.reshape(1, -1)
-        
-        # Vector similarity score
-        vector_sim = cosine_similarity(input_emb, log_emb)[0][0]
-        if vector_sim > 0.99:  # Exclude self
-            continue
-        
-        # Keyword overlap score
-        log_keywords = set(log.get("keywords", []))
-        if input_keywords and log_keywords:
-            keyword_score = len(input_keywords & log_keywords) / max(len(input_keywords), 1)
-        else:
-            keyword_score = 0.0
-        
-        # Hybrid score = vector (70%) + keyword (30%)
-        hybrid_score = (vector_sim * 0.7) + (keyword_score * 0.3)
-        
-        if hybrid_score > SIMILARITY_THRESHOLD * 0.7:  # Adjusted threshold for hybrid
-            scored.append((hybrid_score, log))
-    
-    scored.sort(key=lambda x: x[0], reverse=True)
-    return [log for _, log in scored[:limit]]
 
 
 # ============================================================

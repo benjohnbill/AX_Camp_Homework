@@ -115,8 +115,6 @@ def init_database():
     
     # ============================================================
     # [NEW v5] Schema Migration — Add Chronos / Kanban columns
-    # SQLite doesn't support IF NOT EXISTS for ALTER TABLE,
-    # so we catch errors for already-existing columns.
     # ============================================================
     migration_columns = [
         ("linked_constitutions", "TEXT"),      # JSON array of Constitution IDs
@@ -131,6 +129,17 @@ def init_database():
             conn.commit()
         except sqlite3.OperationalError:
             pass  # Column already exists — safe to ignore
+
+    # ============================================================
+    # [NEW v5.1] FTS5 Virtual Table for Hybrid Search
+    # ============================================================
+    try:
+        cursor.execute("CREATE VIRTUAL TABLE IF NOT EXISTS logs_fts USING fts5(content, keywords, content='logs', content_rowid='id')")
+        # Initial population if empty
+        cursor.execute("INSERT OR IGNORE INTO logs_fts(rowid, content, keywords) SELECT rowid, content, keywords FROM logs")
+        conn.commit()
+    except Exception as e:
+        print(f"Warning: FTS5 not available or failed: {e}")
     
     conn.close()
 
@@ -795,7 +804,15 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
     # Convert embedding blob to list
     if d.get("embedding"):
         try:
-            d["embedding"] = np.frombuffer(d["embedding"], dtype=np.float64).tolist()
+            # Handle both blob and list formats (legacy vs new)
+            if isinstance(d["embedding"], bytes):
+                # Try float32 first
+                try:
+                    d["embedding"] = np.frombuffer(d["embedding"], dtype=np.float32).tolist()
+                except:
+                    # Fallback to float64
+                    d["embedding"] = np.frombuffer(d["embedding"], dtype=np.float64).tolist()
+            # If it's already a list, do nothing
         except:
             d["embedding"] = []
     else:
@@ -824,3 +841,78 @@ def reset_database() -> None:
 
 # Initialize on import
 init_database()
+
+
+# ============================================================
+# [NEW v5.1] Hybrid Search Helpers
+# ============================================================
+def get_all_embeddings_as_float32():
+    """Efficiently load all embeddings for ANN indexing"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, embedding FROM logs WHERE embedding IS NOT NULL")
+    rows = cursor.fetchall()
+    
+    ids = []
+    embeds = []
+    
+    DIM = 1536
+    
+    for log_id, blob in rows:
+        if not blob:
+            continue
+            
+        try:
+            # Try float32
+            arr = np.frombuffer(blob, dtype=np.float32)
+            if arr.size != DIM:
+                # Fallback to float64 and convert
+                arr = np.frombuffer(blob, dtype=np.float64).astype(np.float32)
+            
+            if arr.size == DIM:
+                ids.append(log_id)
+                embeds.append(arr)
+        except:
+            pass
+            
+    conn.close()
+    
+    if not embeds:
+        return ids, np.zeros((0, DIM), dtype=np.float32)
+        
+    return ids, np.vstack(embeds)
+
+
+def load_logs_by_ids(log_ids: List[str]) -> List[dict]:
+    """Bulk retrieve logs by ID list (preserves order)"""
+    if not log_ids:
+        return []
+        
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    placeholders = ",".join("?" for _ in log_ids)
+    cursor.execute(f"SELECT * FROM logs WHERE id IN ({placeholders})", log_ids)
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    # Create lookup dict
+    log_map = {row['id']: _row_to_dict(row) for row in rows}
+    
+    # Return in requested order
+    return [log_map[lid] for lid in log_ids if lid in log_map]
+
+
+def ensure_fts_index():
+    """Sync FTS index with main table"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        # Rebuild FTS for simplicity (or incremental update)
+        cursor.execute("INSERT OR REPLACE INTO logs_fts(rowid, content, keywords) SELECT rowid, content, keywords FROM logs")
+        conn.commit()
+    except:
+        pass
+    conn.close()
+

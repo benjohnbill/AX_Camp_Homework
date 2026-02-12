@@ -8,3 +8,7 @@ networkx
 pyvis
 plotly
 
+# ANN / Hybrid Search
+faiss-cpu>=1.7.4
+annoy>=1.17.0
+numpy>=1.24
