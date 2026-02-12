@@ -1,7 +1,8 @@
 """
 narrative_logic.py
-Antigravity v4: The Laws of Physics
+Antigravity v5: The Laws of Physics
 3-Body Hierarchy + Red Protocol + Dreaming Integration + Action Plan
++ Chronos Docking + Soul Finviz + Narrative Kanban
 """
 
 import os
@@ -195,9 +196,6 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
     if score < CONFLICT_THRESHOLD:
         return False, score
     return True, score
-
-
-
 
 
 def process_apology(content: str, constitution_id: str, action_plan: str) -> dict:
@@ -562,7 +560,7 @@ def get_welcome_message() -> str:
 
 
 # ============================================================
-# Graph Generation (PyVis)
+# Graph Generation (PyVis)  [PRESERVED FROM v4]
 # ============================================================
 from pyvis.network import Network
 import networkx as nx
@@ -684,6 +682,21 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
                     title="Apology Link"
                 )
     
+    # [NEW v5] Add edges for Chronos-docked Fragments → Constitution
+    for log in logs:
+        if log.get("meta_type") == "Fragment" and log.get("linked_constitutions"):
+            child_idx = id_to_idx.get(log["id"])
+            for const_id in log["linked_constitutions"]:
+                parent_idx = id_to_idx.get(const_id)
+                if parent_idx is not None and child_idx is not None:
+                    net.add_edge(
+                        child_idx, parent_idx,
+                        color="#FFD700",  # Gold - Chronos docking link
+                        width=2,
+                        dashes=True,
+                        title="Chronos Docking"
+                    )
+    
     # Add Manual Connections (Red Edge)
     connections = db.get_connections()
     for conn in connections:
@@ -710,8 +723,6 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
             if i < j:
                 common = G.nodes[i].get("keywords", set()) & G.nodes[j].get("keywords", set())
                 if common:
-                    # Check if manual connection already exists (avoid duplicates)
-                    # This is a simple visual check, strict check is complex here
                     net.add_edge(i, j, width=1, color="rgba(100,100,100,0.2)")
     
     html = net.generate_html()
@@ -728,3 +739,79 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
 def add_manual_connection(source_id: str, target_id: str) -> bool:
     """Create a manual connection between two logs"""
     return db.add_connection(source_id, target_id)
+
+
+# ============================================================
+# [NEW v5] Chronos Docking Logic
+# ============================================================
+def save_chronos_log(content: str, constitution_ids: list, duration: int) -> dict:
+    """Save a Fragment created from a Chronos session with docking to Constitutions."""
+    embedding = get_embedding(content)
+    metadata = extract_metadata(content)
+    
+    log = db.create_log(
+        content=content,
+        meta_type="Fragment",
+        embedding=embedding,
+        emotion=metadata["emotion"],
+        dimension=metadata["dimension"],
+        keywords=metadata["keywords"],
+        linked_constitutions=constitution_ids,
+        duration=duration
+    )
+    return log
+
+
+# ============================================================
+# [NEW v5] Soul Finviz Data
+# ============================================================
+def get_finviz_data() -> list:
+    """
+    Get portfolio data for Soul Finviz Treemap.
+    Returns list of dicts ready for Plotly treemap.
+    """
+    return db.get_constitutions_with_stats()
+
+
+# ============================================================
+# [NEW v5] Narrative Kanban Logic
+# ============================================================
+def get_kanban_cards() -> dict:
+    """Get all kanban cards grouped by status"""
+    return db.get_kanban_cards()
+
+
+def create_kanban_card(content: str, constitution_id: str) -> dict:
+    """Create a new draft card — must orbit a Constitution."""
+    return db.create_kanban_card(content, constitution_id=constitution_id, status="draft")
+
+
+def move_kanban_card(card_id: str, new_status: str) -> bool:
+    """Move a kanban card to a new status"""
+    return db.update_kanban_status(card_id, new_status)
+
+
+def land_kanban_card(card_id: str, constitution_ids: list, accomplishment: str, duration: int = 0) -> dict:
+    """
+    Process a Kanban card landing (moved to 'Landed').
+    - Updates the card status
+    - Links it to Constitutions
+    - Saves duration
+    """
+    # Update the existing card
+    db.update_log(
+        card_id,
+        kanban_status="landed",
+        linked_constitutions=constitution_ids,
+        duration=duration
+    )
+    
+    # If accomplishment is provided and different from card content, save as additional fragment
+    if accomplishment and accomplishment.strip():
+        save_chronos_log(
+            content=accomplishment,
+            constitution_ids=constitution_ids,
+            duration=duration
+        )
+    
+    return db.get_log_by_id(card_id)

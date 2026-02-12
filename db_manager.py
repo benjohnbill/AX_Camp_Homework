@@ -1,7 +1,8 @@
 """
 db_manager.py
-Antigravity v4: SQLite Database Layer
+Antigravity v5: SQLite Database Layer
 3-Body Hierarchy: Constitution (Sun) / Apology (Planet) / Fragment (Dust)
++ Chronos Docking / Soul Finviz / Narrative Kanban
 """
 
 import sqlite3
@@ -111,6 +112,26 @@ def init_database():
     """)
     
     conn.commit()
+    
+    # ============================================================
+    # [NEW v5] Schema Migration — Add Chronos / Kanban columns
+    # SQLite doesn't support IF NOT EXISTS for ALTER TABLE,
+    # so we catch errors for already-existing columns.
+    # ============================================================
+    migration_columns = [
+        ("linked_constitutions", "TEXT"),      # JSON array of Constitution IDs
+        ("duration", "INTEGER"),               # Minutes spent (Chronos)
+        ("debt_repaid", "INTEGER DEFAULT 0"),  # 1 if this log repaid a debt
+        ("kanban_status", "TEXT"),              # 'draft' | 'orbit' | 'landed' | NULL
+    ]
+    
+    for col_name, col_type in migration_columns:
+        try:
+            cursor.execute(f"ALTER TABLE logs ADD COLUMN {col_name} {col_type}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # Column already exists — safe to ignore
+    
     conn.close()
 
 
@@ -159,50 +180,43 @@ def update_streak() -> dict:
     cursor.execute("SELECT last_login, current_streak, longest_streak FROM user_stats WHERE id = 1")
     row = cursor.fetchone()
     
-    today = date.today()
-    last_login = None
-    if row['last_login']:
-        try:
-            last_login = datetime.strptime(row['last_login'], "%Y-%m-%d").date()
-        except:
-            last_login = None
+    if not row:
+        conn.close()
+        return {"streak": 0, "longest": 0, "status": "new"}
+        
+    last_login = row["last_login"]
+    current_streak = row["current_streak"] or 0
+    longest_streak = row["longest_streak"] or 0
     
-    current_streak = row['current_streak'] or 0
-    longest_streak = row['longest_streak'] or 0
-    streak_broken = False
+    today = date.today().isoformat()
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
     
-    if last_login is None:
-        # First login ever
-        current_streak = 1
-    elif last_login == today:
-        # Already logged in today
-        pass
-    elif last_login == today - timedelta(days=1):
-        # Consecutive day
+    status = "kept"
+    
+    if last_login == today:
+        status = "same_day"
+    elif last_login == yesterday:
         current_streak += 1
+        if current_streak > longest_streak:
+            longest_streak = current_streak
+        status = "increased"
     else:
-        # Streak broken
-        streak_broken = True
-        current_streak = 1
-    
-    # Update longest streak
-    if current_streak > longest_streak:
-        longest_streak = current_streak
-    
-    # Save updates
+        current_streak = 1  # Reset if missed a day
+        status = "broken"
+        
     cursor.execute("""
         UPDATE user_stats 
         SET last_login = ?, current_streak = ?, longest_streak = ?
         WHERE id = 1
-    """, (today.isoformat(), current_streak, longest_streak))
+    """, (today, current_streak, longest_streak))
     
     conn.commit()
     conn.close()
     
     return {
-        "current_streak": current_streak,
-        "longest_streak": longest_streak,
-        "streak_broken": streak_broken
+        "streak": current_streak,
+        "longest": longest_streak,
+        "status": status
     }
 
 
@@ -220,9 +234,8 @@ def get_longest_streak() -> int:
     cursor = conn.cursor()
     cursor.execute("SELECT longest_streak FROM user_stats WHERE id = 1")
     result = cursor.fetchone()
-    row = cursor.fetchone()
     conn.close()
-    return row[0] if row else 0
+    return result['longest_streak'] if result else 0
 
 
 def get_debt_count() -> int:
@@ -268,52 +281,6 @@ def reset_debt() -> None:
     conn.close()
 
 
-def update_streak() -> dict:
-    conn = get_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT last_login, current_streak, longest_streak FROM user_stats WHERE id = 1")
-    row = cursor.fetchone()
-    
-    if not row:
-        return {"streak": 0, "longest": 0, "status": "new"}
-        
-    last_login = row["last_login"]
-    current_streak = row["current_streak"]
-    longest_streak = row["longest_streak"]
-    
-    today = date.today().isoformat()
-    yesterday = (date.today() - timedelta(days=1)).isoformat()
-    
-    status = "kept"
-    
-    if last_login == today:
-        status = "same_day"
-    elif last_login == yesterday:
-        current_streak += 1
-        if current_streak > longest_streak:
-            longest_streak = current_streak
-        status = "increased"
-    else:
-        current_streak = 1 # Reset if missed a day
-        status = "broken"
-        
-    cursor.execute("""
-        UPDATE user_stats 
-        SET last_login = ?, current_streak = ?, longest_streak = ?
-        WHERE id = 1
-    """, (today, current_streak, longest_streak))
-    
-    conn.commit()
-    conn.close()
-    
-    return {
-        "streak": current_streak,
-        "longest": longest_streak,
-        "status": status
-    }
-
-
 # ============================================================
 # CRUD Operations
 # ============================================================
@@ -325,7 +292,12 @@ def create_log(
     dimension: str = None,
     keywords: list = None,
     parent_id: str = None,
-    action_plan: str = None
+    action_plan: str = None,
+    # [NEW v5] Chronos / Kanban fields
+    linked_constitutions: list = None,
+    duration: int = None,
+    debt_repaid: int = 0,
+    kanban_status: str = None
 ) -> dict:
     """Create a new log entry"""
     conn = get_connection()
@@ -334,14 +306,17 @@ def create_log(
     log_id = str(uuid.uuid4())
     embedding_blob = np.array(embedding).tobytes() if embedding else None
     keywords_json = json.dumps(keywords or [], ensure_ascii=False)
+    linked_const_json = json.dumps(linked_constitutions or [], ensure_ascii=False)
     
     cursor.execute("""
         INSERT INTO logs (id, content, meta_type, parent_id, action_plan, 
-                         created_at, embedding, emotion, dimension, keywords)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         created_at, embedding, emotion, dimension, keywords,
+                         linked_constitutions, duration, debt_repaid, kanban_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         log_id, content, meta_type, parent_id, action_plan,
-        datetime.now().isoformat(), embedding_blob, emotion, dimension, keywords_json
+        datetime.now().isoformat(), embedding_blob, emotion, dimension, keywords_json,
+        linked_const_json, duration, debt_repaid, kanban_status
     ))
     
     conn.commit()
@@ -354,7 +329,7 @@ def get_logs_for_analytics() -> List[dict]:
     """Get all logs with created_at and meta_type for analytics"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, meta_type, created_at FROM logs")
+    cursor.execute("SELECT id, meta_type, created_at, duration, linked_constitutions FROM logs")
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
@@ -365,6 +340,7 @@ def create_apology(content: str, constitution_id: str, action_plan: str, embeddi
         content=content,
         meta_type="Apology",
         embedding=embedding,
+        parent_id=constitution_id,
         action_plan=action_plan
     )
 
@@ -401,9 +377,6 @@ def get_connection_counts() -> dict:
         (SELECT COUNT(*) FROM logs l2 WHERE l2.parent_id = logs.id) as child_count
         FROM logs
     """)
-    
-    # Note: We also need to count manual connections if implemented fully
-    # For now, base growth on parent-child hierarchy (Constitution -> Apology/Fragment)
     
     rows = cursor.fetchall()
     conn.close()
@@ -527,6 +500,9 @@ def update_log(log_id: str, **kwargs) -> bool:
             values.append(np.array(value).tobytes() if value else None)
         elif key == "keywords":
             updates.append("keywords = ?")
+            values.append(json.dumps(value or [], ensure_ascii=False))
+        elif key == "linked_constitutions":
+            updates.append("linked_constitutions = ?")
             values.append(json.dumps(value or [], ensure_ascii=False))
         else:
             updates.append(f"{key} = ?")
@@ -657,6 +633,141 @@ def delete_connection(source_id: str, target_id: str) -> bool:
 
 
 # ============================================================
+# [NEW v5] Chronos & Soul Finviz Queries
+# ============================================================
+def get_constitutions_with_stats() -> List[dict]:
+    """
+    Get each Constitution with aggregated stats for Soul Finviz Treemap.
+    Returns: list of dicts with id, content, total_duration, fragment_count, last_activity, health_score
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    constitutions = get_constitutions()
+    
+    stats = []
+    for const in constitutions:
+        const_id = const["id"]
+        
+        # Count fragments linked to this constitution via linked_constitutions JSON
+        cursor.execute("SELECT duration, linked_constitutions, created_at FROM logs WHERE meta_type = 'Fragment'")
+        rows = cursor.fetchall()
+        
+        total_duration = 0
+        fragment_count = 0
+        last_activity = const.get("created_at", "")
+        
+        for row in rows:
+            linked = row["linked_constitutions"]
+            if linked:
+                try:
+                    linked_ids = json.loads(linked)
+                except:
+                    linked_ids = []
+                if const_id in linked_ids:
+                    fragment_count += 1
+                    total_duration += (row["duration"] or 0)
+                    if row["created_at"] > last_activity:
+                        last_activity = row["created_at"]
+        
+        # Also count Apologies linked via parent_id
+        cursor.execute("""
+            SELECT COUNT(*) as cnt FROM logs 
+            WHERE meta_type = 'Apology' AND parent_id = ?
+        """, (const_id,))
+        apology_count = cursor.fetchone()["cnt"]
+        
+        # Check debt status
+        has_debt = get_debt_count() > 0
+        
+        # Calculate health score (-1.0 to 1.0)
+        days_since = _days_since(last_activity)
+        
+        if has_debt or days_since > 7:
+            health = -1.0 + min(0.5, fragment_count * 0.1)
+        elif days_since > 3:
+            health = 0.0
+        else:
+            health = min(1.0, 0.3 + fragment_count * 0.1 + total_duration * 0.005)
+        
+        health = max(-1.0, min(1.0, health))
+        
+        stats.append({
+            "id": const_id,
+            "content": const["content"],
+            "total_duration": total_duration,
+            "fragment_count": fragment_count,
+            "apology_count": apology_count,
+            "last_activity": last_activity,
+            "days_since_activity": days_since,
+            "health_score": round(health, 2),
+            # Size for treemap = duration + fragment_count weighted
+            "size": max(1, total_duration + fragment_count * 10)
+        })
+    
+    conn.close()
+    return stats
+
+
+def _days_since(iso_timestamp: str) -> int:
+    """Calculate days since an ISO timestamp"""
+    if not iso_timestamp:
+        return 999
+    try:
+        dt = datetime.fromisoformat(iso_timestamp.replace("Z", "+00:00"))
+        return (datetime.now() - dt.replace(tzinfo=None)).days
+    except:
+        return 999
+
+
+# ============================================================
+# [NEW v5] Narrative Kanban Operations
+# ============================================================
+def get_kanban_cards() -> dict:
+    """Get logs grouped by kanban_status. Returns {'draft': [...], 'orbit': [...], 'landed': [...]}"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    result = {"draft": [], "orbit": [], "landed": []}
+    
+    cursor.execute("""
+        SELECT * FROM logs 
+        WHERE kanban_status IS NOT NULL 
+        ORDER BY created_at DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+    
+    for row in rows:
+        d = _row_to_dict(row)
+        status = d.get("kanban_status", "draft")
+        if status in result:
+            result[status].append(d)
+    
+    return result
+
+
+def update_kanban_status(log_id: str, new_status: str) -> bool:
+    """Move a kanban card to a new status column"""
+    if new_status not in ("draft", "orbit", "landed"):
+        return False
+    return update_log(log_id, kanban_status=new_status)
+
+
+def create_kanban_card(content: str, constitution_id: str, status: str = "draft") -> dict:
+    """Create a new Kanban card — MUST orbit a Constitution (no orphans)."""
+    if not constitution_id:
+        raise ValueError("A Kanban card cannot be born without a mother star (constitution_id required).")
+    return create_log(
+        content=content,
+        meta_type="Fragment",
+        parent_id=constitution_id,
+        linked_constitutions=[constitution_id],
+        kanban_status=status
+    )
+
+
+# ============================================================
 # Helpers
 # ============================================================
 def _row_to_dict(row: sqlite3.Row) -> dict:
@@ -671,6 +782,15 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
             d["keywords"] = []
     else:
         d["keywords"] = []
+    
+    # [NEW v5] Parse linked_constitutions JSON
+    if d.get("linked_constitutions"):
+        try:
+            d["linked_constitutions"] = json.loads(d["linked_constitutions"])
+        except:
+            d["linked_constitutions"] = []
+    else:
+        d["linked_constitutions"] = []
     
     # Convert embedding blob to list
     if d.get("embedding"):
