@@ -331,11 +331,14 @@ with st.sidebar:
     streak = db.get_current_streak()
     longest = db.get_longest_streak()
     
+    recovery_points = db.get_recovery_points()
+
     st.markdown(f"""
     <div class="streak-counter">
         {icons.get_icon("flame", color="#FFD700")} {streak}일 연속
     </div>
     """, unsafe_allow_html=True)
+    st.caption(f"🪙 Recovery Points: {recovery_points}")
     
     if longest > streak:
         st.caption(f"최장 기록: {longest}일")
@@ -377,6 +380,28 @@ with st.sidebar:
     debt = db.get_debt_count()
     if debt > 0:
         st.error(f"Debt: {debt}")
+
+    # Notification badge (chat-like stacked alerts)
+    notifications = []
+    if debt > 0:
+        notifications.append(f"🩸 해명 필요 항목 {debt}개")
+
+    try:
+        finviz_data_for_alerts = logic.get_finviz_data()
+        starving = [d for d in finviz_data_for_alerts if d.get("health_score", 0) < -0.5]
+        for d in starving[:2]:
+            title = d.get("content", "헌법")[:20]
+            notifications.append(f"🌑 '{title}...' 헌법이 굶주리고 있어요")
+    except Exception:
+        pass
+
+    notif_count = len(notifications)
+    st.caption(f"🔔 알림 {notif_count}")
+    if notifications:
+        with st.expander("알림함 열기"):
+            for n in notifications:
+                st.write(f"• {n}")
+            st.info("팁: 오늘 해명 1회 + 짧은 기록 1회만 해도 상태가 빠르게 회복됩니다.")
     
     st.markdown("---")
     
@@ -425,7 +450,7 @@ if red_mode:
     st.markdown("---")
     
     st.markdown(f"### {icons.get_icon('pencil')} 해명서 작성", unsafe_allow_html=True)
-    st.caption("최소 100자 이상의 해명 + 내일의 약속이 필요합니다")
+    st.caption("최소 30자 해명 + 내일의 약속이 필요합니다 (권장 50자 이상)")
     
     apology_text = st.text_area(
         "해명 (Explanation)",
@@ -438,20 +463,34 @@ if red_mode:
         placeholder="내일은 무엇을 다르게 할 것인가?"
     )
     
-    is_valid = len(apology_text.strip()) >= 100 and len(action_plan.strip()) > 0
+    is_valid = len(apology_text.strip()) >= 30 and len(action_plan.strip()) > 0
     char_count = len(apology_text.strip())
-    
-    if char_count < 100:
-        st.warning(f"해명 글자 수: {char_count}/100")
+
+    if char_count < 30:
+        st.warning(f"해명 글자 수: {char_count}/30 (최소)")
+    elif char_count < 50:
+        st.info(f"좋아요, 제출 가능! 권장 길이까지 {50-char_count}자 남았어요. ({char_count}/50)")
+    else:
+        st.success(f"좋습니다. 권장 길이 달성! ({char_count}/50+)")
+
+    preview_quality = logic.score_apology_quality(apology_text, action_plan)
+    preview_reward = logic.calculate_apology_reward(apology_text, preview_quality)
+    q_cols = st.columns(3)
+    q_cols[0].metric("구조 품질", f"{preview_quality}/3")
+    q_cols[1].metric("예상 보상", f"+{preview_reward} RP")
+    q_cols[2].metric("권장 길이", "50자")
     
     if st.button("제출하고 속죄하기", disabled=not is_valid, use_container_width=True, type="primary"):
-        logic.process_apology(
+        result = logic.process_apology(
             content=apology_text,
             constitution_id=constitution['id'] if constitution else None,
             action_plan=action_plan
         )
         st.balloons()
-        st.success("우주가 다시 푸르게 변했습니다. Constellation이 생성되었습니다.")
+        st.success(
+            f"우주가 다시 푸르게 변했습니다. +{result.get('reward_points', 0)} RP 획득! "
+            f"(품질 {result.get('quality_score', 0)}/3, 총 {result.get('recovery_points_total', 0)} RP)"
+        )
         st.session_state['first_input_of_session'] = True
         st.rerun()
 

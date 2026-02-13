@@ -112,6 +112,17 @@ def init_database():
     """)
     
     conn.commit()
+
+    # user_stats migration columns
+    user_stats_migrations = [
+        ("recovery_points", "INTEGER DEFAULT 0"),
+    ]
+    for col_name, col_type in user_stats_migrations:
+        try:
+            cursor.execute(f"ALTER TABLE user_stats ADD COLUMN {col_name} {col_type}")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
     
     # ============================================================
     # [NEW v5] Schema Migration — Add Chronos / Kanban columns
@@ -123,6 +134,8 @@ def init_database():
         ("duration", "INTEGER"),               # Minutes spent (Chronos)
         ("debt_repaid", "INTEGER DEFAULT 0"),  # 1 if this log repaid a debt
         ("kanban_status", "TEXT"),              # 'draft' | 'orbit' | 'landed' | NULL
+        ("quality_score", "INTEGER DEFAULT 0"),
+        ("reward_points", "INTEGER DEFAULT 0"),
     ]
     
     for col_name, col_type in migration_columns:
@@ -238,6 +251,26 @@ def get_longest_streak() -> int:
     return result['longest_streak'] if result else 0
 
 
+def get_recovery_points() -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT recovery_points FROM user_stats WHERE id = 1")
+    result = cursor.fetchone()
+    conn.close()
+    return result['recovery_points'] if result and result['recovery_points'] is not None else 0
+
+
+def add_recovery_points(points: int) -> int:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE user_stats SET recovery_points = COALESCE(recovery_points, 0) + ? WHERE id = 1", (points,))
+    conn.commit()
+    cursor.execute("SELECT recovery_points FROM user_stats WHERE id = 1")
+    result = cursor.fetchone()
+    conn.close()
+    return result['recovery_points'] if result else 0
+
+
 def get_debt_count() -> int:
     conn = get_connection()
     cursor = conn.cursor()
@@ -297,7 +330,9 @@ def create_log(
     linked_constitutions: list = None,
     duration: int = None,
     debt_repaid: int = 0,
-    kanban_status: str = None
+    kanban_status: str = None,
+    quality_score: int = 0,
+    reward_points: int = 0
 ) -> dict:
     """Create a new log entry"""
     conn = get_connection()
@@ -311,12 +346,14 @@ def create_log(
     cursor.execute("""
         INSERT INTO logs (id, content, meta_type, parent_id, action_plan, 
                          created_at, embedding, emotion, dimension, keywords,
-                         linked_constitutions, duration, debt_repaid, kanban_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         linked_constitutions, duration, debt_repaid, kanban_status,
+                         quality_score, reward_points)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         log_id, content, meta_type, parent_id, action_plan,
         datetime.now().isoformat(), embedding_blob, emotion, dimension, keywords_json,
-        linked_const_json, duration, debt_repaid, kanban_status
+        linked_const_json, duration, debt_repaid, kanban_status,
+        quality_score, reward_points
     ))
     
     conn.commit()
@@ -334,14 +371,23 @@ def get_logs_for_analytics() -> List[dict]:
     conn.close()
     return [dict(row) for row in rows]
 
-def create_apology(content: str, constitution_id: str, action_plan: str, embedding: list = None) -> dict:
+def create_apology(
+    content: str,
+    constitution_id: str,
+    action_plan: str,
+    embedding: list = None,
+    quality_score: int = 0,
+    reward_points: int = 0
+) -> dict:
     """Create an Apology linked to a Constitution"""
     return create_log(
         content=content,
         meta_type="Apology",
         embedding=embedding,
         parent_id=constitution_id,
-        action_plan=action_plan
+        action_plan=action_plan,
+        quality_score=quality_score,
+        reward_points=reward_points
     )
 
 
