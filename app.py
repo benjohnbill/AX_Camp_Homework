@@ -77,6 +77,9 @@ if 'docking_modal_active' not in st.session_state:
 if 'docking_card_id' not in st.session_state:
     st.session_state['docking_card_id'] = None
 
+if 'interventions_checked' not in st.session_state:
+    st.session_state['interventions_checked'] = False
+
 # ============================================================
 # Check Red Mode
 # ============================================================
@@ -495,6 +498,16 @@ if red_mode:
         st.rerun()
 
     st.stop()  # Block normal chat in Red Mode
+
+
+# ============================================================
+# [NEW v5.1] ACTIVE INTERVENTION (P0)
+# ============================================================
+if not red_mode and st.session_state.get('gatekeeper_dismissed') and not st.session_state.get('interventions_checked'):
+    interventions = logic.run_active_intervention()
+    for msg in interventions:
+        st.toast(msg, icon="🔔")
+    st.session_state['interventions_checked'] = True
 
 
 # ============================================================

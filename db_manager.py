@@ -143,6 +143,13 @@ def init_database():
         except sqlite3.OperationalError:
             pass  # Column already exists — safe to ignore
 
+    # [NEW v5.1] Add last_log_at to user_stats
+    try:
+        cursor.execute("ALTER TABLE user_stats ADD COLUMN last_log_at TIMESTAMP")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
+
     # ============================================================
     # [NEW v5.1] FTS5 Virtual Table for Hybrid Search
     # ============================================================
@@ -251,6 +258,25 @@ def get_current_streak() -> int:
     return result['current_streak'] if result else 0
 
 
+def update_last_log_time():
+    """Update the last_log_at timestamp to NOW"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE user_stats SET last_log_at = CURRENT_TIMESTAMP WHERE id=1")
+    conn.commit()
+    conn.close()
+
+
+def get_last_log_time() -> str:
+    """Get the last time the user created a log"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT last_log_at FROM user_stats WHERE id=1")
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else None
+
+
 def get_longest_streak() -> int:
     conn = get_connection()
     cursor = conn.cursor()
@@ -344,15 +370,16 @@ def create_log(
     reward_points: int = 0
 ) -> dict:
     """Create a new log entry"""
+    log_id = str(uuid.uuid4())
+    
+    # [FIX] Use BLOB for embedding storage (consistent with schema)
+    embedding_blob = np.array(embedding).tobytes() if embedding else None
+    
     conn = get_connection()
     cursor = conn.cursor()
     
-    log_id = str(uuid.uuid4())
-    embedding_blob = np.array(embedding).tobytes() if embedding else None
-    keywords_json = json.dumps(keywords or [], ensure_ascii=False)
-    linked_const_json = json.dumps(linked_constitutions or [], ensure_ascii=False)
-    
     cursor.execute("""
+<<<<<<< Updated upstream
         INSERT INTO logs (id, content, meta_type, parent_id, action_plan, 
                          created_at, embedding, emotion, dimension, keywords,
                          linked_constitutions, duration, debt_repaid, kanban_status,
@@ -363,10 +390,27 @@ def create_log(
         datetime.now().isoformat(), embedding_blob, emotion, dimension, keywords_json,
         linked_const_json, duration, debt_repaid, kanban_status,
         quality_score, reward_points
+=======
+        INSERT INTO logs (
+            id, content, meta_type, embedding, emotion, dimension, keywords, 
+            parent_id, action_plan, linked_constitutions, duration, debt_repaid, kanban_status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        log_id, content, meta_type,
+        embedding_blob,
+        emotion, dimension,
+        json.dumps(keywords) if keywords else None,
+        parent_id, action_plan,
+        json.dumps(linked_constitutions) if linked_constitutions else None,
+        duration, debt_repaid, kanban_status
+>>>>>>> Stashed changes
     ))
     
     conn.commit()
     conn.close()
+    
+    # [NEW v5.1] Update last_log_at on any creation
+    update_last_log_time()
     
     return get_log_by_id(log_id)
 

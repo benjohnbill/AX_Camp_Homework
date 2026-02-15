@@ -654,6 +654,82 @@ def check_yesterday_promise() -> dict:
     return None
 
 
+# ============================================================
+# [NEW v5.1] Active Intervention System (P0)
+# ============================================================
+def run_active_intervention() -> list:
+    """
+    Check for inactivity or negative patterns on launch.
+    Returns a list of intervention messages (strings).
+    """
+    interventions = []
+    
+    # 1. Silence Detection (> 24 hours)
+    last_log_at = db.get_last_log_time()
+    if last_log_at:
+        try:
+            # Parse DB timestamp (UTC or local depending on SQLite)
+            # Assuming standard YYYY-MM-DD HH:MM:SS
+            last_dt = datetime.strptime(last_log_at, "%Y-%m-%d %H:%M:%S")
+            
+            # Simple check against system time
+            now = datetime.now()
+            diff = now - last_dt
+            
+            hours_silent = diff.total_seconds() / 3600
+            
+            if hours_silent > 72:
+                interventions.append(f"⚠️ 우주가 차갑게 식어가고 있습니다. 3일간 관측 기록이 없습니다.")
+            elif hours_silent > 24:
+                interventions.append(f"🕰️ 문학적 천문학자가 당신의 부재를 감지했습니다. ({int(hours_silent)}시간 동안 침묵)")
+                
+        except Exception as e:
+            pass
+            
+    return interventions
+
+
+# ============================================================
+# [NEW v5.1] Active Intervention System (P0)
+# ============================================================
+def run_active_intervention() -> list:
+    """
+    Check for inactivity or negative patterns on launch.
+    Returns a list of intervention messages (strings).
+    """
+    interventions = []
+    
+    # 1. Silence Detection (> 24 hours)
+    last_log_at = db.get_last_log_time()
+    if last_log_at:
+        try:
+            # Parse DB timestamp (UTC or local depending on SQLite)
+            # Assuming standard YYYY-MM-DD HH:MM:SS
+            last_dt = datetime.strptime(last_log_at, "%Y-%m-%d %H:%M:%S")
+            
+            # Simple check against system time
+            # For robustness, we check time difference without timezone hassle
+            now = datetime.now()
+            diff = now - last_dt
+            
+            hours_silent = diff.total_seconds() / 3600
+            
+            if hours_silent > 72:
+                interventions.append(f"⚠️ 우주가 차갑게 식어가고 있습니다. 3일간 관측 기록이 없습니다.")
+            elif hours_silent > 24:
+                interventions.append(f"🕰️ 문학적 천문학자가 당신의 부재를 감지했습니다. ({int(hours_silent)}시간 동안 침묵)")
+                
+        except Exception as e:
+            # Timestamp parsing failed or other issue
+            pass
+            
+    # 2. Constitution Neglect (Simple Heartbeat)
+    # If standard deviation of constitution activity is high?
+    # For P0, silence detection is the MVP.
+        
+    return interventions
+
+
 
 
 
@@ -677,41 +753,74 @@ def get_zoom_level() -> float:
 # ============================================================
 # AI Persona
 # ============================================================
+# ============================================================
+# AI Persona (P1: Variation Engine)
+# ============================================================
 RED_MODE_PERSONA = """너는 피 흘리는 우주다. 매우 냉정하고 가차없다.
 사용자가 헌법 위반을 해명할 때까지 일반 대화를 거부한다.
 응답은 짧고 단호하게:
 "우주가 피를 흘리고 있다. [{constitution}] 위반을 먼저 해명하라."
 """
 
-BLUE_MODE_PERSONA = """너는 "문학적 천문학자(The Literary Astronomer)"다.
+PERSONAS = {
+    "etymologist": """너는 "문학적 천문학자(The Literary Astronomer)"다 - [어원학 모드]
 
 [정체성]
 - 철학자 + 시인 + 어원학자
-- 냉소적이지만 시적
-- 경외감을 주면서도 차갑다
+- 핵심 단어의 어원(Etymology)을 파헤쳐서 깊은 의미를 부여한다.
+- 예: "고통(Pain)은 라틴어 Poena(처벌)에서 왔다..."
 
-[절대 규칙 1: Raw Quotes]
-- 절대 요약하지 마라
-- 과거 로그를 인용할 때는 반드시 Blockquote 사용:
-  > "On 2024-02-08, you wrote:
-  > **'I want to die.'**"
-- 이것이 "Mirror Effect"다. 사용자가 과거의 자신과 직접 마주하게 하라.
+[절대 규칙]
+1. Raw Quotes: 과거 로그를 인용할 때는 반드시 Blockquote (>) 사용. 절대 요약 금지.
+2. Grounding: 오직 제공된 [USER DATA CONTEXT]만 사실로 간주. 없는 사실 지어내지 말 것.
 
-[절대 규칙 2: Grounding (Data-Driven)]
-- 사용자에 대해 아는 척하지 마라.
-- 오직 제공된 [Context]에 있는 내용만 사실로 간주하라.
-- 컨텍스트에 없는 내용은 "나는 당신의 그 부분에 대해 알지 못한다"고 명확히 말하라.
-- **절대로 사용자의 과거, 직업, 상황을 지어내지 마라.**
+[톤앤매너]
+- 신비롭고 시적인 어조.
+""",
 
-[응답 모드]
-1. 어원학적 해부: 핵심 단어의 어원 분석
-2. 문학적 은유: 시지프스, 카뮈 등 문학 인용
-3. 냉정한 논리: 순수 데이터 분석
+    "cartographer": """너는 "문학적 천문학자(The Literary Astronomer)"다 - [지도제작 모드]
+
+[정체성]
+- 탐험가 + 지리학자 + 패턴 분석가
+- 사용자의 삶을 '영토'로 보고, 그 안의 길과 장애물을 지도로 그린다.
+- 공간적 은유(산맥, 강, 사막, 궤도)를 적극 활용한다.
+- 예: "당신은 지금 '나태의 늪'을 건너 '의지의 산'으로 향하고 있다."
+
+[절대 규칙]
+1. Raw Quotes: 과거 로그를 인용할 때는 반드시 Blockquote (>) 사용. 절대 요약 금지.
+2. Grounding: 오직 제공된 [USER DATA CONTEXT]만 사실로 간주. 없는 사실 지어내지 말 것.
+
+[톤앤매너]
+- 분석적이고 공간적인 어조. "위치", "방향", "구조"에 집중.
+""",
+
+    "archivist": """너는 "문학적 천문학자(The Literary Astronomer)"다 - [기록보관 모드]
+
+[정체성]
+- 사관 + 데이터 분석가 + 냉정한 관찰자
+- 감정을 배제하고 사실(Fact)과 빈도(Frequency), 시간의 흐름을 건조하게 분석한다.
+- 사용자의 감정을 위로하기보다, 그 감정이 발생한 '패턴'을 지적한다.
+- 예: "지난 7일간 '피곤'이라는 단어가 5회 등장했다."
+
+[절대 규칙]
+1. Raw Quotes: 과거 로그를 인용할 때는 반드시 Blockquote (>) 사용. 절대 요약 금지.
+2. Grounding: 오직 제공된 [USER DATA CONTEXT]만 사실로 간주. 없는 사실 지어내지 말 것.
+
+[톤앤매너]
+- 건조하고 냉철한 어조. 숫자와 데이터를 인용.
 """
+}
+
+def select_persona() -> str:
+    """Select persona based on Day of Year (Rotate daily)"""
+    day_idx = datetime.now().timetuple().tm_yday % 3
+    keys = ["etymologist", "cartographer", "archivist"]
+    selected_key = keys[day_idx]
+    return PERSONAS[selected_key]
 
 
 def generate_response(user_input: str, past_logs: list = None) -> str:
-    """Generate AI response based on mode (Red/Blue)"""
+    """Generate AI response based on mode (Red/Blue) and Daily Persona"""
     
     if is_red_mode():
         constitution = get_violated_constitution()
@@ -731,7 +840,8 @@ def generate_response(user_input: str, past_logs: list = None) -> str:
     
     context_str = "\n\n".join(context) if context else "No past logs found."
     
-    system_prompt = BLUE_MODE_PERSONA
+    # [P1] Dynamic Persona Selection
+    system_prompt = select_persona()
     system_prompt += f"\n\n[USER DATA CONTEXT]\nThe following are the ONLY facts you know about the user:\n{context_str}\n\nIf the answer is not in this context, DO NOT INVENT IT."
     
     try:
