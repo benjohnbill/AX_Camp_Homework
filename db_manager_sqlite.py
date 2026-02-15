@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 DB_PATH = os.getenv("SQLITE_PATH", "data/narrative.db")
+KNOWN_EMBEDDING_DIMS = {1536}
 
 
 def get_conn() -> sqlite3.Connection:
@@ -26,14 +27,39 @@ def _blob_to_float32(blob: bytes) -> Optional[np.ndarray]:
     if blob is None:
         return None
 
-    # Try float32 first, then float64 fallback (legacy)
+    raw = bytes(blob)
+
+    candidates: Dict[np.dtype, np.ndarray] = {}
+
     for dtype in (np.float32, np.float64):
+        if len(raw) % np.dtype(dtype).itemsize != 0:
+            continue
+
         try:
-            arr = np.frombuffer(blob, dtype=dtype)
+            arr = np.frombuffer(raw, dtype=dtype)
             if arr.size > 0:
-                return arr.astype(np.float32)
+                candidates[np.dtype(dtype)] = arr
         except Exception:
             continue
+
+    if not candidates:
+        return None
+
+    # Prefer vectors matching known embedding dimensions.
+    for dtype in (np.float32, np.float64):
+        arr = candidates.get(np.dtype(dtype))
+        if arr is not None and arr.size in KNOWN_EMBEDDING_DIMS:
+            return arr.astype(np.float32)
+
+    # Default to float32 when shape hints are unavailable.
+    arr32 = candidates.get(np.dtype(np.float32))
+    if arr32 is not None:
+        return arr32.astype(np.float32)
+
+    arr64 = candidates.get(np.dtype(np.float64))
+    if arr64 is not None:
+        return arr64.astype(np.float32)
+
     return None
 
 

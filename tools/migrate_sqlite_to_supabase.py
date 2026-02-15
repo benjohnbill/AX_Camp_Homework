@@ -2,7 +2,7 @@
 import json
 import os
 import sqlite3
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 import numpy as np
 from tqdm import tqdm
@@ -60,22 +60,45 @@ def _normalize_embedding(raw) -> Optional[np.ndarray]:
     return None
 
 
+def _get_logs_columns(conn: sqlite3.Connection) -> List[str]:
+    cur = conn.cursor()
+    cur.execute("PRAGMA table_info(logs)")
+    return [row[1] for row in cur.fetchall()]
+
+
 def iter_rows(conn: sqlite3.Connection) -> Iterable[sqlite3.Row]:
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM logs")
     total = cur.fetchone()[0]
 
-    cur.execute(
-        """
-        SELECT
-            id, content, meta_type, parent_id, action_plan, created_at,
-            embedding, emotion, dimension, keywords, linked_constitutions,
-            duration, debt_repaid, kanban_status, quality_score, reward_points
-        FROM logs
-        ORDER BY created_at ASC
-        """
-    )
+    columns = set(_get_logs_columns(conn))
+
+    select_fields = [
+        "id",
+        "content",
+        "meta_type",
+        "parent_id",
+        "action_plan",
+        "created_at",
+        "embedding",
+        "emotion",
+        "dimension",
+        "keywords",
+        "linked_constitutions",
+        "duration",
+        "debt_repaid",
+        "kanban_status",
+    ]
+
+    for optional_col in ("quality_score", "reward_points"):
+        if optional_col in columns:
+            select_fields.append(optional_col)
+        else:
+            select_fields.append(f"0 AS {optional_col}")
+
+    query = f"SELECT {', '.join(select_fields)} FROM logs ORDER BY created_at ASC"
+    cur.execute(query)
 
     for row in tqdm(cur, total=total, desc="Migrating logs"):
         yield row
