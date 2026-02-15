@@ -30,7 +30,7 @@
 
 ### [Droplet] Red Protocol (위반 시스템)
 - 헌법(Constitution) 위반 시 "Red Mode" 활성화
-- 100자 이상의 해명서 + 내일의 약속 필요
+- 최소 30자 해명 + 내일의 약속 필요 (권장 50자 이상)
 - 해명 완료 시 "Catharsis" 효과와 함께 정상 모드 복귀
 
 ### [Moon] Dream Report (Gatekeeper)
@@ -172,3 +172,31 @@ headless = true
 <div align="center">
   <sub>Built with Love and Gravity for self-reflection</sub>
 </div>
+
+---
+
+## Postgres/Supabase 전환 (DATASTORE 라우터)
+
+### 1) 환경변수
+```bash
+export DATASTORE=postgres          # 또는 sqlite
+export DATABASE_URL='postgresql://USER:PASSWORD@HOST:5432/postgres'
+```
+
+### 2) Supabase 스키마 생성
+```bash
+psql "$DATABASE_URL" -f sql/1_create_logs_table.sql
+```
+
+### 3) SQLite → Supabase 마이그레이션
+```bash
+python tools/migrate_sqlite_to_supabase.py
+```
+
+### 4) 테스트
+```bash
+pytest -q
+```
+
+### 한국어 FTS 참고
+Postgres 기본 `to_tsvector('english', ...)`는 영어 중심입니다. 한국어 품질이 필요하면 Mecab 등 형태소 분석으로 사전 토큰화한 텍스트를 별도 컬럼(tsvector)에 저장하는 방식을 권장합니다.

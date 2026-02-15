@@ -343,10 +343,43 @@ def get_violated_constitution() -> dict:
 
 
 def validate_apology(text: str) -> tuple[bool, str]:
-    """Validate apology text. Must be >= 100 characters."""
-    if len(text.strip()) < 100:
-        return False, f"해명이 너무 짧습니다. 최소 100자 필요 (현재: {len(text.strip())}자)"
+    """Validate apology text. Must be >= 30 characters."""
+    if len(text.strip()) < 30:
+        return False, f"해명이 너무 짧습니다. 최소 30자 필요 (현재: {len(text.strip())}자)"
     return True, "유효한 해명입니다."
+
+
+def score_apology_quality(content: str, action_plan: str) -> int:
+    """Score apology structure quality (0~3): cause, emotion, next action."""
+    score = 0
+    text = content.strip()
+    action = action_plan.strip()
+
+    cause_tokens = ["왜", "때문", "원인", "그래서", "탓", "하지 못"]
+    emotion_tokens = ["불안", "후회", "죄책", "슬픔", "분노", "두려", "지쳤", "무기력", "감정", "마음"]
+    action_tokens = ["내일", "하겠다", "실행", "시도", "기록", "체크", "약속"]
+
+    if any(tok in text for tok in cause_tokens):
+        score += 1
+    if any(tok in text for tok in emotion_tokens):
+        score += 1
+    if any(tok in action for tok in action_tokens) or len(action) >= 6:
+        score += 1
+
+    return score
+
+
+def calculate_apology_reward(content: str, quality_score: int) -> int:
+    """Reward points with low-friction baseline + quality incentives."""
+    length = len(content.strip())
+    reward = 1  # base for submission
+    if length >= 50:
+        reward += 1
+    if length >= 80:
+        reward += 1
+    if quality_score >= 2:
+        reward += 1
+    return min(reward, 3)
 
 
 def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[bool, float]:
@@ -367,16 +400,24 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
 def process_apology(content: str, constitution_id: str, action_plan: str) -> dict:
     """Process and save an Apology, decrement debt"""
     embedding = get_embedding(content)
+    quality_score = score_apology_quality(content, action_plan)
+    reward_points = calculate_apology_reward(content, quality_score)
     
     apology = db.create_apology(
         content=content,
         constitution_id=constitution_id,
         action_plan=action_plan,
-        embedding=embedding
+        embedding=embedding,
+        quality_score=quality_score,
+        reward_points=reward_points
     )
     
     # Standard Repayment = 1
     db.decrement_debt(1)
+    total_points = db.add_recovery_points(reward_points)
+    apology["quality_score"] = quality_score
+    apology["reward_points"] = reward_points
+    apology["recovery_points_total"] = total_points
     
     return apology
 
