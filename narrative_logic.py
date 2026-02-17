@@ -360,8 +360,15 @@ def ann_query(q_emb: np.ndarray, top_k=100):
     return [], []
 
 def simple_keyword_search(query_text, limit=100):
+    if hasattr(db, "keyword_search"):
+        try:
+            return db.keyword_search(query_text, limit)
+        except Exception as e:
+            print(f"Backend keyword search failed: {e}")
+
     conn = db.get_connection()
-    conn.row_factory = sqlite3.Row
+    if hasattr(conn, "row_factory"):
+        conn.row_factory = sqlite3.Row
     cur = conn.cursor()
     try:
         # Match using FTS5

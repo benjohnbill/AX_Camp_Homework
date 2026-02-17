@@ -16,6 +16,7 @@ import os
 # ============================================================
 # Database Configuration
 # ============================================================
+DATASTORE = os.getenv("DATASTORE", "sqlite").strip().lower()
 DB_PATH = "data/narrative.db"
 
 # Genesis Data (Seed for Testing Red Protocol)
@@ -622,6 +623,11 @@ def get_cores() -> List[dict]:
     return get_logs_by_type("Core")
 
 
+def get_constitutions() -> List[dict]:
+    """Backward-compatible alias for legacy callers."""
+    return get_cores()
+
+
 def get_gaps() -> List[dict]:
     """Get all Gap logs"""
     return get_logs_by_type("Gap")
@@ -1047,7 +1053,8 @@ def reset_database() -> None:
 
 
 # Initialize on import
-init_database()
+if DATASTORE != "postgres":
+    init_database()
 
 
 # ============================================================
@@ -1122,5 +1129,58 @@ def ensure_fts_index():
     except:
         pass
     conn.close()
+
+
+if DATASTORE == "postgres":
+    try:
+        import db_manager_postgres as _pg
+    except Exception as e:
+        raise RuntimeError(
+            "DATASTORE=postgres is enabled, but postgres backend failed to load. "
+            "Ensure psycopg2-binary/pgvector dependencies are installed and DATABASE_URL is set."
+        ) from e
+
+    _OVERRIDE_FUNCS = [
+        "get_connection",
+        "init_database",
+        "inject_genesis_data",
+        "update_streak",
+        "check_streak_and_apply_penalty",
+        "get_current_streak",
+        "get_debt_count",
+        "increment_debt",
+        "decrement_debt",
+        "add_recovery_points",
+        "create_log",
+        "create_gap",
+        "get_logs_for_analytics",
+        "get_logs_last_7_days",
+        "get_log_by_id",
+        "get_all_logs",
+        "get_logs_paginated",
+        "get_fragment_count",
+        "get_random_echo",
+        "get_logs_by_type",
+        "get_cores",
+        "get_constitutions",
+        "update_log",
+        "save_chat_message",
+        "get_chat_history",
+        "clear_chat_history",
+        "add_connection",
+        "get_connections",
+        "get_connection_counts",
+        "get_cores_with_stats",
+        "get_kanban_cards",
+        "update_kanban_status",
+        "create_kanban_card",
+        "get_all_embeddings_as_float32",
+        "load_logs_by_ids",
+        "ensure_fts_index",
+    ]
+
+    for _name in _OVERRIDE_FUNCS:
+        if hasattr(_pg, _name):
+            globals()[_name] = getattr(_pg, _name)
 
 
