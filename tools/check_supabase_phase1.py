@@ -24,6 +24,10 @@ REQUIRED_INDEXES = {
     "idx_connections_target",
     "idx_connections_created_at",
     "idx_logs_content_trgm",
+    "uq_chat_history_source_chat_id",
+}
+REQUIRED_COLUMNS = {
+    ("chat_history", "source_chat_id"),
 }
 
 
@@ -59,6 +63,15 @@ def main() -> int:
             cur.execute("SELECT indexname FROM pg_indexes WHERE schemaname='public'")
             indexes = {row[0] for row in cur.fetchall()}
 
+            cur.execute(
+                """
+                SELECT table_name, column_name
+                FROM information_schema.columns
+                WHERE table_schema='public'
+                """
+            )
+            columns = {(row[0], row[1]) for row in cur.fetchall()}
+
             cur.execute("SELECT id FROM user_stats WHERE id = 1")
             singleton = cur.fetchone()
     finally:
@@ -66,6 +79,7 @@ def main() -> int:
 
     missing_tables = sorted(REQUIRED_TABLES - tables)
     missing_indexes = sorted(REQUIRED_INDEXES - indexes)
+    missing_columns = sorted(REQUIRED_COLUMNS - columns)
 
     if missing_tables:
         print("[FAIL] Missing tables:")
@@ -86,7 +100,14 @@ def main() -> int:
     else:
         print("[FAIL] user_stats singleton row(id=1) is missing.")
 
-    if missing_tables or missing_indexes or not singleton:
+    if missing_columns:
+        print("[FAIL] Missing required columns:")
+        for table_name, column_name in missing_columns:
+            print(f"  - {table_name}.{column_name}")
+    else:
+        print("[OK] Required columns exist.")
+
+    if missing_tables or missing_indexes or missing_columns or not singleton:
         return 1
     print("[PASS] Phase 1 Supabase bootstrap checks passed.")
     return 0

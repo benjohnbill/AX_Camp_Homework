@@ -100,6 +100,11 @@ def init_database():
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute("INSERT INTO user_stats (id) VALUES (1) ON CONFLICT (id) DO NOTHING")
+                cur.execute("ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS source_chat_id BIGINT")
+                cur.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_chat_history_source_chat_id "
+                    "ON chat_history (source_chat_id)"
+                )
             conn.commit()
     except Exception:
         pass
@@ -473,22 +478,78 @@ def ensure_fts_index() -> None:
     ensure_fts()
 
 
+def _contains_hangul(text: str) -> bool:
+    return any("\uac00" <= ch <= "\ud7a3" for ch in text)
+
+
 def keyword_search(query_text: str, limit: int = 100) -> Tuple[List[str], List[float]]:
-    if not query_text.strip():
+    query_text = (query_text or "").strip()
+    if not query_text:
         return [], []
+
+    is_short_query = len(query_text) < 3
+    prefers_korean_fallback = is_short_query or _contains_hangul(query_text)
+    if prefers_korean_fallback:
+        weight_fts, weight_trgm, weight_ilike, trgm_threshold = 0.2, 0.6, 0.2, 0.05
+    else:
+        weight_fts, weight_trgm, weight_ilike, trgm_threshold = 0.6, 0.3, 0.1, 0.08
+
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT id,
-                       ts_rank_cd(to_tsvector('english', COALESCE(content, '')), plainto_tsquery('english', %s)) AS score
-                FROM logs
-                WHERE to_tsvector('english', COALESCE(content, '')) @@ plainto_tsquery('english', %s)
-                ORDER BY score DESC, created_at DESC
-                LIMIT %s
-                """,
-                (query_text, query_text, limit),
-            )
+            try:
+                cur.execute(
+                    """
+                    SELECT
+                        id,
+                        (
+                            %s * COALESCE(ts_rank_cd(
+                                to_tsvector('english', COALESCE(content, '')),
+                                plainto_tsquery('english', %s)
+                            ), 0.0)
+                            + %s * COALESCE(similarity(COALESCE(content, ''), %s), 0.0)
+                            + %s * CASE
+                                WHEN COALESCE(content, '') ILIKE ('%%' || %s || '%%') THEN 1.0
+                                ELSE 0.0
+                              END
+                        ) AS score
+                    FROM logs
+                    WHERE
+                        to_tsvector('english', COALESCE(content, '')) @@ plainto_tsquery('english', %s)
+                        OR COALESCE(content, '') ILIKE ('%%' || %s || '%%')
+                        OR similarity(COALESCE(content, ''), %s) >= %s
+                    ORDER BY score DESC, created_at DESC
+                    LIMIT %s
+                    """,
+                    (
+                        weight_fts,
+                        query_text,
+                        weight_trgm,
+                        query_text,
+                        weight_ilike,
+                        query_text,
+                        query_text,
+                        query_text,
+                        query_text,
+                        trgm_threshold,
+                        limit,
+                    ),
+                )
+            except Exception as exc:
+                print(f"[postgres] keyword_search hybrid fallback: {exc}")
+                cur.execute(
+                    """
+                    SELECT id,
+                           CASE
+                               WHEN COALESCE(content, '') ILIKE ('%%' || %s || '%%') THEN 1.0
+                               ELSE 0.0
+                           END AS score
+                    FROM logs
+                    WHERE COALESCE(content, '') ILIKE ('%%' || %s || '%%')
+                    ORDER BY score DESC, created_at DESC
+                    LIMIT %s
+                    """,
+                    (query_text, query_text, limit),
+                )
             rows = cur.fetchall()
     ids = [r[0] for r in rows]
     scores = [float(r[1] or 0.0) for r in rows]
@@ -706,4 +767,3 @@ def inject_genesis_data(embedding_func):
             embedding = None
         create_log(content=content, meta_type=row["meta_type"], embedding=embedding)
     increment_debt(1)
-

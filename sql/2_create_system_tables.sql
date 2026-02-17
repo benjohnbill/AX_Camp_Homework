@@ -26,10 +26,14 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS chat_history (
     id BIGSERIAL PRIMARY KEY,
     "timestamp" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    source_chat_id BIGINT,
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     metadata JSONB
 );
+
+ALTER TABLE chat_history
+ADD COLUMN IF NOT EXISTS source_chat_id BIGINT;
 
 CREATE TABLE IF NOT EXISTS connections (
     id BIGSERIAL PRIMARY KEY,
@@ -53,6 +57,7 @@ CREATE INDEX IF NOT EXISTS idx_logs_tags_gin ON logs USING GIN (tags jsonb_path_
 
 CREATE INDEX IF NOT EXISTS idx_chat_history_timestamp ON chat_history ("timestamp" DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_history_role ON chat_history (role);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_chat_history_source_chat_id ON chat_history (source_chat_id);
 
 CREATE INDEX IF NOT EXISTS idx_connections_source ON connections (source_id);
 CREATE INDEX IF NOT EXISTS idx_connections_target ON connections (target_id);

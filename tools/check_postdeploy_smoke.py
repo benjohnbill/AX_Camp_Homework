@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import sys
 from datetime import datetime, timezone
@@ -18,9 +19,30 @@ REQUIRED_METHODS = [
 ]
 
 
-def main() -> int:
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run post-deploy smoke checks.")
+    parser.add_argument(
+        "--strict-postgres",
+        dest="strict_postgres",
+        action="store_true",
+        default=True,
+        help="Fail when DATASTORE is not postgres (default: enabled).",
+    )
+    parser.add_argument(
+        "--no-strict-postgres",
+        dest="strict_postgres",
+        action="store_false",
+        help="Allow non-postgres datastore for local exploratory checks.",
+    )
+    return parser.parse_args()
+
+
+def main(strict_postgres: bool = True) -> int:
     datastore = os.getenv("DATASTORE", "").strip().lower()
     if datastore != "postgres":
+        if strict_postgres:
+            print(f"[FAIL] DATASTORE is '{datastore or '(unset)'}' (expected: 'postgres')")
+            return 1
         print(f"[WARN] DATASTORE is '{datastore or '(unset)'}' (expected: 'postgres')")
     else:
         print("[OK] DATASTORE=postgres")
@@ -52,4 +74,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    args = _parse_args()
+    sys.exit(main(strict_postgres=args.strict_postgres))

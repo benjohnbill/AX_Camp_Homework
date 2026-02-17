@@ -118,6 +118,11 @@ python tools/check_supabase_phase1.py
 python tools/migrate_sqlite_to_supabase.py
 ```
 
+엄격 모드(오류 즉시 실패):
+```bash
+python tools/migrate_sqlite_to_supabase.py --strict
+```
+
 필요 시 배치 크기 조정:
 ```bash
 MIGRATION_BATCH=200 python tools/migrate_sqlite_to_supabase.py
@@ -135,7 +140,12 @@ streamlit run app.py
 
 Post-deploy smoke 체크:
 ```bash
-python tools/check_postdeploy_smoke.py
+python tools/check_postdeploy_smoke.py --strict-postgres
+```
+
+데이터 정합성 체크:
+```bash
+python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_report.json
 ```
 
 ---

@@ -11,7 +11,8 @@ This runbook standardizes deploy checks for Supabase-backed production runs.
 ## Pre-Deploy Checklist
 1. `python tools/check_supabase_phase1.py`
 2. `python -m pytest -q tests/test_phase4_phase5_stability.py`
-3. Verify branch is clean and pushed.
+3. `python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_pre.json`
+4. Verify branch is clean and pushed.
 
 ## Deploy Steps
 1. Deploy latest `main` to Streamlit Cloud.
@@ -23,12 +24,14 @@ This runbook standardizes deploy checks for Supabase-backed production runs.
 
 ## Post-Deploy Smoke
 1. Run local smoke script:
-   - `python tools/check_postdeploy_smoke.py`
-2. Browser smoke (manual):
+   - `python tools/check_postdeploy_smoke.py --strict-postgres`
+2. Run integrity gate:
+   - `python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_post.json`
+3. Browser smoke (manual):
    - Create one stream log.
    - Send one follow-up message (AI response path).
    - Create/move one kanban card.
-3. Confirm Supabase row growth:
+4. Confirm Supabase row growth:
    - `logs` increased
    - `chat_history` increased
    - `connections` unchanged or increased depending on action
@@ -39,6 +42,7 @@ This runbook standardizes deploy checks for Supabase-backed production runs.
    - Run `python tools/check_supabase_phase1.py`.
 2. If writes are missing:
    - Run `python tools/check_postdeploy_smoke.py`.
+   - Run `python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0`.
    - Verify DB role permissions on `logs/chat_history/connections`.
 3. If AI responses fail:
    - Confirm `OPENAI_API_KEY`.
@@ -50,8 +54,11 @@ This runbook standardizes deploy checks for Supabase-backed production runs.
 3. Verify app boots and can create logs locally.
 4. Record rollback timestamp and reason.
 
-## Evidence to Store After Every Deploy
+## Evidence to Store After Every Deploy (Required 4)
 - Git commit hash
 - Result of `check_supabase_phase1.py`
-- Result of `check_postdeploy_smoke.py`
+- Result of `check_postdeploy_smoke.py --strict-postgres`
 - Manual smoke checklist status
+
+Recommended additional evidence:
+- Result JSON from `check_data_integrity.py`

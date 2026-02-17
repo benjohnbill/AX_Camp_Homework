@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import os
 import sqlite3
@@ -14,8 +15,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import db_manager_postgres as pg
 
-SQLITE_PATH = os.getenv("SQLITE_PATH", "data/narrative.db")
-BATCH_SIZE = int(os.getenv("MIGRATION_BATCH", "200"))
+DEFAULT_SQLITE_PATH = os.getenv("SQLITE_PATH", "data/narrative.db")
+DEFAULT_BATCH_SIZE = int(os.getenv("MIGRATION_BATCH", "200"))
 
 
 @dataclass
@@ -25,6 +26,23 @@ class SectionResult:
     migrated: int = 0
     skipped: int = 0
     errors: int = 0
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Migrate SQLite runtime tables into Supabase/Postgres.")
+    parser.add_argument("--sqlite-path", default=DEFAULT_SQLITE_PATH, help=f"SQLite path (default: {DEFAULT_SQLITE_PATH})")
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=DEFAULT_BATCH_SIZE,
+        help=f"Batch size for logs upsert (default: {DEFAULT_BATCH_SIZE})",
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail immediately on row-level migration errors.",
+    )
+    return parser.parse_args()
 
 
 def _safe_json_list(raw) -> list:
@@ -80,6 +98,30 @@ def _table_columns(conn: sqlite3.Connection, table_name: str) -> set:
     return {row[1] for row in cur.fetchall()}
 
 
+def _raise_or_record(result: SectionResult, message: str, strict: bool) -> None:
+    result.errors += 1
+    print(message)
+    if strict:
+        raise RuntimeError(message)
+
+
+def _ensure_chat_history_idempotent_schema(strict: bool) -> None:
+    try:
+        with pg.get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("ALTER TABLE chat_history ADD COLUMN IF NOT EXISTS source_chat_id BIGINT")
+                cur.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS uq_chat_history_source_chat_id "
+                    "ON chat_history (source_chat_id)"
+                )
+            conn.commit()
+    except Exception as exc:
+        msg = f"[schema] failed to ensure chat_history source key schema: {exc}"
+        print(msg)
+        if strict:
+            raise RuntimeError(msg)
+
+
 def _iter_logs_rows(conn: sqlite3.Connection) -> Iterable[sqlite3.Row]:
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -117,13 +159,13 @@ def _iter_logs_rows(conn: sqlite3.Connection) -> Iterable[sqlite3.Row]:
         yield row
 
 
-def migrate_logs(sqlite_conn: sqlite3.Connection) -> SectionResult:
+def migrate_logs(sqlite_conn: sqlite3.Connection, batch_size: int, strict: bool) -> SectionResult:
     result = SectionResult(name="logs")
     if not _table_exists(sqlite_conn, "logs"):
         result.skipped = 1
         return result
 
-    batch = []
+    batch: List[dict] = []
     for row in _iter_logs_rows(sqlite_conn):
         result.total += 1
         emb = _normalize_embedding(row["embedding"])
@@ -149,26 +191,25 @@ def migrate_logs(sqlite_conn: sqlite3.Connection) -> SectionResult:
         }
         batch.append(payload)
 
-        if len(batch) >= BATCH_SIZE:
-            _flush_logs_batch(batch, result)
+        if len(batch) >= batch_size:
+            _flush_logs_batch(batch, result, strict)
             batch = []
 
     if batch:
-        _flush_logs_batch(batch, result)
+        _flush_logs_batch(batch, result, strict)
     return result
 
 
-def _flush_logs_batch(batch: List[dict], result: SectionResult) -> None:
+def _flush_logs_batch(batch: List[dict], result: SectionResult, strict: bool) -> None:
     for item in batch:
         try:
             pg.upsert_log(**item)
             result.migrated += 1
         except Exception as exc:
-            result.errors += 1
-            print(f"[logs][skip] id={item['log_id']} error={exc}")
+            _raise_or_record(result, f"[logs][skip] id={item['log_id']} error={exc}", strict)
 
 
-def migrate_user_stats(sqlite_conn: sqlite3.Connection) -> SectionResult:
+def migrate_user_stats(sqlite_conn: sqlite3.Connection, strict: bool) -> SectionResult:
     result = SectionResult(name="user_stats")
     if not _table_exists(sqlite_conn, "user_stats"):
         result.skipped = 1
@@ -214,13 +255,12 @@ def migrate_user_stats(sqlite_conn: sqlite3.Connection) -> SectionResult:
             conn.commit()
         result.migrated = 1
     except Exception as exc:
-        result.errors = 1
-        print(f"[user_stats][skip] error={exc}")
+        _raise_or_record(result, f"[user_stats][skip] error={exc}", strict)
 
     return result
 
 
-def migrate_chat_history(sqlite_conn: sqlite3.Connection) -> SectionResult:
+def migrate_chat_history(sqlite_conn: sqlite3.Connection, strict: bool) -> SectionResult:
     result = SectionResult(name="chat_history")
     if not _table_exists(sqlite_conn, "chat_history"):
         result.skipped = 1
@@ -234,31 +274,33 @@ def migrate_chat_history(sqlite_conn: sqlite3.Connection) -> SectionResult:
     if total == 0:
         return result
 
-    cur.execute("SELECT role, content, metadata, timestamp FROM chat_history ORDER BY id ASC")
+    cur.execute("SELECT id, role, content, metadata, timestamp FROM chat_history ORDER BY id ASC")
     rows = cur.fetchall()
     with pg.get_conn() as conn:
         with conn.cursor() as pcur:
             for row in tqdm(rows, total=total, desc="Migrating chat_history"):
                 try:
-                    metadata = row["metadata"]
-                    if metadata is None:
-                        metadata = "{}"
+                    metadata = row["metadata"] or "{}"
                     pcur.execute(
                         """
-                        INSERT INTO chat_history ("timestamp", role, content, metadata)
-                        VALUES (%s, %s, %s, %s::jsonb)
+                        INSERT INTO chat_history (source_chat_id, "timestamp", role, content, metadata)
+                        VALUES (%s, %s, %s, %s, %s::jsonb)
+                        ON CONFLICT (source_chat_id) DO UPDATE SET
+                            "timestamp" = EXCLUDED."timestamp",
+                            role = EXCLUDED.role,
+                            content = EXCLUDED.content,
+                            metadata = EXCLUDED.metadata
                         """,
-                        (row["timestamp"], row["role"], row["content"], metadata),
+                        (row["id"], row["timestamp"], row["role"], row["content"], metadata),
                     )
                     result.migrated += 1
                 except Exception as exc:
-                    result.errors += 1
-                    print(f"[chat_history][skip] error={exc}")
+                    _raise_or_record(result, f"[chat_history][skip] source_chat_id={row['id']} error={exc}", strict)
         conn.commit()
     return result
 
 
-def migrate_connections(sqlite_conn: sqlite3.Connection) -> SectionResult:
+def migrate_connections(sqlite_conn: sqlite3.Connection, strict: bool) -> SectionResult:
     result = SectionResult(name="connections")
     if not _table_exists(sqlite_conn, "connections"):
         result.skipped = 1
@@ -291,8 +333,7 @@ def migrate_connections(sqlite_conn: sqlite3.Connection) -> SectionResult:
                     )
                     result.migrated += 1
                 except Exception as exc:
-                    result.errors += 1
-                    print(f"[connections][skip] {row['source_id']}->{row['target_id']} error={exc}")
+                    _raise_or_record(result, f"[connections][skip] {row['source_id']}->{row['target_id']} error={exc}", strict)
         conn.commit()
     return result
 
@@ -325,19 +366,25 @@ def print_post_migration_report(sqlite_conn: sqlite3.Connection) -> None:
             print(f"{table:12} sqlite={s_count:6d}  postgres=ERROR ({exc})")
 
 
-def main() -> None:
-    if not os.path.exists(SQLITE_PATH):
-        raise FileNotFoundError(f"SQLite DB not found: {SQLITE_PATH}")
+def main() -> int:
+    args = _parse_args()
+    sqlite_path = args.sqlite_path
+    batch_size = max(1, int(args.batch_size))
+    strict = bool(args.strict)
 
-    sqlite_conn = sqlite3.connect(SQLITE_PATH)
+    if not os.path.exists(sqlite_path):
+        raise FileNotFoundError(f"SQLite DB not found: {sqlite_path}")
+
+    sqlite_conn = sqlite3.connect(sqlite_path)
     sqlite_conn.row_factory = sqlite3.Row
 
-    sections = []
+    sections: List[SectionResult] = []
     try:
-        sections.append(migrate_logs(sqlite_conn))
-        sections.append(migrate_user_stats(sqlite_conn))
-        sections.append(migrate_chat_history(sqlite_conn))
-        sections.append(migrate_connections(sqlite_conn))
+        _ensure_chat_history_idempotent_schema(strict=strict)
+        sections.append(migrate_logs(sqlite_conn, batch_size=batch_size, strict=strict))
+        sections.append(migrate_user_stats(sqlite_conn, strict=strict))
+        sections.append(migrate_chat_history(sqlite_conn, strict=strict))
+        sections.append(migrate_connections(sqlite_conn, strict=strict))
         print_post_migration_report(sqlite_conn)
     finally:
         sqlite_conn.close()
@@ -349,7 +396,14 @@ def main() -> None:
             f"skipped={s.skipped:4d} errors={s.errors:4d}"
         )
 
+    total_errors = sum(s.errors for s in sections)
+    if strict and total_errors > 0:
+        print(f"[FAIL] strict mode enabled: migration errors={total_errors}")
+        return 1
+
+    print("[PASS] migration completed.")
+    return 0
+
 
 if __name__ == "__main__":
-    main()
-
+    sys.exit(main())
