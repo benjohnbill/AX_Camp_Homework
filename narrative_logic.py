@@ -17,6 +17,7 @@ import streamlit as st
 import pandas as pd
 from openai import OpenAI
 import sqlite3
+import db_manager as db
 
 # [NEW v5.1] Optional Vector Search Libraries
 try:
