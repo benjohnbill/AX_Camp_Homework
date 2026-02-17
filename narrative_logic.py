@@ -482,6 +482,17 @@ def get_embedding(text: str) -> list:
     return res if res else []
 
 
+def _safe_date_prefix(value, default: str = "unknown", length: int = 10) -> str:
+    """Convert any timestamp-like value to a safe fixed-length prefix string."""
+    text = str(value) if value is not None else default
+    return text[:length]
+
+
+def _safe_text(value, default: str = "") -> str:
+    """Convert possibly-null content values into safe strings for rendering/prompts."""
+    return str(value) if value is not None else default
+
+
 def extract_metadata(text: str) -> dict:
     """Extract keywords, emotion, dimension using AI"""
     client = get_client()
@@ -500,7 +511,8 @@ def extract_metadata(text: str) -> dict:
         )
         r = json.loads(response.choices[0].message.content)
         return {"keywords": r.get("keywords", []), "emotion": r.get("emotion", "기타"), "dimension": r.get("dimension", "기타")}
-    except:
+    except (json.JSONDecodeError, TypeError, AttributeError, KeyError, IndexError) as parse_error:
+        logger.warning(f"Metadata extraction fallback: {parse_error}")
         return {"keywords": [], "emotion": "기타", "dimension": "기타"}
 
 
@@ -738,9 +750,9 @@ def get_weekly_summary() -> str:
     # Prepare context
     context = []
     for log in logs:
-        date_str = str(log.get('created_at') or '')[:10]
-        type_str = log.get('meta_type', 'Log')
-        content = log.get('content', '')[:100]
+        date_str = _safe_date_prefix(log.get('created_at'), default="")
+        type_str = _safe_text(log.get('meta_type'), default='Log')
+        content = _safe_text(log.get('content'), default='')[:100]
         context.append(f"[{date_str}] {type_str}: {content}")
         
     context_str = "\n".join(context)
@@ -943,7 +955,7 @@ def check_yesterday_promise() -> dict:
     # Filter for Apology
     apologies = [l for l in logs 
                  if l.get('meta_type') == 'Apology' 
-                 and str(l.get('created_at') or '').startswith(y_str)]
+                 and _safe_text(l.get('created_at'), default='').startswith(y_str)]
     
     if apologies:
         # Just return the fast one found
@@ -1008,8 +1020,8 @@ def _build_context_from_logs(logs: list[dict]) -> str:
     
     formatted_entries = []
     for entry in logs:
-        timestamp = str(entry.get('created_at') or 'unknown')[:10]
-        content = entry.get('content', '')
+        timestamp = _safe_date_prefix(entry.get('created_at'))
+        content = _safe_text(entry.get('content'))
         formatted_entries.append(f"[{timestamp}] {content}")
     
     return "\n".join(formatted_entries)
@@ -1426,7 +1438,6 @@ def land_kanban_card(card_id: str, constitution_ids: list, accomplishment: str, 
             constitution_ids=constitution_ids,
             duration=duration
         )
-    
     return db.get_log_by_id(card_id)
 
 
