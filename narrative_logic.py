@@ -617,7 +617,18 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
     return True, score
 
 
-def process_apology(content: str, constitution_id: str, action_plan: str) -> dict:
+def get_tag_hierarchy() -> dict:
+    """
+    Returns the fixed 2-tier tag hierarchy for Apologies.
+    Parent -> [Default Children]
+    """
+    return {
+        "Lack of Will (의지)": ["Willpower", "Emotion", "Attitude", "Procrastination", "Temptation"],
+        "Environment (환경)": ["Unexpected Event", "Social Pressure", "Physical Condition", "Noise/Distraction"],
+        "Forgetting (망각)": ["Simple Forgetting", "Cognitive Bias", "Priority Conflict"]
+    }
+
+def process_apology(content: str, constitution_id: str, action_plan: str, tags: list = None) -> dict:
     """Process and save an Apology, decrement debt"""
     embedding = get_embedding(content)
     quality_score = score_apology_quality(content, action_plan)
@@ -629,7 +640,8 @@ def process_apology(content: str, constitution_id: str, action_plan: str) -> dic
         action_plan=action_plan,
         embedding=embedding,
         quality_score=quality_score,
-        reward_points=reward_points
+        reward_points=reward_points,
+        tags=tags
     )
     
     # Standard Repayment = 1
@@ -771,6 +783,102 @@ def get_daily_apology_trend(days: int = 30) -> pd.DataFrame:
     daily_counts = df.groupby('date').size().reset_index(name='count')
     
     return daily_counts
+
+
+# ============================================================
+# [NEW v5.4] Soul Analytics Data Aggregation
+# ============================================================
+def get_density_data() -> pd.DataFrame:
+    """
+    Prepare data for Density Calendar (Heatmap).
+    Returns DataFrame: [date, count, intensity (0-4)]
+    """
+    logs = db.get_logs_for_analytics()
+    if not logs: return pd.DataFrame()
+    
+    df = pd.DataFrame(logs)
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    df['date'] = df['created_at'].dt.date
+    
+    # Aggregation: Count logs per day
+    daily = df.groupby('date').size().reset_index(name='count')
+    
+    # Intensity Logic: 0=None, 1=1-2, 2=3-5, 3=6-9, 4=10+
+    def calc_intensity(c):
+        if c == 0: return 0
+        elif c <= 2: return 1
+        elif c <= 5: return 2
+        elif c <= 9: return 3
+        else: return 4
+        
+    daily['intensity'] = daily['count'].apply(calc_intensity)
+    daily['date'] = pd.to_datetime(daily['date']) # Ensure datetime type for Plotly
+    
+    return daily
+
+def get_saboteur_data() -> pd.DataFrame:
+    """
+    Prepare data for Saboteur Analysis (Horizontal Bar).
+    Aggregates tags from Apologies.
+    Returns DataFrame: [tag, count, parent_category]
+    """
+    logs = db.get_logs_by_type("Apology")
+    tag_counts = {}
+    
+    for log in logs:
+        tags = log.get('tags')
+        if not tags and log.get('content'):
+            # Fallback: Extract basic keywords if no tags (legacy support)
+            # This is a simple heuristic or we could leave it empty.
+            # Let's group them under "Unclassified"
+            tags = ["Unclassified"]
+        elif not tags:
+             tags = ["Unclassified"]
+             
+        for tag in tags:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+            
+    if not tag_counts: return pd.DataFrame()
+    
+    # Convert to DF
+    df = pd.DataFrame(list(tag_counts.items()), columns=['tag', 'count'])
+    return df.sort_values('count', ascending=True)
+
+def get_net_worth_data() -> pd.DataFrame:
+    """
+    Prepare data for Net Worth Area Chart.
+    Cumulative Assets (Fragments + Cores) vs Liabilities (Debts/Apologies).
+    """
+    logs = db.get_logs_for_analytics()
+    if not logs: return pd.DataFrame()
+    
+    df = pd.DataFrame(logs)
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    df['date'] = df['created_at'].dt.date
+    
+    # 1. Assets (Fragments + Constitutions + Apologies(Resolved))
+    # Actually, Apologies are part of the narrative, but let's count "Apologies" as liabilities event.
+    # However, 'Debt' is a number in user_stats. We need historical debt?
+    # We don't have historical debt log. We have Apology logs.
+    # Let's approximate:
+    # Asset = Count of all logs (Expression of Self)
+    # Liability = Cumulative Count of Apologies (Representation of Failure)
+    
+    daily_counts = df.groupby(['date', 'meta_type']).size().unstack(fill_value=0).reset_index()
+    
+    # Fill missing dates? For now, just use active dates.
+    daily_counts['date'] = pd.to_datetime(daily_counts['date'])
+    daily_counts = daily_counts.sort_values('date')
+    
+    # Cumulative Sums
+    if 'Fragment' not in daily_counts.columns: daily_counts['Fragment'] = 0
+    if 'Apology' not in daily_counts.columns: daily_counts['Apology'] = 0
+    if 'Constitution' not in daily_counts.columns: daily_counts['Constitution'] = 0
+    
+    daily_counts['cum_assets'] = daily_counts['Fragment'].cumsum() + daily_counts['Constitution'].cumsum()
+    daily_counts['cum_debt'] = daily_counts['Apology'].cumsum()
+    
+    return daily_counts[['date', 'cum_assets', 'cum_debt']]
 
 
 # ============================================================
@@ -1310,6 +1418,47 @@ def land_kanban_card(card_id: str, constitution_ids: list, accomplishment: str, 
         )
     
     return db.get_log_by_id(card_id)
+
+
+# ============================================================
+# [NEW v5.3] Red Protocol: Active Failure Detection
+# ============================================================
+def check_streak_and_apply_penalty() -> dict:
+    """
+    [Red Protocol] Check streak status on login.
+    If broken, AUTOMATICALLY increment debt.
+    Returns: {streak_info, penalty_applied: bool}
+    """
+    streak_info = db.update_streak()
+    penalty_applied = False
+    
+    if streak_info['status'] == 'broken':
+        db.increment_debt(1)
+        penalty_applied = True
+        logger.warning("Streak Broken. Debt Incremented.")
+        
+    return {
+        "streak_info": streak_info,
+        "penalty_applied": penalty_applied
+    }
+
+
+def evaluate_input_integrity(text: str) -> tuple[str, dict]:
+    """
+    [Red Protocol] Check if input violates constitution before saving.
+    Returns: (status, constitution_ref)
+    Status: "SAFE", "VIOLATION"
+    """
+    constitutions = db.get_constitutions()
+    if not constitutions:
+        return "SAFE", None
+        
+    is_violation, reason, const = policy.detect_violation(text, constitutions, gateway)
+    
+    if is_violation:
+        return "VIOLATION", const
+        
+    return "SAFE", None
 
 
 # ============================================================

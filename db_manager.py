@@ -141,6 +141,28 @@ def _run_schema_migrations(cursor):
         try:
             cursor.execute(f"ALTER TABLE logs ADD COLUMN {col} {ctype}")
         except sqlite3.OperationalError: pass
+    
+    # [NEW v5.4] Tagging System
+    try:
+        cursor.execute("ALTER TABLE logs ADD COLUMN tags TEXT")
+    except sqlite3.OperationalError: pass
+
+def get_all_used_tags() -> List[str]:
+    """Get all distinct tags used in logs"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT tags FROM logs WHERE tags IS NOT NULL")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    tags = set()
+    for row in rows:
+        try:
+            t = json.loads(row['tags'])
+            if isinstance(t, list):
+                tags.update(t)
+        except: pass
+    return sorted(list(tags))
 
 
 def _init_fts_table(cursor):
@@ -355,7 +377,9 @@ def create_log(
     debt_repaid: int = 0,
     kanban_status: str = None,
     quality_score: int = 0,
-    reward_points: int = 0
+    reward_points: int = 0,
+    # [NEW v5.4] Tagging System
+    tags: list = None
 ) -> dict:
     """Create a new log entry"""
     log_id = str(uuid.uuid4())
@@ -368,18 +392,19 @@ def create_log(
     
     keywords_json = json.dumps(keywords) if keywords else None
     linked_const_json = json.dumps(linked_constitutions) if linked_constitutions else None
+    tags_json = json.dumps(tags) if tags else None
 
     cursor.execute("""
         INSERT INTO logs (id, content, meta_type, parent_id, action_plan, 
                          created_at, embedding, emotion, dimension, keywords,
                          linked_constitutions, duration, debt_repaid, kanban_status,
-                         quality_score, reward_points)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         quality_score, reward_points, tags)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         log_id, content, meta_type, parent_id, action_plan,
         datetime.now().isoformat(), embedding_blob, emotion, dimension, keywords_json,
         linked_const_json, duration, debt_repaid, kanban_status,
-        quality_score, reward_points
+        quality_score, reward_points, tags_json
     ))
     
     conn.commit()
@@ -406,7 +431,8 @@ def create_apology(
     action_plan: str,
     embedding: list = None,
     quality_score: int = 0,
-    reward_points: int = 0
+    reward_points: int = 0,
+    tags: list = None
 ) -> dict:
     """Create an Apology linked to a Constitution"""
     return create_log(
@@ -416,7 +442,8 @@ def create_apology(
         parent_id=constitution_id,
         action_plan=action_plan,
         quality_score=quality_score,
-        reward_points=reward_points
+        reward_points=reward_points,
+        tags=tags
     )
 
 
@@ -912,6 +939,15 @@ def _row_to_dict(row: sqlite3.Row) -> dict:
             d["linked_constitutions"] = []
     else:
         d["linked_constitutions"] = []
+
+    # [NEW v5.4] Parse tags JSON
+    if d.get("tags"):
+        try:
+            d["tags"] = json.loads(d["tags"])
+        except:
+            d["tags"] = []
+    else:
+        d["tags"] = []
     
     # Convert embedding blob to list
     if d.get("embedding"):
