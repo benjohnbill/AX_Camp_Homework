@@ -80,7 +80,29 @@ def apply_atmosphere(entropy_mode: bool):
     
     st.markdown(f"""
         <style>
-        .stApp {{ background: {bg} !important; }}
+        .stApp {{
+            background: {bg} !important;
+            color: {text_color} !important;
+        }}
+        /* Ensure core containers remain readable across theme/runtime differences */
+        .stApp, .stApp p, .stApp li, .stApp label, .stApp span, .stApp div,
+        .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+        section[data-testid="stSidebar"] *, [data-testid="stMarkdownContainer"] * {{
+            color: {text_color} !important;
+        }}
+        /* Keep input widgets readable on dark atmospheric backgrounds */
+        [data-testid="stTextInput"] input,
+        [data-testid="stTextArea"] textarea,
+        [data-testid="stChatInput"] textarea,
+        [data-testid="stSelectbox"] div,
+        [data-testid="stNumberInput"] input {{
+            color: #f5f7ff !important;
+            background-color: rgba(255, 255, 255, 0.08) !important;
+        }}
+        [data-testid="stButton"] button {{
+            color: #f5f7ff !important;
+            border-color: rgba(255, 255, 255, 0.25) !important;
+        }}
         /* Global Text Adjustment for Entropy Mode */
         {'body { filter: grayscale(100%); }' if entropy_mode else ''}
         .kanban-card {{
