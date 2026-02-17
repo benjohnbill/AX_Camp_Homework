@@ -10,8 +10,8 @@ import time
 import json
 
 import narrative_logic as logic
-import db_manager as db
 import icons
+db = logic.db
 
 import plotly.express as px
 import plotly.graph_objects as go
