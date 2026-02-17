@@ -493,6 +493,15 @@ def _safe_text(value, default: str = "") -> str:
     return str(value) if value is not None else default
 
 
+def invalidate_search_cache() -> None:
+    """Clear ANN/embedding caches after write operations."""
+    try:
+        load_embeddings_cache.clear()
+        load_or_build_index.clear()
+    except Exception as cache_error:
+        logger.warning(f"Failed to clear search cache: {cache_error}")
+
+
 def extract_metadata(text: str) -> dict:
     """Extract keywords, emotion, dimension using AI"""
     client = get_client()
@@ -537,6 +546,7 @@ def save_log(text: str) -> dict:
         dimension=metadata["dimension"],
         keywords=metadata["keywords"]
     )
+    invalidate_search_cache()
     return log
 
 
@@ -668,6 +678,7 @@ def process_gap(content: str, core_id: str, action_plan: str, tags: list = None)
         reward_points=reward_points,
         tags=tags
     )
+    invalidate_search_cache()
     
     # Standard Repayment = 1
     db.decrement_debt(1)
@@ -1384,6 +1395,7 @@ def save_chronos_log(content: str, constitution_ids: list, duration: int) -> dic
         linked_constitutions=constitution_ids,
         duration=duration
     )
+    invalidate_search_cache()
     return log
 
 
@@ -1408,7 +1420,9 @@ def get_kanban_cards() -> dict:
 
 def create_kanban_card(content: str, constitution_id: str) -> dict:
     """Create a new draft card — must orbit a Constitution."""
-    return db.create_kanban_card(content, constitution_id=constitution_id, status="draft")
+    card = db.create_kanban_card(content, constitution_id=constitution_id, status="draft")
+    invalidate_search_cache()
+    return card
 
 
 def move_kanban_card(card_id: str, new_status: str) -> bool:
@@ -1438,6 +1452,7 @@ def land_kanban_card(card_id: str, constitution_ids: list, accomplishment: str, 
             constitution_ids=constitution_ids,
             duration=duration
         )
+    invalidate_search_cache()
     return db.get_log_by_id(card_id)
 
 
