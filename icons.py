@@ -3,6 +3,32 @@ icons.py
 Lucide Icons Subset for Antigravity - Optimized for robustness
 """
 
+ICON_TEXT = {
+    "waves": "🌊",
+    "orbit": "🪐",
+    "timer": "⏱️",
+    "layout-dashboard": "📊",
+    "book-open": "📖",
+    "star": "⭐",
+    "activity": "📈",
+    "sparkles": "✨",
+    "bell": "🔔",
+    "shield-alert": "⚠️",
+    "check-circle": "✅",
+    "anchor": "⚓",
+    "alert-octagon": "🛑",
+    "skull": "💀",
+    "flame": "🔥",
+    "target": "🎯",
+    "trash": "🗑️",
+    "zap": "⚡",
+    "plus-circle": "➕",
+    "moon": "🌙",
+    "calendar": "📅",
+    "pencil": "✍️",
+    "save": "💾",
+}
+
 def get_icon_svg(name, size=24, color="currentColor"):
     """Get SVG string for Lucide icon"""
     
@@ -45,3 +71,8 @@ def get_icon(name, size=20, color="currentColor"):
     """Get centralized icon HTML wrapper"""
     svg = get_icon_svg(name, size, color)
     return f'<span style="display:inline-block;vertical-align:middle;margin-right:8px;">{svg}</span>'
+
+
+def get_icon_text(name: str) -> str:
+    """Plain-text fallback icon for Streamlit widgets that escape HTML."""
+    return ICON_TEXT.get(name, "•")

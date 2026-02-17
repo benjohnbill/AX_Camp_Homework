@@ -550,7 +550,7 @@ def get_current_echo(reference_text: str = None) -> dict:
     Falls back to random if no reference_text or no embeddings available.
     """
     if reference_text:
-        related = find_related_logs(reference_text, limit=1)
+        related = find_related_logs(reference_text, top_k=1)
         if related:
             return related[0]
     # Fallback: random echo

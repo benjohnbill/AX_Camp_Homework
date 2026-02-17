@@ -131,12 +131,12 @@ def render_api_key_section():
             st.rerun()
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
-        st.title(f"{icons.get_icon('orbit')} Antigravity")
+        st.title(f"{icons.get_icon_text('orbit')} Antigravity")
         st.caption("Existential Audit Protocol v6.0") # Version Bump
         st.divider()
         
         if entropy_mode:
-            st.warning(f"{icons.get_icon_svg('shield-alert', size=18)} ENTROPY ALERT")
+            st.warning(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT")
             st.info("시스템 엔트로피가 임계치를 초과했습니다. [Gap Analysis]가 필요합니다.")
         else:
             mode = st.radio("Select Mode", ["Stream", "Chronos", "Universe", "Control", "Desk"],
@@ -163,23 +163,23 @@ def render_stream_mode():
     
     if st.session_state.get('violation_pending'):
         v = st.session_state['violation_pending']
-        st.warning(f"{icons.get_icon('shield-alert')} Alignment Error against Core: \"{v['core']['content'][:50]}...\"")
+        st.warning(f"{icons.get_icon_text('shield-alert')} Alignment Error against Core: \"{v['core']['content'][:50]}...\"")
         st.info(f"Input: {v['text']}")
         
         c1, c2 = st.columns(2)
-        if c1.button(f"{icons.get_icon_svg('skull', size=18)} Stop & Analyze Gap"):
+        if c1.button(f"{icons.get_icon_text('skull')} Stop & Analyze Gap"):
             db.increment_debt(1)
             del st.session_state['violation_pending']
             st.rerun()
             
-        if c2.button(f"{icons.get_icon_svg('zap', size=18)} Force Merge (Entropy +1)"):
+        if c2.button(f"{icons.get_icon_text('zap')} Force Merge (Entropy +1)"):
             db.increment_debt(1)
             logic.save_log(v['text'])
             del st.session_state['violation_pending']
             st.toast("Forced merge. Entropy increased.", icon="🚨")
             st.rerun()
             
-        if st.button(f"{icons.get_icon_svg('trash', size=18)} Discard"):
+        if st.button(f"{icons.get_icon_text('trash')} Discard"):
             del st.session_state['violation_pending']
             st.rerun()
         return
@@ -238,21 +238,21 @@ def render_chronos_timer():
     st.markdown(f"<h1 style='text-align:center; font-size:80px; color:#00FFFF;'>{mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
     
     c1, c2 = st.columns(2)
-    if c1.button(f"{icons.get_icon_svg('check-circle', size=18)} 완료", use_container_width=True):
+    if c1.button(f"{icons.get_icon_text('check-circle')} 완료", use_container_width=True):
         st.session_state['chronos_running'] = False
         st.session_state['chronos_finished'] = True
         st.rerun()
-    if c2.button(f"{icons.get_icon_svg('shield-alert', size=18)} 취소", use_container_width=True):
+    if c2.button(f"{icons.get_icon_text('shield-alert')} 취소", use_container_width=True):
         st.session_state['chronos_running'] = False
         st.rerun()
     time.sleep(2); st.rerun()
 
 def render_chronos_setup():
     c1, c2, c3 = st.columns(3)
-    if c1.button(f"{icons.get_icon_svg('flame', size=18)} 25분", use_container_width=True): start_timer(25)
-    if c2.button(f"{icons.get_icon_svg('target', size=18)} 60분", use_container_width=True): start_timer(60)
+    if c1.button(f"{icons.get_icon_text('flame')} 25분", use_container_width=True): start_timer(25)
+    if c2.button(f"{icons.get_icon_text('target')} 60분", use_container_width=True): start_timer(60)
     mins = c3.number_input("분", 1, 180, 45)
-    if c3.button(f"{icons.get_icon_svg('zap', size=18)} 시작", use_container_width=True): start_timer(mins)
+    if c3.button(f"{icons.get_icon_text('zap')} 시작", use_container_width=True): start_timer(mins)
 
 def start_timer(m: int):
     st.session_state['chronos_duration'] = m
@@ -261,7 +261,7 @@ def start_timer(m: int):
     st.rerun()
 
 def render_chronos_docking():
-    st.info(f"{icons.get_icon('anchor')} 이 시간은 어떤 헌법에 귀속됩니까?")
+    st.info(f"{icons.get_icon_text('anchor')} 이 시간은 어떤 헌법에 귀속됩니까?")
     consts = db.get_constitutions()
     options = {c['content'][:50]: c['id'] for c in consts}
     
@@ -270,7 +270,7 @@ def render_chronos_docking():
 
     sel = st.multiselect("헌법 선택", list(options.keys()))
     acc = st.text_area("성취 기록 (최소 10자)")
-    if st.button(f"{icons.get_icon_svg('anchor', size=18)} Dock", use_container_width=True, type="primary", disabled=len(sel)==0 or len(acc)<10):
+    if st.button(f"{icons.get_icon_text('anchor')} Dock", use_container_width=True, type="primary", disabled=len(sel)==0 or len(acc)<10):
         logic.save_chronos_log(acc, [options[n] for n in sel], st.session_state['chronos_duration'])
         st.balloons(); st.session_state['chronos_finished'] = False; st.rerun()
 
@@ -291,7 +291,7 @@ def render_universe_mode():
         render_soul_analytics()
         
     with t3:
-        st.markdown(f"### {icons.get_icon('layout-dashboard')} Soul Finviz (Legacy)")
+        st.markdown(f"### {icons.get_icon_text('layout-dashboard')} Soul Finviz (Legacy)")
         data = logic.get_finviz_data()
         if data:
             fig = go.Figure(go.Treemap(
@@ -303,7 +303,7 @@ def render_universe_mode():
             st.plotly_chart(fig, use_container_width=True)
 
 def render_soul_analytics():
-    st.markdown(f"### {icons.get_icon('calendar')} Willpower Density")
+    st.markdown(f"### {icons.get_icon_text('calendar')} Willpower Density")
     density = logic.get_density_data()
     if not density.empty:
         fig1 = px.density_heatmap(density, x="date", y="intensity", nbinsx=30, nbinsy=4, color_continuous_scale="Viridis")
@@ -314,7 +314,7 @@ def render_soul_analytics():
 
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown(f"### {icons.get_icon('skull')} Saboteur Analysis")
+        st.markdown(f"### {icons.get_icon_text('skull')} Saboteur Analysis")
         saboteur = logic.get_saboteur_data()
         if not saboteur.empty:
             fig2 = px.bar(saboteur, x="count", y="tag", orientation='h', color="count", color_continuous_scale="Reds")
@@ -322,7 +322,7 @@ def render_soul_analytics():
         else: st.info("실패 기록이 없습니다.")
             
     with c2:
-        st.markdown(f"### {icons.get_icon('activity')} Narrative Net Worth")
+        st.markdown(f"### {icons.get_icon_text('activity')} Narrative Net Worth")
         nw = logic.get_net_worth_data()
         if not nw.empty:
             fig3 = go.Figure()
@@ -340,7 +340,7 @@ def render_control_mode():
         c1, c2 = st.columns([2, 1])
         thought = c1.text_input("새로운 생각", key="kb_new")
         star = c2.selectbox("소속 Core", list(options.keys()), key="kb_const")
-        if st.button(f"{icons.get_icon_svg('sparkles', size=18)} 궤도 투입") and thought:
+        if st.button(f"{icons.get_icon_text('sparkles')} 궤도 투입") and thought:
             logic.create_kanban_card(thought, options[star]); st.rerun()
     
     cards = logic.get_kanban_cards()
@@ -352,9 +352,9 @@ def render_control_mode():
             for card in cards.get(status, []):
                 with st.container():
                     st.markdown(f"<div class='kanban-card'>{card['content'][:60]}</div>", unsafe_allow_html=True)
-                    if status == "draft" and st.button(f"{icons.get_icon_svg('orbit', size=14)} Orbit", key=f"orb_{card['id']}"):
+                    if status == "draft" and st.button(f"{icons.get_icon_text('orbit')} Orbit", key=f"orb_{card['id']}"):
                         logic.move_kanban_card(card['id'], "orbit"); st.rerun()
-                    elif status == "orbit" and st.button(f"{icons.get_icon_svg('anchor', size=14)} Land", key=f"land_{card['id']}"):
+                    elif status == "orbit" and st.button(f"{icons.get_icon_text('anchor')} Land", key=f"land_{card['id']}"):
                         st.session_state['docking_modal_active'] = True
                         st.session_state['docking_card_id'] = card['id']; st.rerun()
 
@@ -363,11 +363,11 @@ def render_control_mode():
 
 def render_kanban_docking(options):
     st.divider()
-    st.markdown(f"### {icons.get_icon('anchor')} Kanban Docking")
+    st.markdown(f"### {icons.get_icon_text('anchor')} Kanban Docking")
     sel = st.multiselect("Core 선택", list(options.keys()), key="k_dock_sel")
     acc = st.text_input("성취 요약", key="k_dock_acc")
     dur = st.number_input("시간(분)", 0, 480, 0, key="k_dock_dur")
-    if st.button(f"{icons.get_icon_svg('check-circle', size=18)} Confirm Dock", type="primary"):
+    if st.button(f"{icons.get_icon_text('check-circle')} Confirm Dock", type="primary"):
         logic.land_kanban_card(st.session_state['docking_card_id'], [options[n] for n in sel], acc, dur)
         st.session_state['docking_modal_active'] = False; st.rerun()
 
@@ -375,17 +375,17 @@ def render_desk_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('book-open', size=40)} THE DESK</h1></div>", unsafe_allow_html=True)
     l, r = st.columns([1, 1.5])
     with l:
-        st.markdown(f"#### {icons.get_icon('sparkles')} Fragments")
+        st.markdown(f"#### {icons.get_icon_text('sparkles')} Fragments")
         frags, count = logic.get_fragments_paginated(st.session_state['desk_page'])
         for f in frags:
             with st.expander(f['content'][:40]):
                 st.write(f['content'])
-                if st.button(f"{icons.get_icon_svg('plus-circle', size=14)} 에세이 추가", key=f"add_{f['id']}"): 
+                if st.button(f"{icons.get_icon_text('plus-circle')} 에세이 추가", key=f"add_{f['id']}"): 
                     st.session_state['selected_cards'].append(f['id']); st.rerun()
     with r:
-        st.markdown(f"#### {icons.get_icon('pencil')} Essay")
+        st.markdown(f"#### {icons.get_icon_text('pencil')} Essay")
         essay = st.text_area("Connect your story", height=400)
-        if st.button(f"{icons.get_icon_svg('save', size=18)} Save Essay") and essay:
+        if st.button(f"{icons.get_icon_text('save')} Save Essay") and essay:
             logic.save_log(essay); st.toast("Saved!"); st.rerun()
 
 # ============================================================
@@ -397,22 +397,22 @@ def main():
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
     
     if is_entropy:
-        st.error(f"{icons.get_icon('shield-alert')} ENTROPY ALERT: SYSTEM UNSTABLE")
-        st.markdown(f"### {icons.get_icon('skull')} 시스템 엔트로피가 임계점을 넘었습니다.")
+        st.error(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT: SYSTEM UNSTABLE")
+        st.markdown(f"### {icons.get_icon_text('skull')} 시스템 엔트로피가 임계점을 넘었습니다.")
         with st.form("gap_analysis"):
             cores = db.get_cores()
             sel = st.selectbox("관련된 Core Violation", [c['content'] for c in cores] if cores else ["Unknown"])
-            st.markdown(f"#### 1. Saboteur Analysis ({icons.get_icon_svg('skull', size=16)} 실패 원인)")
+            st.markdown(f"#### 1. Saboteur Analysis ({icons.get_icon_text('skull')} 실패 원인)")
             tag_h = logic.get_tag_hierarchy()
             p_cat = st.radio("Root Cause", list(tag_h.keys()), horizontal=True)
             c_tags = tag_h[p_cat]
             c1, c2 = st.columns([3, 1])
             s_tag = c1.selectbox("Specific Reason", c_tags + ["➕ Create New..."])
             f_tag = s_tag if s_tag != "➕ Create New..." else c2.text_input("New Tag Name")
-            st.markdown(f"#### 2. Gap Analysis ({icons.get_icon_svg('book-open', size=16)} 격차 분석)")
+            st.markdown(f"#### 2. Gap Analysis ({icons.get_icon_text('book-open')} 격차 분석)")
             reason = st.text_area("분석 (100자 이상) - 왜 의지와 행동의 격차가 발생했습니까?")
             plan = st.text_area("보정 계획 (Calibration)")
-            if st.form_submit_button(f"{icons.get_icon_svg('zap', size=18)} 엔트로피 해소 (Repay Debt)"):
+            if st.form_submit_button(f"{icons.get_icon_text('zap')} 엔트로피 해소 (Repay Debt)"):
                 if len(reason) < 100: st.error("분석이 너무 얕습니다.")
                 else:
                     core_id = [c['id'] for c in cores if c['content']==sel][0] if cores else None
