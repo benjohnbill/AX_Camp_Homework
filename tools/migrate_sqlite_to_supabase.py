@@ -2,11 +2,15 @@
 import json
 import os
 import sqlite3
+import sys
 from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
 import numpy as np
 from tqdm import tqdm
+
+# Ensure project root is importable when running from tools/
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import db_manager_postgres as pg
 
