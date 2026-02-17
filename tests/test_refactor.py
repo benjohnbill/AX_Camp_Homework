@@ -31,7 +31,7 @@ class TestRefactor(unittest.TestCase):
         past = now - timedelta(hours=75)
         msg = engine.evaluate_silence(past, now)
         print(f"Case C (75h): {msg}")
-        self.assertIn("우주가 차갑게", msg)
+        self.assertIn("3일간 로그가 없습니다", msg)
 
     def test_gateway_sanitization(self):
         gateway = logic.EvidenceGateway()
