@@ -1,0 +1,87 @@
+# PR#2 Conflict Resolution Implementation Plan
+
+## 목적
+`work` 브랜치의 용어 리팩터(Core/Gap/Log + Entropy Alert)와 `main`의 최신 변경을 안전하게 병합한다.
+
+## 현재 충돌 가능성이 높은 파일
+- `app.py`
+- `db_manager.py`
+- `narrative_logic.py`
+- `PROJECT_ANALYSIS_KR.md`
+
+> 근거: 이전 PR diff에서 반복적으로 동일 파일이 다중 수정됨.
+
+---
+
+## 1) 병합 원칙 (Merge Policy)
+1. **실행 안정성 우선**: `NameError`, import 순서, 함수명 호환 이슈를 먼저 해결.
+2. **용어 변경은 canonical + alias 전략 유지**:
+   - canonical: `Core`, `Gap`, `Log`
+   - legacy alias: `Constitution`, `Apology`, `Fragment`
+3. **UI 충돌은 기능 우선 병합**:
+   - `main`에 추가된 기능/버그픽스 로직 보존
+   - 텍스트/스타일만 최소 diff로 Core/Gap/Log 반영
+4. **문서 충돌은 코드와 정합성 우선**: 문서는 최종 코드 상태 기준으로 재작성.
+
+---
+
+## 2) 파일별 충돌 해소 계획
+
+### A. `narrative_logic.py`
+- [ ] `db_manager` import는 **상단 고정** (지연 import 금지).
+- [ ] `gateway = EvidenceGateway()` 초기화 시점 이전에 `db` 참조가 가능한지 확인.
+- [ ] `META_TYPES`, 그래프 렌더링 조건, 분석 필터에서 `db.canonicalize_meta_type(...)` 사용 유지.
+- [ ] `main`에서 들어온 신규 함수/수정이 있으면 먼저 적용 후, 용어 변경을 재적용.
+- [ ] 구 용어 함수명(`is_red_mode`, `process_apology`)은 당장 유지하되 내부 의미만 Entropy/Gap으로 맞춤 (호환성).
+
+### B. `db_manager.py`
+- [ ] `canonicalize_meta_type`, `get_meta_aliases`, `_migrate_legacy_meta_types` 유지.
+- [ ] `get_logs_paginated`, `get_logs_by_type`, 통계 쿼리에서 alias-aware `IN (...)` 로직 유지.
+- [ ] `main`의 스키마 변경(새 컬럼/인덱스)과 충돌 시 스키마를 **합집합**으로 병합.
+- [ ] `create_log` 기본값은 `Log`, 단 레거시 값 입력 시 canonicalize 처리.
+
+### C. `app.py`
+- [ ] `main`의 구조/핸들러 시그니처를 기준으로 우선 병합.
+- [ ] 사이드바/폼/모드 텍스트를 Core/Gap/Log/Entropy Alert로 정리.
+- [ ] 기존 red gradient 제거 유지(그레이스케일+노이즈).
+- [ ] `logic` API 이름이 `main`에서 바뀌었다면 adapter 레이어(별칭 함수)로 양쪽 호환.
+
+### D. `PROJECT_ANALYSIS_KR.md`
+- [ ] 최종 병합 코드 기준으로 문서 용어를 Core/Gap/Log로 통일.
+- [ ] 실제 코드에 없는 표현은 제거.
+
+---
+
+## 3) 충돌 해소 순서 (Recommended Sequence)
+1. `main` 최신 반영 (`git fetch` + `git merge origin/main` 또는 PR merge editor 기준 수동해결).
+2. `narrative_logic.py` 컴파일 안정화.
+3. `db_manager.py` 데이터/쿼리 호환성 정리.
+4. `app.py` UI 텍스트/스타일 및 호출부 맞춤.
+5. 문서(`PROJECT_ANALYSIS_KR.md`) 마지막 정리.
+
+---
+
+## 4) 검증 체크리스트
+- [ ] `python -m py_compile app.py narrative_logic.py db_manager.py`
+- [ ] `pytest -q`
+- [ ] `streamlit run app.py --server.headless true --server.port 8501`
+- [ ] 앱 초기 진입 시 `script-health-check` 200 확인
+- [ ] startup diagnostics에 `DB Error`/`NameError`가 없는지 확인
+
+---
+
+## 5) 리스크 및 대응
+- **리스크 1: 함수명 변경 충돌**
+  - 대응: 구 함수명 wrapper 유지 후 점진 전환.
+- **리스크 2: mixed meta_type 데이터**
+  - 대응: read 시 canonicalize + init 시 migration 병행.
+- **리스크 3: 스타일 충돌로 UX 회귀**
+  - 대응: apply_atmosphere 단일 함수에서 alert 스타일 중앙집중 관리.
+
+---
+
+## 6) 최종 산출물 정의 (Definition of Done)
+- 충돌 파일 4개 모두 수동 병합 완료.
+- 테스트/컴파일/앱 실행 검증 통과.
+- 용어 정책(Core/Gap/Log, Entropy Alert)과 레거시 호환 동시 만족.
+- PR 설명에 “충돌 원인/해결 기준/검증 결과” 포함.
