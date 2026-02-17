@@ -738,7 +738,7 @@ def get_weekly_summary() -> str:
     # Prepare context
     context = []
     for log in logs:
-        date_str = log.get('created_at', '')[:10]
+        date_str = str(log.get('created_at') or '')[:10]
         type_str = log.get('meta_type', 'Log')
         content = log.get('content', '')[:100]
         context.append(f"[{date_str}] {type_str}: {content}")
@@ -943,7 +943,7 @@ def check_yesterday_promise() -> dict:
     # Filter for Apology
     apologies = [l for l in logs 
                  if l.get('meta_type') == 'Apology' 
-                 and l.get('created_at', '').startswith(y_str)]
+                 and str(l.get('created_at') or '').startswith(y_str)]
     
     if apologies:
         # Just return the fast one found
@@ -1008,7 +1008,7 @@ def _build_context_from_logs(logs: list[dict]) -> str:
     
     formatted_entries = []
     for entry in logs:
-        timestamp = entry.get('created_at', 'unknown')[:10]
+        timestamp = str(entry.get('created_at') or 'unknown')[:10]
         content = entry.get('content', '')
         formatted_entries.append(f"[{timestamp}] {content}")
     
