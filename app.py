@@ -33,7 +33,7 @@ def init_session_state():
         st.session_state['diagnostics_run'] = True
 
     if 'streak_updated' not in st.session_state:
-        result = logic.check_streak_and_apply_penalty()
+        result = db.check_streak_and_apply_penalty() # [Refactor] Moved to db_manager
         st.session_state['streak_info'] = result['streak_info']
         if result['penalty_applied']:
             st.session_state['entropy_mode_trigger'] = True # [Refactor]

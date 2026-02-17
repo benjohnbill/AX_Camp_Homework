@@ -271,7 +271,28 @@ def update_streak() -> dict:
     return {
         "streak": current_streak,
         "longest": longest_streak,
-        "status": status
+        "status": status,
+        "last_login": today
+    }
+
+
+def check_streak_and_apply_penalty() -> dict:
+    """
+    [Entropy Alert] Check streak status on login.
+    If broken, AUTOMATICALLY increment debt.
+    Returns: {streak_info, penalty_applied: bool}
+    """
+    streak_info = update_streak() # Local call
+    penalty_applied = False
+    
+    if streak_info['status'] == 'broken':
+        increment_debt(1) # Local call
+        penalty_applied = True
+        print("Streak Broken. Debt Incremented.")
+        
+    return {
+        "streak_info": streak_info,
+        "penalty_applied": penalty_applied
     }
 
 

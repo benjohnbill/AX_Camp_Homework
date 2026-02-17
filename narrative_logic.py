@@ -1423,24 +1423,7 @@ def land_kanban_card(card_id: str, constitution_ids: list, accomplishment: str, 
 # ============================================================
 # [NEW v5.3] Red Protocol: Active Failure Detection
 # ============================================================
-def check_streak_and_apply_penalty() -> dict:
-    """
-    [Red Protocol] Check streak status on login.
-    If broken, AUTOMATICALLY increment debt.
-    Returns: {streak_info, penalty_applied: bool}
-    """
-    streak_info = db.update_streak()
-    penalty_applied = False
-    
-    if streak_info['status'] == 'broken':
-        db.increment_debt(1)
-        penalty_applied = True
-        logger.warning("Streak Broken. Debt Incremented.")
-        
-    return {
-        "streak_info": streak_info,
-        "penalty_applied": penalty_applied
-    }
+# Function moved to db_manager.py for architectural consistency
 
 
 def evaluate_input_integrity(text: str) -> tuple[str, dict]:
