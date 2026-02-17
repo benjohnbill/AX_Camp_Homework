@@ -36,7 +36,7 @@ def init_session_state():
         result = logic.check_streak_and_apply_penalty()
         st.session_state['streak_info'] = result['streak_info']
         if result['penalty_applied']:
-            st.session_state['red_mode_trigger'] = True
+            st.session_state['entropy_mode_trigger'] = True # [Refactor]
         st.session_state['streak_updated'] = True
 
     if 'mode' not in st.session_state:
@@ -62,19 +62,27 @@ def init_session_state():
         'interventions_checked': False,
         'desk_page': 1,
         'violation_pending': None,
-        'red_mode_trigger': False
+        'entropy_mode_trigger': False # [Refactor]
     }
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
 
-def apply_atmosphere(red_mode: bool):
-    bg = "linear-gradient(to bottom, #330000 0%, #000000 100%)" if red_mode else \
-         "radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+def apply_atmosphere(entropy_mode: bool):
+    # [Refactor] Entropy Mode: Desaturated, Glitchy, Cold Grey/White
+    if entropy_mode:
+        bg = "linear-gradient(to bottom, #2b2b2b 0%, #000000 100%)" # Cold Grey/Black
+        text_color = "#a0a0a0" # Dimmed text
+    else:
+        # Standard: Deep Space Blue
+        bg = "radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+        text_color = "#e94560" # Vivd Red/Pink accent
     
     st.markdown(f"""
         <style>
-        .stApp {{ background: {bg} !important; color: #e94560 !important; }}
+        .stApp {{ background: {bg} !important; }}
+        /* Global Text Adjustment for Entropy Mode */
+        {'body { filter: grayscale(100%); }' if entropy_mode else ''}
         .kanban-card {{
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -87,15 +95,15 @@ def apply_atmosphere(red_mode: bool):
 # ============================================================
 # Navigation
 # ============================================================
-def render_sidebar(red_mode: bool):
+def render_sidebar(entropy_mode: bool):
     with st.sidebar:
         st.title(f"{icons.get_icon('orbit')} Antigravity")
-        st.caption("Existential Audit Protocol v5.3")
+        st.caption("Existential Audit Protocol v6.0") # Version Bump
         st.divider()
         
-        if red_mode:
-            st.warning(f"{icons.get_icon_svg('shield-alert', size=18)} RED MODE ACTIVE")
-            st.info("해명을 완료할 때까지 모든 기능이 잠깁니다.")
+        if entropy_mode:
+            st.warning(f"{icons.get_icon_svg('shield-alert', size=18)} ENTROPY ALERT")
+            st.info("시스템 엔트로피가 임계치를 초과했습니다. [Gap Analysis]가 필요합니다.")
         else:
             mode = st.radio("Select Mode", ["Stream", "Chronos", "Universe", "Control", "Desk"],
                             index=["stream", "chronos", "universe", "control", "desk"].index(st.session_state['mode']))
@@ -107,8 +115,8 @@ def render_sidebar(red_mode: bool):
         st.metric("Longest Streak", f"{streak.get('longest', 0)} days")
         
         debt = logic.get_debt_count()
-        if debt > 0: st.error(f"Unpaid Debts: {debt}")
-        else: st.success("No active debts.")
+        if debt > 0: st.error(f"E-Levels: {debt}")
+        else: st.success("System Stable")
 
 # ============================================================
 # MODES
@@ -118,30 +126,30 @@ def render_stream_mode():
     
     if st.session_state.get('violation_pending'):
         v = st.session_state['violation_pending']
-        st.warning(f"{icons.get_icon('shield-alert')} Logical Contradiction Detected against: \"{v['constitution']['content'][:50]}...\"")
-        st.info(f"Your thought: {v['text']}")
+        st.warning(f"{icons.get_icon('shield-alert')} Alignment Error against Core: \"{v['core']['content'][:50]}...\"")
+        st.info(f"Input: {v['text']}")
         
         c1, c2 = st.columns(2)
-        if c1.button(f"{icons.get_icon_svg('skull', size=18)} Stop & Apologize"):
+        if c1.button(f"{icons.get_icon_svg('skull', size=18)} Stop & Analyze Gap"):
             db.increment_debt(1)
             del st.session_state['violation_pending']
             st.rerun()
             
-        if c2.button(f"{icons.get_icon_svg('zap', size=18)} Force Save (Debt +1)"):
+        if c2.button(f"{icons.get_icon_svg('zap', size=18)} Force Merge (Entropy +1)"):
             db.increment_debt(1)
             logic.save_log(v['text'])
             del st.session_state['violation_pending']
-            st.toast("Forced save. Debt increased.", icon="🚨")
+            st.toast("Forced merge. Entropy increased.", icon="🚨")
             st.rerun()
             
-        if st.button(f"{icons.get_icon_svg('trash', size=18)} Discard Thought"):
+        if st.button(f"{icons.get_icon_svg('trash', size=18)} Discard"):
             del st.session_state['violation_pending']
             st.rerun()
         return
 
     echo = st.session_state.get('current_echo')
     if echo:
-        st.markdown(f"""<div style="background: rgba(255, 255, 255, 0.05); border-left: 3px solid #888; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-style: italic; color: #ccc;">
+        st.markdown(f"""<div style="background: rgba(255, 255, 255, 0.05); border-left: 3px solid #666; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-style: italic; color: #aaa;">
             <small>{icons.get_icon('sparkles', size=14)} Echo from {echo.get('created_at', '')[:10]}</small><br>"{echo.get('content', '')}"</div>""", unsafe_allow_html=True)
     
     for msg in st.session_state.messages:
@@ -151,9 +159,9 @@ def render_stream_mode():
         process_stream_input(user_input)
 
 def process_stream_input(user_input: str):
-    status, const = logic.evaluate_input_integrity(user_input)
+    status, core = logic.evaluate_input_integrity(user_input)
     if status == "VIOLATION":
-        st.session_state['violation_pending'] = {"text": user_input, "constitution": const}
+        st.session_state['violation_pending'] = {"text": user_input, "core": core}
         st.rerun()
         return
 
@@ -162,7 +170,7 @@ def process_stream_input(user_input: str):
     logic.save_log(user_input)
     
     if st.session_state['first_input_of_session']:
-        st.toast("저장됨. Meteor Effect.", icon="☄️")
+        st.toast("Log captured. Meteor Effect.", icon="☄️")
         st.session_state['first_input_of_session'] = False
     else:
         related = logic.find_related_logs(user_input)
@@ -287,12 +295,12 @@ def render_soul_analytics():
 def render_control_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('layout-dashboard', size=40)} CONTROL</h1></div>", unsafe_allow_html=True)
     
-    consts = db.get_constitutions()
-    options = {c['content'][:50]: c['id'] for c in consts}
+    cores = db.get_cores()
+    options = {c['content'][:50]: c['id'] for c in cores}
     if options:
         c1, c2 = st.columns([2, 1])
         thought = c1.text_input("새로운 생각", key="kb_new")
-        star = c2.selectbox("소속 헌법", list(options.keys()), key="kb_const")
+        star = c2.selectbox("소속 Core", list(options.keys()), key="kb_const")
         if st.button(f"{icons.get_icon_svg('sparkles', size=18)} 궤도 투입") and thought:
             logic.create_kanban_card(thought, options[star]); st.rerun()
     
@@ -317,7 +325,7 @@ def render_control_mode():
 def render_kanban_docking(options):
     st.divider()
     st.markdown(f"### {icons.get_icon('anchor')} Kanban Docking")
-    sel = st.multiselect("헌법 선택", list(options.keys()), key="k_dock_sel")
+    sel = st.multiselect("Core 선택", list(options.keys()), key="k_dock_sel")
     acc = st.text_input("성취 요약", key="k_dock_acc")
     dur = st.number_input("시간(분)", 0, 480, 0, key="k_dock_dur")
     if st.button(f"{icons.get_icon_svg('check-circle', size=18)} Confirm Dock", type="primary"):
@@ -346,15 +354,15 @@ def render_desk_mode():
 # ============================================================
 def main():
     init_page_config(); init_session_state()
-    red = logic.is_red_mode()
-    apply_atmosphere(red); render_sidebar(red)
+    is_entropy = logic.is_entropy_mode()
+    apply_atmosphere(is_entropy); render_sidebar(is_entropy)
     
-    if red:
-        st.error(f"{icons.get_icon('shield-alert')} RED PROTOCOL: VIOLATION DETECTED")
-        st.markdown(f"### {icons.get_icon('skull')} 당신의 의지가 무너졌습니다.")
-        with st.form("apology"):
-            consts = db.get_constitutions()
-            sel = st.selectbox("위반한 헌법", [c['content'] for c in consts])
+    if is_entropy:
+        st.error(f"{icons.get_icon('shield-alert')} ENTROPY ALERT: SYSTEM UNSTABLE")
+        st.markdown(f"### {icons.get_icon('skull')} 시스템 엔트로피가 임계점을 넘었습니다.")
+        with st.form("gap_analysis"):
+            cores = db.get_cores()
+            sel = st.selectbox("관련된 Core Violation", [c['content'] for c in cores] if cores else ["Unknown"])
             st.markdown(f"#### 1. Saboteur Analysis ({icons.get_icon_svg('skull', size=16)} 실패 원인)")
             tag_h = logic.get_tag_hierarchy()
             p_cat = st.radio("Root Cause", list(tag_h.keys()), horizontal=True)
@@ -362,14 +370,18 @@ def main():
             c1, c2 = st.columns([3, 1])
             s_tag = c1.selectbox("Specific Reason", c_tags + ["➕ Create New..."])
             f_tag = s_tag if s_tag != "➕ Create New..." else c2.text_input("New Tag Name")
-            st.markdown(f"#### 2. Narrative Apology ({icons.get_icon_svg('book-open', size=16)} 해명)")
-            reason = st.text_area("해명 (100자 이상)")
-            plan = st.text_area("내일의 약속")
-            if st.form_submit_button(f"{icons.get_icon_svg('zap', size=18)} 제출 및 복구"):
-                if len(reason) < 100: st.error("해명이 부족합니다.")
+            st.markdown(f"#### 2. Gap Analysis ({icons.get_icon_svg('book-open', size=16)} 격차 분석)")
+            reason = st.text_area("분석 (100자 이상) - 왜 의지와 행동의 격차가 발생했습니까?")
+            plan = st.text_area("보정 계획 (Calibration)")
+            if st.form_submit_button(f"{icons.get_icon_svg('zap', size=18)} 엔트로피 해소 (Repay Debt)"):
+                if len(reason) < 100: st.error("분석이 너무 얕습니다.")
                 else:
-                    logic.process_apology(reason, [c['id'] for c in consts if c['content']==sel][0], plan, tags=[f_tag] if f_tag else [])
-                    st.success("복귀합니다."); time.sleep(1.5); st.rerun()
+                    core_id = [c['id'] for c in cores if c['content']==sel][0] if cores else None
+                    if core_id:
+                        logic.process_gap(reason, core_id, plan, tags=[f_tag] if f_tag else [])
+                        st.success("엔트로피 감소 확인. 시스템 정상화."); time.sleep(1.5); st.rerun()
+                    else:
+                        st.error("Core를 찾을 수 없습니다.")
         return
 
     if st.session_state['gatekeeper_dismissed'] and not st.session_state['interventions_checked']:

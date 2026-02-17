@@ -215,7 +215,7 @@ class EvidenceGateway:
     def fetch_constitutions(self) -> list:
         return db.get_constitutions()
 
-    def check_compliance_with_llm(self, constitution_text: str, fragment_text: str) -> tuple[bool, str]:
+    def check_compliance_with_llm(self, core_text: str, log_text: str) -> tuple[bool, str]:
         """[Service] Ask LLM if there is a contradiction."""
         if self.is_degraded_mode:
             return False, "Degraded Mode: Skipping Check"
@@ -228,8 +228,8 @@ class EvidenceGateway:
             completion = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are a precise logical judge. Determine if the NEW statement contradicts the CONSTITUTION. Reply with JSON: {\\\"contradiction\\\": true/false, \\\"reason\\\": \\\"short explanation\\\"}."},
-                    {"role": "user", "content": f"CONSTITUTION: {constitution_text}\\nNEW: {fragment_text}"}
+                    {"role": "system", "content": "You are a precise logical judge. Determine if the NEW statement contradicts the CORE VALUE. Reply with JSON: {\\\"contradiction\\\": true/false, \\\"reason\\\": \\\"short explanation\\\"}."},
+                    {"role": "user", "content": f"CORE VALUE: {core_text}\\nNEW: {log_text}"}
                 ],
                 response_format={"type": "json_object"}
             )
@@ -266,28 +266,28 @@ class PolicyEngine:
         hours_silent = diff.total_seconds() / 3600
 
         if hours_silent > 72:
-            return f"⚠️ 우주가 차갑게 식어가고 있습니다. {int(hours_silent/24)}일간 관측 기록이 없습니다."
+            return f"⚠️ 시스템 엔트로피 증가. {int(hours_silent/24)}일간 로그가 없습니다."
         elif hours_silent > 24:
-            return f"🕰️ 문학적 천문학자가 당신의 부재를 감지했습니다. ({int(hours_silent)}시간 동안 침묵)"
+            return f"🕰️ 관측 공백 감지. ({int(hours_silent)}시간 동안 침묵)"
         
         return None
 
-    def detect_violation(self, fragment_content: str, constitution_candidates: list, gateway_ref) -> tuple[bool, str, dict]:
+    def detect_violation(self, log_content: str, core_candidates: list, gateway_ref) -> tuple[bool, str, dict]:
         """
-        [Logic] Determine if a fragment violates any constitution.
+        [Logic] Determine if a log violates any core.
         - Checks ALL candidates, not just the first.
         - Returns: (is_violation, reason, violated_constitution_obj)
         """
-        for const in constitution_candidates:
+        for core in core_candidates:
             # 1. Similarity Logic (Fast Filter)
             # Optimally, we only check high-similarity ones if the list is huge.
             # For now, we trust the caller (Gateway) provided relevant candidates.
             # But let's double check if we have embeddings to be safe
             
             # 2. LLM Check
-            is_violation, reason = gateway_ref.check_compliance_with_llm(const.get('content'), fragment_content)
+            is_violation, reason = gateway_ref.check_compliance_with_llm(core.get('content'), log_content)
             if is_violation:
-                return True, reason, const
+                return True, reason, core
                 
         return False, "", None
 
@@ -442,10 +442,13 @@ def hybrid_search(query_text, top_k=10, alpha=0.7):
 # ============================================================
 # Constants
 # ============================================================
+# ============================================================
+# Constants
+# ============================================================
 import db_manager as db
 
 # 3-Body Hierarchy
-META_TYPES = ["Constitution", "Apology", "Fragment"]
+META_TYPES = ["Core", "Gap", "Log"] # [Refactor] Constitution->Core, Apology->Gap, Fragment->Log
 
 # Thresholds
 SIMILARITY_THRESHOLD = 0.55
@@ -454,9 +457,9 @@ MAX_CONTEXT_TURNS = 10
 
 # Visual Styles for Graph
 META_TYPE_STYLES = {
-    "Constitution": {"shape": "star", "size": 50, "color": "#FFD700", "mass": 100, "fixed": True},
-    "Apology": {"shape": "square", "size": 30, "color": "#00FF7F", "mass": 50, "fixed": False},
-    "Fragment": {"shape": "dot", "size": 15, "color": "#FFFFFF", "mass": 10, "fixed": False}
+    "Core": {"shape": "star", "size": 50, "color": "#FFD700", "mass": 100, "fixed": True},
+    "Gap": {"shape": "square", "size": 30, "color": "#00FF7F", "mass": 50, "fixed": False},
+    "Log": {"shape": "dot", "size": 15, "color": "#FFFFFF", "mass": 10, "fixed": False}
 }
 
 
@@ -495,7 +498,7 @@ def extract_metadata(text: str) -> dict:
 # Core Log Operations
 # ============================================================
 def save_log(text: str) -> dict:
-    """Save a new Fragment"""
+    """Save a new Log (Fragment)"""
     # [Safety] Sanitize input
     text = gateway.sanitize_input(text)
     if not text:
@@ -506,7 +509,7 @@ def save_log(text: str) -> dict:
     
     log = db.create_log(
         content=text,
-        meta_type="Fragment",
+        meta_type="Log", # [Refactor]
         embedding=embedding,
         emotion=metadata["emotion"],
         dimension=metadata["dimension"],
@@ -524,10 +527,10 @@ def get_log_by_id(log_id: str) -> dict:
 
 
 def get_fragments_paginated(page: int = 1, per_page: int = 10) -> tuple[list, int]:
-    """Get fragments for a specific page and total count"""
+    """Get Logs for a specific page and total count"""
     offset = (page - 1) * per_page
-    fragments = db.get_logs_paginated(limit=per_page, offset=offset, meta_type="Fragment")
-    total_count = db.get_fragment_count()
+    fragments = db.get_logs_paginated(limit=per_page, offset=offset, meta_type="Log") # [Refactor]
+    total_count = db.get_fragment_count() # DB migration handles count internally
     return fragments, total_count
 
 
@@ -545,35 +548,35 @@ def get_current_echo(reference_text: str = None) -> dict:
 
 
 # ============================================================
-# Red Protocol: Debt System
+# Entropy Alert (prev. Red Protocol): Debt Logic
 # ============================================================
-def is_red_mode() -> bool:
-    """Check if Red Mode should be active (debt_count > 0)"""
+def is_entropy_mode() -> bool:
+    """Check if Entropy Mode should be active (debt_count > 0)"""
     return db.get_debt_count() > 0
 
 
-def get_violated_constitution() -> dict:
-    """Get the Constitution that was violated (first one for simplicity)"""
-    constitutions = db.get_constitutions()
-    return constitutions[0] if constitutions else None
+def get_violated_core() -> dict:
+    """Get the Core (Constitution) that was violated"""
+    cores = db.get_cores()
+    return cores[0] if cores else None
 
 
-def validate_apology(text: str) -> tuple[bool, str]:
-    """Validate apology text. Must be >= 30 characters."""
+def validate_gap_analysis(text: str) -> tuple[bool, str]:
+    """Validate Gap Analysis text."""
     if len(text.strip()) < 30:
-        return False, f"해명이 너무 짧습니다. 최소 30자 필요 (현재: {len(text.strip())}자)"
-    return True, "유효한 해명입니다."
+        return False, f"분석이 너무 짧습니다. 최소 30자 필요 (현재: {len(text.strip())}자)"
+    return True, "유효한 분석입니다."
 
 
-def score_apology_quality(content: str, action_plan: str) -> int:
-    """Score apology structure quality (0~3): cause, emotion, next action."""
+def score_gap_quality(content: str, action_plan: str) -> int:
+    """Score Gap analysis quality (0~3): cause, emotion, next action."""
     score = 0
     text = content.strip()
     action = action_plan.strip()
 
-    cause_tokens = ["왜", "때문", "원인", "그래서", "탓", "하지 못"]
+    cause_tokens = ["왜", "때문", "원인", "그래서", "탓", "하지 못", "gap", "차이"]
     emotion_tokens = ["불안", "후회", "죄책", "슬픔", "분노", "두려", "지쳤", "무기력", "감정", "마음"]
-    action_tokens = ["내일", "하겠다", "실행", "시도", "기록", "체크", "약속"]
+    action_tokens = ["내일", "하겠다", "실행", "시도", "기록", "체크", "약속", "보정"]
 
     if any(tok in text for tok in cause_tokens):
         score += 1
@@ -585,10 +588,10 @@ def score_apology_quality(content: str, action_plan: str) -> int:
     return score
 
 
-def calculate_apology_reward(content: str, quality_score: int) -> int:
-    """Reward points with low-friction baseline + quality incentives."""
+def calculate_gap_reward(content: str, quality_score: int) -> int:
+    """Reward points for closing the gap."""
     length = len(content.strip())
-    reward = 1  # base for submission
+    reward = 1  # base
     if length >= 50:
         reward += 1
     if length >= 80:
@@ -598,17 +601,17 @@ def calculate_apology_reward(content: str, quality_score: int) -> int:
     return min(reward, 3)
 
 
-def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[bool, float]:
-    """Vector Gatekeeper: Check if fragment is related to constitution (cosine >= 0.4)"""
-    if not constitution or not constitution.get("embedding"):
+def validate_log_relation(log_text: str, core: dict) -> tuple[bool, float]:
+    """Vector Gatekeeper: Check if log is related to core (cosine >= 0.4)"""
+    if not core or not core.get("embedding"):
         return True, 1.0
     
-    raw_emb = get_embedding(fragment_text)
+    raw_emb = get_embedding(log_text)
     if not raw_emb:
         return True, 1.0 # Fail safe (Allow)
 
     frag_emb = np.array(raw_emb).reshape(1, -1)
-    const_emb = np.array(constitution["embedding"]).reshape(1, -1)
+    const_emb = np.array(core["embedding"]).reshape(1, -1)
     
     score = cosine_similarity(frag_emb, const_emb)[0][0]
     
@@ -619,7 +622,7 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
 
 def get_tag_hierarchy() -> dict:
     """
-    Returns the fixed 2-tier tag hierarchy for Apologies.
+    Returns the fixed 2-tier tag hierarchy for Gap Analysis.
     Parent -> [Default Children]
     """
     return {
@@ -628,15 +631,15 @@ def get_tag_hierarchy() -> dict:
         "Forgetting (망각)": ["Simple Forgetting", "Cognitive Bias", "Priority Conflict"]
     }
 
-def process_apology(content: str, constitution_id: str, action_plan: str, tags: list = None) -> dict:
-    """Process and save an Apology, decrement debt"""
+def process_gap(content: str, core_id: str, action_plan: str, tags: list = None) -> dict:
+    """Process and save a Gap Analysis, decrement debt"""
     embedding = get_embedding(content)
-    quality_score = score_apology_quality(content, action_plan)
-    reward_points = calculate_apology_reward(content, quality_score)
+    quality_score = score_gap_quality(content, action_plan)
+    reward_points = calculate_gap_reward(content, quality_score)
     
-    apology = db.create_apology(
+    gap = db.create_gap(
         content=content,
-        constitution_id=constitution_id,
+        core_id=core_id,
         action_plan=action_plan,
         embedding=embedding,
         quality_score=quality_score,
@@ -647,11 +650,11 @@ def process_apology(content: str, constitution_id: str, action_plan: str, tags: 
     # Standard Repayment = 1
     db.decrement_debt(1)
     total_points = db.add_recovery_points(reward_points)
-    apology["quality_score"] = quality_score
-    apology["reward_points"] = reward_points
-    apology["recovery_points_total"] = total_points
+    gap["quality_score"] = quality_score
+    gap["reward_points"] = reward_points
+    gap["recovery_points_total"] = total_points
     
-    return apology
+    return gap
 
 
 def get_temporal_patterns() -> pd.DataFrame:
@@ -819,18 +822,15 @@ def get_density_data() -> pd.DataFrame:
 def get_saboteur_data() -> pd.DataFrame:
     """
     Prepare data for Saboteur Analysis (Horizontal Bar).
-    Aggregates tags from Apologies.
-    Returns DataFrame: [tag, count, parent_category]
+    Aggregates tags from Gaps.
     """
-    logs = db.get_logs_by_type("Apology")
+    logs = db.get_logs_by_type("Gap") # [Refactor] Apology -> Gap
     tag_counts = {}
     
     for log in logs:
         tags = log.get('tags')
         if not tags and log.get('content'):
             # Fallback: Extract basic keywords if no tags (legacy support)
-            # This is a simple heuristic or we could leave it empty.
-            # Let's group them under "Unclassified"
             tags = ["Unclassified"]
         elif not tags:
              tags = ["Unclassified"]
@@ -847,7 +847,7 @@ def get_saboteur_data() -> pd.DataFrame:
 def get_net_worth_data() -> pd.DataFrame:
     """
     Prepare data for Net Worth Area Chart.
-    Cumulative Assets (Fragments + Cores) vs Liabilities (Debts/Apologies).
+    Cumulative Assets (Logs + Cores) vs Liabilities (Debts/Gaps).
     """
     logs = db.get_logs_for_analytics()
     if not logs: return pd.DataFrame()
@@ -856,14 +856,6 @@ def get_net_worth_data() -> pd.DataFrame:
     df['created_at'] = pd.to_datetime(df['created_at'])
     df['date'] = df['created_at'].dt.date
     
-    # 1. Assets (Fragments + Constitutions + Apologies(Resolved))
-    # Actually, Apologies are part of the narrative, but let's count "Apologies" as liabilities event.
-    # However, 'Debt' is a number in user_stats. We need historical debt?
-    # We don't have historical debt log. We have Apology logs.
-    # Let's approximate:
-    # Asset = Count of all logs (Expression of Self)
-    # Liability = Cumulative Count of Apologies (Representation of Failure)
-    
     daily_counts = df.groupby(['date', 'meta_type']).size().unstack(fill_value=0).reset_index()
     
     # Fill missing dates? For now, just use active dates.
@@ -871,12 +863,20 @@ def get_net_worth_data() -> pd.DataFrame:
     daily_counts = daily_counts.sort_values('date')
     
     # Cumulative Sums
-    if 'Fragment' not in daily_counts.columns: daily_counts['Fragment'] = 0
-    if 'Apology' not in daily_counts.columns: daily_counts['Apology'] = 0
-    if 'Constitution' not in daily_counts.columns: daily_counts['Constitution'] = 0
+    if 'Log' not in daily_counts.columns: daily_counts['Log'] = 0
+    if 'Gap' not in daily_counts.columns: daily_counts['Gap'] = 0
+    if 'Core' not in daily_counts.columns: daily_counts['Core'] = 0
     
-    daily_counts['cum_assets'] = daily_counts['Fragment'].cumsum() + daily_counts['Constitution'].cumsum()
-    daily_counts['cum_debt'] = daily_counts['Apology'].cumsum()
+    # [Refactor] Check for old keys just in case (if migration didn't catch them all or for safety)
+    if 'Fragment' in daily_counts.columns:
+        daily_counts['Log'] += daily_counts['Fragment']
+    if 'Constitution' in daily_counts.columns:
+        daily_counts['Core'] += daily_counts['Constitution']
+    if 'Apology' in daily_counts.columns:
+        daily_counts['Gap'] += daily_counts['Apology']
+    
+    daily_counts['cum_assets'] = daily_counts['Log'].cumsum() + daily_counts['Core'].cumsum()
+    daily_counts['cum_debt'] = daily_counts['Gap'].cumsum()
     
     return daily_counts[['date', 'cum_assets', 'cum_debt']]
 

@@ -146,6 +146,19 @@ def _run_schema_migrations(cursor):
     try:
         cursor.execute("ALTER TABLE logs ADD COLUMN tags TEXT")
     except sqlite3.OperationalError: pass
+    
+    # [NEW v6.0] Secular Refactor Migration
+    _migrate_terminology_v6(cursor)
+
+def _migrate_terminology_v6(cursor):
+    """Refactor: Constitution->Core, Apology->Gap, Fragment->Log"""
+    corrections = {
+        "Constitution": "Core",
+        "Apology": "Gap",
+        "Fragment": "Log"
+    }
+    for old, new in corrections.items():
+        cursor.execute("UPDATE logs SET meta_type = ? WHERE meta_type = ?", (new, old))
 
 def get_all_used_tags() -> List[str]:
     """Get all distinct tags used in logs"""
@@ -183,6 +196,9 @@ def inject_genesis_data(embedding_func):
     if cursor.fetchone()[0] == 0:
         print("🌱 Injecting Genesis Data...")
         for data in GENESIS_DATA:
+            # Migration check: if genesis data still uses old terms, map them on insert
+            # But let's just assume we insert them as is, and migration fixes them if needed.
+            # Actually better to update GENESIS_DATA constant, but for now let's just insert.
             _insert_genesis_record(cursor, data, embedding_func)
         
         cursor.execute("UPDATE user_stats SET debt_count = 1 WHERE id = 1")
@@ -364,7 +380,7 @@ def reset_debt() -> None:
 # ============================================================
 def create_log(
     content: str,
-    meta_type: str = "Fragment",
+    meta_type: str = "Log", # [Refactor] Default Fragment -> Log
     embedding: list = None,
     emotion: str = None,
     dimension: str = None,
@@ -425,21 +441,21 @@ def get_logs_for_analytics() -> List[dict]:
     conn.close()
     return [dict(row) for row in rows]
 
-def create_apology(
+def create_gap(
     content: str,
-    constitution_id: str,
+    core_id: str, # [Refactor] constitution_id -> core_id
     action_plan: str,
     embedding: list = None,
     quality_score: int = 0,
     reward_points: int = 0,
     tags: list = None
 ) -> dict:
-    """Create an Apology linked to a Constitution"""
+    """Create a Gap (Apology) linked to a Core (Constitution)"""
     return create_log(
         content=content,
-        meta_type="Apology",
+        meta_type="Gap", # [Refactor] Apology -> Gap
         embedding=embedding,
-        parent_id=constitution_id,
+        parent_id=core_id,
         action_plan=action_plan,
         quality_score=quality_score,
         reward_points=reward_points,
@@ -532,10 +548,10 @@ def get_logs_paginated(limit: int = 10, offset: int = 0, meta_type: str = None) 
 
 
 def get_fragment_count() -> int:
-    """Get total count of fragments"""
+    """Get total count of logs (fragments)"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM logs WHERE meta_type = 'Fragment'")
+    cursor.execute("SELECT COUNT(*) FROM logs WHERE meta_type = 'Log'")
     count = cursor.fetchone()[0]
     conn.close()
     return count
@@ -544,7 +560,7 @@ def get_fragment_count() -> int:
 def get_log_counts() -> dict:
     """
     [Optimized] Get counts for all log types in one query.
-    Returns: {'Constitution': N, 'Apology': N, 'Fragment': N}
+    Returns: {'Core': N, 'Gap': N, 'Log': N}
     """
     conn = get_connection()
     cursor = conn.cursor()
@@ -552,7 +568,7 @@ def get_log_counts() -> dict:
     rows = cursor.fetchall()
     conn.close()
     
-    counts = {"Constitution": 0, "Apology": 0, "Fragment": 0}
+    counts = {"Core": 0, "Gap": 0, "Log": 0}
     for meta_type, count in rows:
         if meta_type in counts:
             counts[meta_type] = count
@@ -580,23 +596,23 @@ def get_logs_by_type(meta_type: str) -> List[dict]:
     return [_row_to_dict(row) for row in rows]
 
 
-def get_constitutions() -> List[dict]:
-    """Get all Constitution logs"""
-    return get_logs_by_type("Constitution")
+def get_cores() -> List[dict]:
+    """Get all Core logs"""
+    return get_logs_by_type("Core")
 
 
-def get_apologies() -> List[dict]:
-    """Get all Apology logs"""
-    return get_logs_by_type("Apology")
+def get_gaps() -> List[dict]:
+    """Get all Gap logs"""
+    return get_logs_by_type("Gap")
 
 
-def get_fragments() -> List[dict]:
-    """Get all Fragment logs"""
-    return get_logs_by_type("Fragment")
+def get_last_logs() -> List[dict]:
+    """Get all regular Logs (Fragments)"""
+    return get_logs_by_type("Log")
 
 
-def get_yesterday_apology() -> Optional[dict]:
-    """Get the most recent Apology from yesterday"""
+def get_yesterday_gap() -> Optional[dict]:
+    """Get the most recent Gap from yesterday"""
     conn = get_connection()
     cursor = conn.cursor()
     
@@ -605,7 +621,7 @@ def get_yesterday_apology() -> Optional[dict]:
     
     cursor.execute("""
         SELECT * FROM logs 
-        WHERE meta_type = 'Apology' 
+        WHERE meta_type = 'Gap' 
         AND date(created_at) >= ? AND date(created_at) < ?
         ORDER BY created_at DESC LIMIT 1
     """, (yesterday, today))
@@ -764,47 +780,49 @@ def delete_connection(source_id: str, target_id: str) -> bool:
 # ============================================================
 # [NEW v5] Chronos & Soul Finviz Queries
 # ============================================================
-def get_constitutions_with_stats() -> List[dict]:
+# ============================================================
+# [NEW v5] Chronos & Soul Finviz Queries
+# ============================================================
+def get_cores_with_stats() -> List[dict]:
     """
-    각 헌법별 통계(성취 시간, 기록 수, 건강도 등)를 집계하여 반환합니다.
-    [변경 이유] 거대한 루프 내부 로직을 별도 함수로 분리하여 가독성 및 유지보수성 향상.
+    각 Core 별 통계(성취 시간, 기록 수, 건강도 등)를 집계하여 반환합니다.
     """
     conn = get_connection()
     cursor = conn.cursor()
     
-    constitutions = get_constitutions()
+    cores = get_cores()
     stats = []
     
-    for const in constitutions:
-        const_stats = _fetch_single_constitution_stats(cursor, const)
-        stats.append(const_stats)
+    for core in cores:
+        core_stats = _fetch_single_core_stats(cursor, core)
+        stats.append(core_stats)
     
     conn.close()
     return stats
 
 
-def _fetch_single_constitution_stats(cursor, const: dict) -> dict:
-    """단일 헌법에 대한 상세 통계를 쿼리하고 계산합니다."""
-    const_id = const["id"]
+def _fetch_single_core_stats(cursor, core: dict) -> dict:
+    """단일 Core에 대한 상세 통계를 쿼리하고 계산합니다."""
+    core_id = core["id"]
     
-    # Fragment 통계 집계
-    cursor.execute("SELECT duration, linked_constitutions, created_at FROM logs WHERE meta_type = 'Fragment'")
+    # Log (Fragment) 통계 집계
+    cursor.execute("SELECT duration, linked_constitutions, created_at FROM logs WHERE meta_type = 'Log'")
     rows = cursor.fetchall()
     
-    duration, count, last_act = _aggregate_fragment_data(rows, const_id, const.get("created_at", ""))
+    duration, count, last_act = _aggregate_log_data(rows, core_id, core.get("created_at", ""))
     
-    # Apology 통계 집계
-    cursor.execute("SELECT COUNT(*) as cnt FROM logs WHERE meta_type = 'Apology' AND parent_id = ?", (const_id,))
-    apology_count = cursor.fetchone()["cnt"]
+    # Gap (Apology) 통계 집계
+    cursor.execute("SELECT COUNT(*) as cnt FROM logs WHERE meta_type = 'Gap' AND parent_id = ?", (core_id,))
+    gap_count = cursor.fetchone()["cnt"]
     
-    health = _calculate_constitution_health(duration, count, last_act)
+    health = _calculate_core_health(duration, count, last_act)
     
     return {
-        "id": const_id,
-        "content": const["content"],
+        "id": core_id,
+        "content": core["content"],
         "total_duration": duration,
-        "fragment_count": count,
-        "apology_count": apology_count,
+        "log_count": count,
+        "gap_count": gap_count,
         "last_activity": last_act,
         "days_since_activity": _days_since(last_act),
         "health_score": round(health, 2),
@@ -812,10 +830,10 @@ def _fetch_single_constitution_stats(cursor, const: dict) -> dict:
     }
 
 
-def _aggregate_fragment_data(rows: list, const_id: str, initial_last_act: str) -> tuple:
-    """로그 목록을 순회하며 특정 헌법에 연결된 데이터들을 합산합니다."""
+def _aggregate_log_data(rows: list, core_id: str, initial_last_act: str) -> tuple:
+    """로그 목록을 순회하며 특정 Core에 연결된 데이터들을 합산합니다."""
     total_duration = 0
-    fragment_count = 0
+    log_count = 0
     last_activity = initial_last_act
     
     for row in rows:
@@ -827,13 +845,33 @@ def _aggregate_fragment_data(rows: list, const_id: str, initial_last_act: str) -
         except:
             linked_ids = []
             
-        if const_id in linked_ids:
-            fragment_count += 1
+        if core_id in linked_ids:
+            log_count += 1
             total_duration += (row["duration"] or 0)
             if row["created_at"] > last_activity:
                 last_activity = row["created_at"]
                 
-    return total_duration, fragment_count, last_activity
+    return total_duration, log_count, last_activity
+
+
+def _calculate_core_health(duration: int, count: int, last_act: str) -> float:
+    """
+    Core의 건강도(-1.0 ~ 1.0)를 계산합니다.
+    """
+    days_since = _days_since(last_act)
+    has_debt = get_debt_count() > 0
+    
+    if has_debt or days_since > 7:
+        health = -1.0 + min(0.5, count * 0.1)
+    elif days_since > 3:
+        health = 0.0
+    else:
+        # 가중치 기반 점수 부여 (시간, 깊이, 빈도)
+        base = 0.3 + (duration * 0.005)
+        count_bonus = count * 0.05
+        health = min(1.0, base + count_bonus)
+        
+    return max(-1.0, min(1.0, health))
 
 
 def _calculate_constitution_health(duration: int, count: int, last_act: str) -> float:
