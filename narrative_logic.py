@@ -17,6 +17,7 @@ import streamlit as st
 import pandas as pd
 from openai import OpenAI
 import sqlite3
+import db_manager as db
 
 # [NEW v5.1] Optional Vector Search Libraries
 try:
@@ -442,8 +443,6 @@ def hybrid_search(query_text, top_k=10, alpha=0.7):
 # ============================================================
 # Constants
 # ============================================================
-import db_manager as db
-
 # 3-Body Hierarchy
 META_TYPES = ["Core", "Gap", "Log"]
 
