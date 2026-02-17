@@ -112,6 +112,17 @@ Supabase SQL Editor에서 아래 파일 내용을 순서대로 붙여넣어 실�
 python tools/check_supabase_phase1.py
 ```
 
+### 2-2. SQLite -> Supabase Data Migration
+환경변수 설정 후 아래를 실행하면 `logs`, `user_stats`, `chat_history`, `connections`를 모두 이관합니다.
+```bash
+python tools/migrate_sqlite_to_supabase.py
+```
+
+필요 시 배치 크기 조정:
+```bash
+MIGRATION_BATCH=200 python tools/migrate_sqlite_to_supabase.py
+```
+
 ### 3. 실행
 ```bash
 streamlit run app.py
