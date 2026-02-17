@@ -47,11 +47,25 @@ def get_connection() -> sqlite3.Connection:
 
 
 def init_database():
-    """Create tables if not exist"""
+    """
+    데이터베이스 테이블 생성 및 스키마 마이그레이션을 관리합니다.
+    [변경 이유] 하나의 큰 함수를 테이블 생성, 초기 데이터 삽입, 마이그레이션으로 분리하여 관리 용이성 향상.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Logs table (3-Body Hierarchy)
+    _create_base_tables(cursor)
+    _init_user_stats(cursor)
+    _run_schema_migrations(cursor)
+    _init_fts_table(cursor)
+    
+    conn.commit()
+    conn.close()
+
+
+def _create_base_tables(cursor):
+    """기본적인 3-Body Hierarchy 테이블들을 생성합니다."""
+    # Logs table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS logs (
             id TEXT PRIMARY KEY,
@@ -60,14 +74,11 @@ def init_database():
             parent_id TEXT REFERENCES logs(id),
             action_plan TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            embedding BLOB,
-            emotion TEXT,
-            dimension TEXT,
-            keywords TEXT
+            embedding BLOB, emotion TEXT, dimension TEXT, keywords TEXT
         )
     """)
     
-    # User stats table (Streak & Debt)
+    # User stats table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS user_stats (
             id INTEGER PRIMARY KEY DEFAULT 1,
@@ -78,31 +89,20 @@ def init_database():
         )
     """)
     
-    # Initialize user_stats if empty
-    cursor.execute("SELECT COUNT(*) FROM user_stats")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("""
-            INSERT INTO user_stats (id, last_login, current_streak, longest_streak, debt_count)
-            VALUES (1, NULL, 0, 0, 0)
-        """)
-    
     # Chat history table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            role TEXT NOT NULL,
-            content TEXT NOT NULL,
-            metadata TEXT
+            role TEXT NOT NULL, content TEXT NOT NULL, metadata TEXT
         )
     """)
     
-    # Manual Connections table (Constellations)
+    # Manual Connections table
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS connections (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            source_id TEXT NOT NULL,
-            target_id TEXT NOT NULL,
+            source_id TEXT NOT NULL, target_id TEXT NOT NULL,
             type TEXT DEFAULT 'manual',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(source_id) REFERENCES logs(id),
@@ -110,92 +110,80 @@ def init_database():
             UNIQUE(source_id, target_id)
         )
     """)
-    
-    conn.commit()
 
-    # user_stats migration columns
-    user_stats_migrations = [
-        ("recovery_points", "INTEGER DEFAULT 0"),
-    ]
-    for col_name, col_type in user_stats_migrations:
+
+def _init_user_stats(cursor):
+    """사용자 통계 테이블의 초기 행을 생성합니다."""
+    cursor.execute("SELECT COUNT(*) FROM user_stats")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("""
+            INSERT INTO user_stats (id, last_login, current_streak, longest_streak, debt_count)
+            VALUES (1, NULL, 0, 0, 0)
+        """)
+
+
+def _run_schema_migrations(cursor):
+    """기존 스키마에 새로운 컬럼들을 추가하는 마이그레이션 로직입니다."""
+    # user_stats 컬럼 추가
+    user_stats_cols = [("recovery_points", "INTEGER DEFAULT 0"), ("last_log_at", "TIMESTAMP")]
+    for col, ctype in user_stats_cols:
         try:
-            cursor.execute(f"ALTER TABLE user_stats ADD COLUMN {col_name} {col_type}")
-            conn.commit()
-        except sqlite3.OperationalError:
-            pass
-    
-    # ============================================================
-    # [NEW v5] Schema Migration — Add Chronos / Kanban columns
-    # ============================================================
-    migration_columns = [
-        ("linked_constitutions", "TEXT"),      # JSON array of Constitution IDs
-        ("duration", "INTEGER"),               # Minutes spent (Chronos)
-        ("debt_repaid", "INTEGER DEFAULT 0"),  # 1 if this log repaid a debt
-        ("kanban_status", "TEXT"),              # 'draft' | 'orbit' | 'landed' | NULL
-        ("quality_score", "INTEGER DEFAULT 0"),
-        ("reward_points", "INTEGER DEFAULT 0"),
+            cursor.execute(f"ALTER TABLE user_stats ADD COLUMN {col} {ctype}")
+        except sqlite3.OperationalError: pass
+
+    # logs 컬럼 추가 (Chronos / Kanban)
+    logs_cols = [
+        ("linked_constitutions", "TEXT"), ("duration", "INTEGER"),
+        ("debt_repaid", "INTEGER DEFAULT 0"), ("kanban_status", "TEXT"),
+        ("quality_score", "INTEGER DEFAULT 0"), ("reward_points", "INTEGER DEFAULT 0")
     ]
-    
-    for col_name, col_type in migration_columns:
+    for col, ctype in logs_cols:
         try:
-            cursor.execute(f"ALTER TABLE logs ADD COLUMN {col_name} {col_type}")
-            conn.commit()
-        except sqlite3.OperationalError:
-            pass  # Column already exists — safe to ignore
+            cursor.execute(f"ALTER TABLE logs ADD COLUMN {col} {ctype}")
+        except sqlite3.OperationalError: pass
 
-    # [NEW v5.1] Add last_log_at to user_stats
-    try:
-        cursor.execute("ALTER TABLE user_stats ADD COLUMN last_log_at TIMESTAMP")
-        conn.commit()
-    except sqlite3.OperationalError:
-        pass
 
-    # ============================================================
-    # [NEW v5.1] FTS5 Virtual Table for Hybrid Search
-    # ============================================================
+def _init_fts_table(cursor):
+    """Full-Text Search를 위한 가상 테이블을 초기화합니다."""
     try:
         cursor.execute("CREATE VIRTUAL TABLE IF NOT EXISTS logs_fts USING fts5(content, keywords, content='logs', content_rowid='id')")
-        # Initial population if empty
         cursor.execute("INSERT OR IGNORE INTO logs_fts(rowid, content, keywords) SELECT rowid, content, keywords FROM logs")
-        conn.commit()
     except Exception as e:
-        print(f"Warning: FTS5 not available or failed: {e}")
-    
-    conn.close()
+        print(f"Warning: FTS5 failed: {e}")
 
 
 def inject_genesis_data(embedding_func):
-    """Inject seed data if database is empty"""
+    """DB가 비어있을 때 초기 데이터를 주입합니다."""
     conn = get_connection()
     cursor = conn.cursor()
     
     cursor.execute("SELECT COUNT(*) FROM logs")
-    count = cursor.fetchone()[0]
-    
-    if count == 0:
+    if cursor.fetchone()[0] == 0:
         print("🌱 Injecting Genesis Data...")
         for data in GENESIS_DATA:
-            log_id = str(uuid.uuid4())
-            content = data["content"]
-            
-            try:
-                embedding = embedding_func(content)
-                embedding_blob = np.array(embedding).tobytes()
-            except:
-                embedding_blob = None
-            
-            cursor.execute("""
-                INSERT INTO logs (id, content, meta_type, created_at, embedding)
-                VALUES (?, ?, ?, ?, ?)
-            """, (log_id, content, data["meta_type"], datetime.now().isoformat(), embedding_blob))
+            _insert_genesis_record(cursor, data, embedding_func)
         
-        # Set initial debt for testing Red Protocol
         cursor.execute("UPDATE user_stats SET debt_count = 1 WHERE id = 1")
-        
         conn.commit()
-        print(f"✅ Injected {len(GENESIS_DATA)} genesis records + debt_count=1 for testing")
     
     conn.close()
+
+
+def _insert_genesis_record(cursor, data, embedding_func):
+    """개별 제네시스 레코드를 삽입하는 내부 도우미 함수입니다."""
+    log_id = str(uuid.uuid4())
+    content = data["content"]
+    
+    try:
+        embedding = embedding_func(content)
+        embedding_blob = np.array(embedding).tobytes()
+    except:
+        embedding_blob = None
+    
+    cursor.execute("""
+        INSERT INTO logs (id, content, meta_type, created_at, embedding)
+        VALUES (?, ?, ?, ?, ?)
+    """, (log_id, content, data["meta_type"], datetime.now().isoformat(), embedding_blob))
 
 
 # ============================================================
@@ -378,8 +366,10 @@ def create_log(
     conn = get_connection()
     cursor = conn.cursor()
     
+    keywords_json = json.dumps(keywords) if keywords else None
+    linked_const_json = json.dumps(linked_constitutions) if linked_constitutions else None
+
     cursor.execute("""
-<<<<<<< Updated upstream
         INSERT INTO logs (id, content, meta_type, parent_id, action_plan, 
                          created_at, embedding, emotion, dimension, keywords,
                          linked_constitutions, duration, debt_repaid, kanban_status,
@@ -390,20 +380,6 @@ def create_log(
         datetime.now().isoformat(), embedding_blob, emotion, dimension, keywords_json,
         linked_const_json, duration, debt_repaid, kanban_status,
         quality_score, reward_points
-=======
-        INSERT INTO logs (
-            id, content, meta_type, embedding, emotion, dimension, keywords, 
-            parent_id, action_plan, linked_constitutions, duration, debt_repaid, kanban_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        log_id, content, meta_type,
-        embedding_blob,
-        emotion, dimension,
-        json.dumps(keywords) if keywords else None,
-        parent_id, action_plan,
-        json.dumps(linked_constitutions) if linked_constitutions else None,
-        duration, debt_repaid, kanban_status
->>>>>>> Stashed changes
     ))
     
     conn.commit()
@@ -504,16 +480,25 @@ def get_all_logs() -> list:
     return [_row_to_dict(row) for row in rows]
 
 
-def get_fragments_paginated(limit: int = 10, offset: int = 0) -> list:
-    """Get fragments with pagination"""
+def get_logs_paginated(limit: int = 10, offset: int = 0, meta_type: str = None) -> list:
+    """Get logs with pagination, optionally filtering by meta_type"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM logs 
-        WHERE meta_type = 'Fragment' 
-        ORDER BY created_at DESC 
-        LIMIT ? OFFSET ?
-    """, (limit, offset))
+    
+    if meta_type:
+        cursor.execute("""
+            SELECT * FROM logs 
+            WHERE meta_type = ?
+            ORDER BY created_at DESC 
+            LIMIT ? OFFSET ?
+        """, (meta_type, limit, offset))
+    else:
+        cursor.execute("""
+            SELECT * FROM logs 
+            ORDER BY created_at DESC 
+            LIMIT ? OFFSET ?
+        """, (limit, offset))
+        
     rows = cursor.fetchall()
     conn.close()
     return [_row_to_dict(row) for row in rows]
@@ -527,6 +512,24 @@ def get_fragment_count() -> int:
     count = cursor.fetchone()[0]
     conn.close()
     return count
+
+
+def get_log_counts() -> dict:
+    """
+    [Optimized] Get counts for all log types in one query.
+    Returns: {'Constitution': N, 'Apology': N, 'Fragment': N}
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT meta_type, COUNT(*) FROM logs GROUP BY meta_type")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    counts = {"Constitution": 0, "Apology": 0, "Fragment": 0}
+    for meta_type, count in rows:
+        if meta_type in counts:
+            counts[meta_type] = count
+    return counts
 
 
 def get_random_echo() -> dict:
@@ -736,76 +739,95 @@ def delete_connection(source_id: str, target_id: str) -> bool:
 # ============================================================
 def get_constitutions_with_stats() -> List[dict]:
     """
-    Get each Constitution with aggregated stats for Soul Finviz Treemap.
-    Returns: list of dicts with id, content, total_duration, fragment_count, last_activity, health_score
+    각 헌법별 통계(성취 시간, 기록 수, 건강도 등)를 집계하여 반환합니다.
+    [변경 이유] 거대한 루프 내부 로직을 별도 함수로 분리하여 가독성 및 유지보수성 향상.
     """
     conn = get_connection()
     cursor = conn.cursor()
     
     constitutions = get_constitutions()
-    
     stats = []
+    
     for const in constitutions:
-        const_id = const["id"]
-        
-        # Count fragments linked to this constitution via linked_constitutions JSON
-        cursor.execute("SELECT duration, linked_constitutions, created_at FROM logs WHERE meta_type = 'Fragment'")
-        rows = cursor.fetchall()
-        
-        total_duration = 0
-        fragment_count = 0
-        last_activity = const.get("created_at", "")
-        
-        for row in rows:
-            linked = row["linked_constitutions"]
-            if linked:
-                try:
-                    linked_ids = json.loads(linked)
-                except:
-                    linked_ids = []
-                if const_id in linked_ids:
-                    fragment_count += 1
-                    total_duration += (row["duration"] or 0)
-                    if row["created_at"] > last_activity:
-                        last_activity = row["created_at"]
-        
-        # Also count Apologies linked via parent_id
-        cursor.execute("""
-            SELECT COUNT(*) as cnt FROM logs 
-            WHERE meta_type = 'Apology' AND parent_id = ?
-        """, (const_id,))
-        apology_count = cursor.fetchone()["cnt"]
-        
-        # Check debt status
-        has_debt = get_debt_count() > 0
-        
-        # Calculate health score (-1.0 to 1.0)
-        days_since = _days_since(last_activity)
-        
-        if has_debt or days_since > 7:
-            health = -1.0 + min(0.5, fragment_count * 0.1)
-        elif days_since > 3:
-            health = 0.0
-        else:
-            health = min(1.0, 0.3 + fragment_count * 0.1 + total_duration * 0.005)
-        
-        health = max(-1.0, min(1.0, health))
-        
-        stats.append({
-            "id": const_id,
-            "content": const["content"],
-            "total_duration": total_duration,
-            "fragment_count": fragment_count,
-            "apology_count": apology_count,
-            "last_activity": last_activity,
-            "days_since_activity": days_since,
-            "health_score": round(health, 2),
-            # Size for treemap = duration + fragment_count weighted
-            "size": max(1, total_duration + fragment_count * 10)
-        })
+        const_stats = _fetch_single_constitution_stats(cursor, const)
+        stats.append(const_stats)
     
     conn.close()
     return stats
+
+
+def _fetch_single_constitution_stats(cursor, const: dict) -> dict:
+    """단일 헌법에 대한 상세 통계를 쿼리하고 계산합니다."""
+    const_id = const["id"]
+    
+    # Fragment 통계 집계
+    cursor.execute("SELECT duration, linked_constitutions, created_at FROM logs WHERE meta_type = 'Fragment'")
+    rows = cursor.fetchall()
+    
+    duration, count, last_act = _aggregate_fragment_data(rows, const_id, const.get("created_at", ""))
+    
+    # Apology 통계 집계
+    cursor.execute("SELECT COUNT(*) as cnt FROM logs WHERE meta_type = 'Apology' AND parent_id = ?", (const_id,))
+    apology_count = cursor.fetchone()["cnt"]
+    
+    health = _calculate_constitution_health(duration, count, last_act)
+    
+    return {
+        "id": const_id,
+        "content": const["content"],
+        "total_duration": duration,
+        "fragment_count": count,
+        "apology_count": apology_count,
+        "last_activity": last_act,
+        "days_since_activity": _days_since(last_act),
+        "health_score": round(health, 2),
+        "size": max(1, duration + count * 10)
+    }
+
+
+def _aggregate_fragment_data(rows: list, const_id: str, initial_last_act: str) -> tuple:
+    """로그 목록을 순회하며 특정 헌법에 연결된 데이터들을 합산합니다."""
+    total_duration = 0
+    fragment_count = 0
+    last_activity = initial_last_act
+    
+    for row in rows:
+        linked = row["linked_constitutions"]
+        if not linked: continue
+        
+        try:
+            linked_ids = json.loads(linked)
+        except:
+            linked_ids = []
+            
+        if const_id in linked_ids:
+            fragment_count += 1
+            total_duration += (row["duration"] or 0)
+            if row["created_at"] > last_activity:
+                last_activity = row["created_at"]
+                
+    return total_duration, fragment_count, last_activity
+
+
+def _calculate_constitution_health(duration: int, count: int, last_act: str) -> float:
+    """
+    헌법의 건강도(-1.0 ~ 1.0)를 계산합니다.
+    [변경 이유] 복잡한 점수 계산 수식을 격리하여 실험 및 수정이 용이하게 함.
+    """
+    days_since = _days_since(last_act)
+    has_debt = get_debt_count() > 0
+    
+    if has_debt or days_since > 7:
+        health = -1.0 + min(0.5, count * 0.1)
+    elif days_since > 3:
+        health = 0.0
+    else:
+        # 가중치 기반 점수 부여 (시간, 깊이, 빈도)
+        base = 0.3 + (duration * 0.005)
+        count_bonus = count * 0.05
+        health = min(1.0, base + count_bonus)
+        
+    return max(-1.0, min(1.0, health))
 
 
 def _days_since(iso_timestamp: str) -> int:
@@ -854,7 +876,7 @@ def update_kanban_status(log_id: str, new_status: str) -> bool:
 
 
 def create_kanban_card(content: str, constitution_id: str, status: str = "draft") -> dict:
-    """Create a new Kanban card — MUST orbit a Constitution (no orphans)."""
+    """Create a new Kanban card - MUST orbit a Constitution (no orphans)."""
     if not constitution_id:
         raise ValueError("A Kanban card cannot be born without a mother star (constitution_id required).")
     return create_log(

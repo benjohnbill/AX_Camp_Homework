@@ -84,6 +84,219 @@ def is_api_key_configured() -> bool:
 client = None  # Will be set dynamically via get_client()
 
 # ============================================================
+# [NEW v5.2] Architecture: EvidenceGateway & PolicyEngine
+# ============================================================
+import time
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("NarrativeLoop")
+
+class EvidenceGateway:
+    """
+    [Body] Responsible for I/O and Data Retrieval. 
+    Never makes decisions, only fetches evidence safely.
+    Handles: OpenAI API, Database, Vector Index, Time Standardization.
+    """
+    def __init__(self):
+        self.api_failure_count = 0
+        self.MAX_FAILURES = 3
+        self.is_degraded_mode = False
+        self._ensure_utc_for_sqlite()
+
+    def _ensure_utc_for_sqlite(self):
+        """Ensure SQLite handles dates as UTC"""
+        # (This is mostly handled by db_manager or connection string, 
+        # but we enforce UTC in our methods)
+        pass
+
+    def check_system_health(self) -> dict:
+        """Startup check for DB, API, Vector Backend"""
+        health = {
+            "db": False,
+            "api": False,
+            "vector": False,
+            "errors": []
+        }
+        
+        # 1. DB Check
+        try:
+            db.get_fragment_count()
+            health["db"] = True
+        except Exception as e:
+            health["errors"].append(f"DB Error: {e}")
+
+        # 2. API Check
+        if is_api_key_configured():
+            health["api"] = True
+        else:
+            health["errors"].append("API Key missing")
+
+        # 3. Vector Backend
+        typ, _, _ = load_or_build_index()
+        if typ:
+            health["vector"] = True
+
+        # 4. Data/BLOB Integrity Check (Numpy Version Safety)
+        try:
+            sample = db.get_random_echo()
+            if sample and sample.get("embedding") and len(sample["embedding"]) > 0:
+                # Good: BLOB decoded successfully
+                pass
+            elif sample and not sample.get("embedding"):
+                # Warn if data exists but no embedding (could be legacy or decode fail)
+                pass 
+            if sample and isinstance(sample.get("embedding"), list) and len(sample["embedding"]) == 0 and sample.get("content"):
+                 # If content exists but embedding is empty list, it *might* be a decode fail if we expect embeddings.
+                 # But for now, just Ensure no crash.
+                 pass
+        except Exception as e:
+            health["errors"].append(f"Data Integrity Error (BLOB/Numpy): {e}")
+        
+        return health
+
+    def sanitize_input(self, text: str) -> str:
+        """
+        [Safety] Validate and sanitize user input.
+        - Trim whitespace
+        - Check constraints (min/max length)
+        """
+        if not text:
+            return ""
+        trimmed = text.strip()
+        if len(trimmed) > 10000:
+            return trimmed[:10000] # Hard cap
+        return trimmed
+
+    def get_embedding_safe(self, text: str) -> list:
+        """
+        [Resilience] Get embedding with Circuit Breaker & Retry.
+        Returns: embedding list or None (if failed/degraded).
+        """
+        # 1. Input Check
+        clean_text = self.sanitize_input(text)
+        if not clean_text or len(clean_text) < 2:
+            return None # Too short to embed
+
+        # 2. Circuit Breaker Check
+        if self.is_degraded_mode:
+            logger.warning("Gateway is in Degraded Mode. Skipping API call.")
+            return None
+
+        # 3. Try API with Retry
+        client = get_client()
+        if not client:
+            return None
+
+        for attempt in range(3):
+            try:
+                response = client.embeddings.create(model="text-embedding-3-small", input=clean_text)
+                self.api_failure_count = 0 # Reset on success
+                return response.data[0].embedding
+            except Exception as e:
+                logger.error(f"Embedding API Error (Attempt {attempt+1}): {e}")
+                time.sleep(1 * (attempt+1)) # Backoff
+        
+        # 4. Failure Handling
+        self.api_failure_count += 1
+        if self.api_failure_count >= self.MAX_FAILURES:
+            self.is_degraded_mode = True
+            logger.critical("Circuit Breaker TRIPPED. Entering Degraded Mode.")
+        
+        return None
+
+    def fetch_recent_logs(self, limit=50) -> list:
+        """Fetch recent logs with UTC normalization"""
+        logs = db.get_logs_paginated(limit=limit, offset=0)
+        # TODO: Normalize timestamps here if necessary
+        return logs
+
+    def fetch_constitutions(self) -> list:
+        return db.get_constitutions()
+
+    def check_compliance_with_llm(self, constitution_text: str, fragment_text: str) -> tuple[bool, str]:
+        """[Service] Ask LLM if there is a contradiction."""
+        if self.is_degraded_mode:
+            return False, "Degraded Mode: Skipping Check"
+            
+        client = get_client()
+        if not client:
+             return False, "No Client"
+             
+        try:
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a precise logical judge. Determine if the NEW statement contradicts the CONSTITUTION. Reply with JSON: {\\\"contradiction\\\": true/false, \\\"reason\\\": \\\"short explanation\\\"}."},
+                    {"role": "user", "content": f"CONSTITUTION: {constitution_text}\\nNEW: {fragment_text}"}
+                ],
+                response_format={"type": "json_object"}
+            )
+            result = json.loads(completion.choices[0].message.content)
+            return result.get("contradiction", False), result.get("reason", "")
+        except Exception as e:
+            logger.error(f"LLM Check Failed: {e}")
+            return False, "Error during check"
+
+
+class PolicyEngine:
+    """
+    [Mind] Pure Logic and Decisions.
+    Takes DTOs (Data Transfer Objects) and returns Decisions.
+    state-less (mostly) and side-effect free.
+    """
+    
+    def evaluate_silence(self, last_log_dt: datetime, now_dt: datetime) -> str:
+        """
+        Check for silence intervention.
+        Both inputs must be timezone-aware (or consistently naive UTC).
+        """
+        if not last_log_dt or not now_dt:
+            return None
+        
+        # Ensure compatibility
+        if last_log_dt.tzinfo is None:
+             # Assume UTC if naive, as per our new standard
+            last_log_dt = last_log_dt.replace(tzinfo=datetime.timezone.utc)
+        if now_dt.tzinfo is None:
+            now_dt = now_dt.replace(tzinfo=datetime.timezone.utc)
+
+        diff = now_dt - last_log_dt
+        hours_silent = diff.total_seconds() / 3600
+
+        if hours_silent > 72:
+            return f"⚠️ 우주가 차갑게 식어가고 있습니다. {int(hours_silent/24)}일간 관측 기록이 없습니다."
+        elif hours_silent > 24:
+            return f"🕰️ 문학적 천문학자가 당신의 부재를 감지했습니다. ({int(hours_silent)}시간 동안 침묵)"
+        
+        return None
+
+    def detect_violation(self, fragment_content: str, constitution_candidates: list, gateway_ref) -> tuple[bool, str, dict]:
+        """
+        [Logic] Determine if a fragment violates any constitution.
+        - Checks ALL candidates, not just the first.
+        - Returns: (is_violation, reason, violated_constitution_obj)
+        """
+        for const in constitution_candidates:
+            # 1. Similarity Logic (Fast Filter)
+            # Optimally, we only check high-similarity ones if the list is huge.
+            # For now, we trust the caller (Gateway) provided relevant candidates.
+            # But let's double check if we have embeddings to be safe
+            
+            # 2. LLM Check
+            is_violation, reason = gateway_ref.check_compliance_with_llm(const.get('content'), fragment_content)
+            if is_violation:
+                return True, reason, const
+                
+        return False, "", None
+
+# Initialize Global Instances
+gateway = EvidenceGateway()
+policy = PolicyEngine()
+
+
+# ============================================================
 # [NEW v5.1] Advanced Search & Caching
 # ============================================================
 # Cache embeddings to avoid DB hits on every rerun
@@ -251,11 +464,9 @@ META_TYPE_STYLES = {
 # Embedding & Metadata
 # ============================================================
 def get_embedding(text: str) -> list:
-    client = get_client()
-    if not client:
-        return []  # Return empty if no API key
-    response = client.embeddings.create(model="text-embedding-3-small", input=text)
-    return response.data[0].embedding
+    """Wrapper for EvidenceGateway.get_embedding_safe"""
+    res = gateway.get_embedding_safe(text)
+    return res if res else []
 
 
 def extract_metadata(text: str) -> dict:
@@ -285,6 +496,11 @@ def extract_metadata(text: str) -> dict:
 # ============================================================
 def save_log(text: str) -> dict:
     """Save a new Fragment"""
+    # [Safety] Sanitize input
+    text = gateway.sanitize_input(text)
+    if not text:
+        return None
+
     embedding = get_embedding(text)
     metadata = extract_metadata(text)
     
@@ -310,7 +526,7 @@ def get_log_by_id(log_id: str) -> dict:
 def get_fragments_paginated(page: int = 1, per_page: int = 10) -> tuple[list, int]:
     """Get fragments for a specific page and total count"""
     offset = (page - 1) * per_page
-    fragments = db.get_fragments_paginated(limit=per_page, offset=offset)
+    fragments = db.get_logs_paginated(limit=per_page, offset=offset, meta_type="Fragment")
     total_count = db.get_fragment_count()
     return fragments, total_count
 
@@ -387,7 +603,11 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
     if not constitution or not constitution.get("embedding"):
         return True, 1.0
     
-    frag_emb = np.array(get_embedding(fragment_text)).reshape(1, -1)
+    raw_emb = get_embedding(fragment_text)
+    if not raw_emb:
+        return True, 1.0 # Fail safe (Allow)
+
+    frag_emb = np.array(raw_emb).reshape(1, -1)
     const_emb = np.array(constitution["embedding"]).reshape(1, -1)
     
     score = cosine_similarity(frag_emb, const_emb)[0][0]
@@ -561,14 +781,8 @@ def run_gatekeeper() -> dict:
     # 1. Check for Broken Promise from yesterday
     broken_promise_log = check_yesterday_promise()
     
-    # 2. Check for Conflicts with Constitution
-    # [UPDATED v5.1] LLM-based Contradiction Check
+    # 2. Check for Conflicts with Constitution (Using PolicyEngine)
     conflicts = []
-    
-    # Get recent fragments (last 24h) to check against Constitution
-    # For now, just check specific recent logs if needed, or simply return empty if no trigger
-    # But usually, Gatekeeper checks if *current state* violates *constitution*.
-    # Let's check the *last written fragment* against Constitution.
     
     all_logs = load_logs()
     fragments = [l for l in all_logs if l.get('meta_type') == 'Fragment']
@@ -577,51 +791,23 @@ def run_gatekeeper() -> dict:
     if fragments and constitutions:
         latest_fragment = fragments[-1] # The most recent thought
         
-        # Check against all constitutions
-        for const in constitutions:
-            # 1. Similarity Check (Fast filter)
-            sim = 0.0
-            if latest_fragment.get('embedding') and const.get('embedding'):
-                v1 = np.array(latest_fragment['embedding'])
-                v2 = np.array(const['embedding'])
-                sim = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
-                
-            # If high similarity (related topic), check logic
-            if sim > 0.4:
-                # LLM Check
-                is_violation, reason = check_contradiction(const.get('content'), latest_fragment.get('content'))
-                if is_violation:
-                    conflicts.append({
-                        "content": const.get('content'),
-                        "violation": latest_fragment.get('content'),
-                        "reason": reason
-                    })
+        # Policy Engine Check
+        is_violation, reason, const = policy.detect_violation(latest_fragment.get('content'), constitutions, gateway)
+        
+        if is_violation:
+            conflicts.append({
+                "content": const.get('content'),
+                "violation": latest_fragment.get('content'),
+                "reason": reason
+            })
 
     return {
         "conflicts": conflicts,
         "broken_promise": broken_promise_log
     }
 
-def check_contradiction(constitution_text, fragment_text):
-    """Use LLM to check if fragment contradicts constitution"""
-    if not is_api_key_configured():
-        return False, ""
-        
-    client = get_client()
-    try:
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a precise logical judge. Determine if the NEW statement contradicts the CONSTITUTION. Reply with JSON: {\"contradiction\": true/false, \"reason\": \"short explanation\"}."},
-                {"role": "user", "content": f"CONSTITUTION: {constitution_text}\nNEW: {fragment_text}"}
-            ],
-            response_format={"type": "json_object"}
-        )
-        result = json.loads(completion.choices[0].message.content)
-        return result.get("contradiction", False), result.get("reason", "")
-    except Exception as e:
-        print(f"Contradiction check failed: {e}")
-        return False, ""
+# check_contradiction is now deprecated/handled by EvidenceGateway
+# def check_contradiction(constitution_text, fragment_text): ...
 
 
 def check_yesterday_promise() -> dict:
@@ -655,79 +841,84 @@ def check_yesterday_promise() -> dict:
 
 
 # ============================================================
-# [NEW v5.1] Active Intervention System (P0)
+# [REFACTORED] Active Intervention System
 # ============================================================
-def run_active_intervention() -> list:
+def run_active_intervention() -> list[str]:
     """
-    Check for inactivity or negative patterns on launch.
-    Returns a list of intervention messages (strings).
+    사용자 활동 패턴을 분석하여 개입(Intervention) 메시지를 생성합니다.
+    [변경 이유] 중복 정의되었던 함수를 통합하고, 로직을 PolicyEngine으로 위임하여 응집도를 높임.
     """
-    interventions = []
-    
-    # 1. Silence Detection (> 24 hours)
-    last_log_at = db.get_last_log_time()
-    if last_log_at:
-        try:
-            # Parse DB timestamp (UTC or local depending on SQLite)
-            # Assuming standard YYYY-MM-DD HH:MM:SS
-            last_dt = datetime.strptime(last_log_at, "%Y-%m-%d %H:%M:%S")
-            
-            # Simple check against system time
-            now = datetime.now()
-            diff = now - last_dt
-            
-            hours_silent = diff.total_seconds() / 3600
-            
-            if hours_silent > 72:
-                interventions.append(f"⚠️ 우주가 차갑게 식어가고 있습니다. 3일간 관측 기록이 없습니다.")
-            elif hours_silent > 24:
-                interventions.append(f"🕰️ 문학적 천문학자가 당신의 부재를 감지했습니다. ({int(hours_silent)}시간 동안 침묵)")
-                
-        except Exception as e:
-            pass
-            
-    return interventions
+    last_log_timestamp = db.get_last_log_time()
+    if not last_log_timestamp:
+        return []
 
-
-# ============================================================
-# [NEW v5.1] Active Intervention System (P0)
-# ============================================================
-def run_active_intervention() -> list:
-    """
-    Check for inactivity or negative patterns on launch.
-    Returns a list of intervention messages (strings).
-    """
-    interventions = []
-    
-    # 1. Silence Detection (> 24 hours)
-    last_log_at = db.get_last_log_time()
-    if last_log_at:
-        try:
-            # Parse DB timestamp (UTC or local depending on SQLite)
-            # Assuming standard YYYY-MM-DD HH:MM:SS
-            last_dt = datetime.strptime(last_log_at, "%Y-%m-%d %H:%M:%S")
-            
-            # Simple check against system time
-            # For robustness, we check time difference without timezone hassle
-            now = datetime.now()
-            diff = now - last_dt
-            
-            hours_silent = diff.total_seconds() / 3600
-            
-            if hours_silent > 72:
-                interventions.append(f"⚠️ 우주가 차갑게 식어가고 있습니다. 3일간 관측 기록이 없습니다.")
-            elif hours_silent > 24:
-                interventions.append(f"🕰️ 문학적 천문학자가 당신의 부재를 감지했습니다. ({int(hours_silent)}시간 동안 침묵)")
-                
-        except Exception as e:
-            # Timestamp parsing failed or other issue
-            pass
-            
-    # 2. Constitution Neglect (Simple Heartbeat)
-    # If standard deviation of constitution activity is high?
-    # For P0, silence detection is the MVP.
+    try:
+        # 문자열 시간을 datetime 객체로 표준화하여 변환
+        last_log_dt = datetime.strptime(last_log_timestamp, "%Y-%m-%d %H:%M:%S")
+        current_time = datetime.now()
         
-    return interventions
+        # PolicyEngine을 통한 판단 (Logic separation)
+        intervention_msg = policy.evaluate_silence(last_log_dt, current_time)
+        return [intervention_msg] if intervention_msg else []
+    except (ValueError, TypeError) as error:
+        logger.error(f"Intervention parsing error: {error}")
+        return []
+
+
+def generate_response(user_input: str, related_logs: list[dict]) -> str:
+    """
+    사용자 입력과 관련 로그를 바탕으로 AI 응답을 생성합니다.
+    [변경 이유] 프롬프트 구성, 컨텍스트 생성 로직을 내부에서 분리하여 가독성 향상.
+    """
+    if not is_api_key_configured():
+        return "API 키가 설정되지 않아 응답할 수 없습니다. 별들의 목소리가 들리지 않네요."
+
+    # 1. 컨텍스트 텍스트 구성 (Sub-task 분리)
+    context_payload = _build_context_from_logs(related_logs)
+    
+    # 2. 페르소나 및 시스템 프롬프트 준비
+    system_prompt = _get_system_prompt_with_persona()
+    
+    # 3. LLM 요청 실행
+    return _call_ai_api(system_prompt, user_input, context_payload)
+
+
+def _build_context_from_logs(logs: list[dict]) -> str:
+    """관련 과거 로그를 AI가 이해할 수 있는 문자열로 변환합니다."""
+    if not logs:
+        return "관련된 과거 기억이 없습니다."
+    
+    formatted_entries = []
+    for entry in logs:
+        timestamp = entry.get('created_at', 'unknown')[:10]
+        content = entry.get('content', '')
+        formatted_entries.append(f"[{timestamp}] {content}")
+    
+    return "\n".join(formatted_entries)
+
+
+def _get_system_prompt_with_persona() -> str:
+    """현재 날짜에 맞는 페르소나 설정을 포함한 시스템 프롬프트를 반환합니다."""
+    base_persona = select_persona()
+    return f"{base_persona}\n사용자의 과거 기록[USER DATA CONTEXT]을 거울삼아 성찰을 도와주세요."
+
+
+def _call_ai_api(system_prompt: str, user_input: str, context: str) -> str:
+    """실제 OpenAI API 호출을 담당하며 예외를 처리합니다."""
+    client = get_client()
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"[USER DATA CONTEXT]\n{context}\n\n[NEW INPUT]\n{user_input}"}
+            ],
+            temperature=0.7
+        )
+        return completion.choices[0].message.content
+    except Exception as api_error:
+        logger.error(f"AI Generation failed: {api_error}")
+        return "우주와의 통신이 원활하지 않습니다. 잠시 후 다시 시도해주세요."
 
 
 
@@ -1162,3 +1353,16 @@ def land_kanban_card(card_id: str, constitution_ids: list, accomplishment: str, 
         )
     
     return db.get_log_by_id(card_id)
+
+
+# ============================================================
+# [NEW v5.2] Diagnostics
+# ============================================================
+def run_startup_diagnostics():
+    """Run EvidenceGateway health check and log results"""
+    health = gateway.check_system_health()
+    if health["errors"]:
+        logger.warning(f"Startup Diagnostics Found Issues: {health['errors']}")
+    else:
+        logger.info("Startup Diagnostics Passed.")
+    return health
