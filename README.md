@@ -107,6 +107,11 @@ Supabase SQL Editor에서 아래 파일 내용을 순서대로 붙여넣어 실�
 - `user_stats`에 `id=1` 기본 row 존재 확인
 - `idx_logs_embedding_ivfflat`, `idx_logs_content_trgm` 인덱스 생성 확인
 
+자동 검증(권장):
+```bash
+python tools/check_supabase_phase1.py
+```
+
 ### 3. 실행
 ```bash
 streamlit run app.py
