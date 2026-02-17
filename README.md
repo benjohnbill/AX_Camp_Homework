@@ -128,6 +128,16 @@ MIGRATION_BATCH=200 python tools/migrate_sqlite_to_supabase.py
 streamlit run app.py
 ```
 
+### 4. 운영 점검 (권장)
+배포 전/후 표준 절차는 아래 Runbook을 따릅니다.
+
+- `SUPABASE_RUNBOOK.md`
+
+Post-deploy smoke 체크:
+```bash
+python tools/check_postdeploy_smoke.py
+```
+
 ---
 
 ## 🔒 보안 및 라이선스
