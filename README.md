@@ -95,6 +95,18 @@ DATASTORE = "sqlite" # 또는 "postgres"
 DATABASE_URL = "postgresql://..."
 ```
 
+### 2-1. Supabase Schema Bootstrap (Phase 1)
+Supabase SQL Editor에서 아래 파일 내용을 순서대로 붙여넣어 실행하세요.
+```sql
+-- 1) sql/1_create_logs_table.sql
+-- 2) sql/2_create_system_tables.sql
+```
+
+검증 체크:
+- `logs`, `user_stats`, `chat_history`, `connections` 테이블 생성 확인
+- `user_stats`에 `id=1` 기본 row 존재 확인
+- `idx_logs_embedding_ivfflat`, `idx_logs_content_trgm` 인덱스 생성 확인
+
 ### 3. 실행
 ```bash
 streamlit run app.py
