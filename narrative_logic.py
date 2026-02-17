@@ -1010,49 +1010,6 @@ def select_persona() -> str:
     return PERSONAS[selected_key]
 
 
-def generate_response(user_input: str, past_logs: list = None) -> str:
-    """Generate AI response based on mode (Red/Blue) and Daily Persona"""
-    
-    if is_red_mode():
-        constitution = get_violated_constitution()
-        const_text = constitution.get("content", "")[:50] if constitution else "알 수 없음"
-        
-        return f"우주가 피를 흘리고 있다. 당신의 헌법 \"{const_text}...\" 위반을 먼저 해명하라."
-    
-    # Blue Mode - Full response
-    context = []
-    
-    # Add past related logs as blockquotes with explicit grounding instruction
-    if past_logs:
-        for log in past_logs[:3]:
-            date_str = log.get("created_at", "")[:10]
-            content = log.get("content", log.get("text", ""))[:150]
-            context.append(f'Log Date: {date_str}\nContent: "{content}"')
-    
-    context_str = "\n\n".join(context) if context else "No past logs found."
-    
-    # [P1] Dynamic Persona Selection
-    system_prompt = select_persona()
-    system_prompt += f"\n\n[USER DATA CONTEXT]\nThe following are the ONLY facts you know about the user:\n{context_str}\n\nIf the answer is not in this context, DO NOT INVENT IT."
-    
-    try:
-        client = get_client()
-        if not client:
-            return "⚠️ API 키가 설정되지 않았습니다. 사이드바에서 API 키를 입력해주세요."
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_input}
-            ],
-            temperature=0.85,
-            max_tokens=300
-        )
-        return response.choices[0].message.content
-    except:
-        return "문학적 천문학자가 잠시 별을 관측 중입니다..."
-
-
 def find_related_logs(query_text: str, top_k: int = 5) -> list:
     """Find related logs using Hybrid Search (Vector + Keyword)"""
     try:
@@ -1367,9 +1324,9 @@ def run_startup_diagnostics():
         logger.info("Startup Diagnostics Passed.")
     return health
 
- #   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
- #   [ B r i d g e ]   D a t a b a s e   A c c e s s 
- #   = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
- d e f   g e t _ d e b t _ c o u n t ( )   - >   i n t : 
-         r e t u r n   d b . g e t _ d e b t _ c o u n t ( )  
- 
+
+# ============================================================
+# [Bridge] Database Access
+# ============================================================
+def get_debt_count() -> int:
+    return db.get_debt_count()
