@@ -85,3 +85,13 @@
 - 테스트/컴파일/앱 실행 검증 통과.
 - 용어 정책(Core/Gap/Log, Entropy Alert)과 레거시 호환 동시 만족.
 - PR 설명에 “충돌 원인/해결 기준/검증 결과” 포함.
+
+
+---
+
+## 7) 실행 결과 (Current Branch)
+- [x] `narrative_logic.py` import 순서 안정화 (`db_manager` 선행 import)
+- [x] Core/Gap/Log canonical + legacy alias 로직 유지
+- [x] `app.py`를 `is_entropy_mode` / `process_gap` 호출로 정렬
+- [x] 용어 호환성 테스트 추가 (`tests/test_terminology_aliases.py`)
+- [x] 컴파일/테스트/런타임 검증 수행

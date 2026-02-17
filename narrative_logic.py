@@ -547,8 +547,13 @@ def get_current_echo(reference_text: str = None) -> dict:
 # Red Protocol: Debt System
 # ============================================================
 def is_red_mode() -> bool:
-    """Check if Red Mode should be active (debt_count > 0)"""
+    """Backward-compatible alias for entropy state check."""
     return db.get_debt_count() > 0
+
+
+def is_entropy_mode() -> bool:
+    """Canonical alert-state check used by newer app flows."""
+    return is_red_mode()
 
 
 def get_violated_constitution() -> dict:
@@ -617,7 +622,7 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
 
 
 def process_apology(content: str, constitution_id: str, action_plan: str) -> dict:
-    """Process and save a Gap log, decrement debt"""
+    """Backward-compatible alias: process and save a Gap log, decrement debt."""
     embedding = get_embedding(content)
     quality_score = score_apology_quality(content, action_plan)
     reward_points = calculate_apology_reward(content, quality_score)
@@ -637,8 +642,13 @@ def process_apology(content: str, constitution_id: str, action_plan: str) -> dic
     apology["quality_score"] = quality_score
     apology["reward_points"] = reward_points
     apology["recovery_points_total"] = total_points
-    
+
     return apology
+
+
+def process_gap(content: str, core_id: str, action_plan: str) -> dict:
+    """Canonical naming wrapper for process_apology()."""
+    return process_apology(content, core_id, action_plan)
 
 
 def get_temporal_patterns() -> pd.DataFrame:

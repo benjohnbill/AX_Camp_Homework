@@ -202,7 +202,7 @@ def render_universe_mode():
     with t1:
         st.caption("관측할 별을 선택하고, 새로운 별자리를 연결하세요.")
         logs = logic.load_logs()
-        opts = {f"[{l['meta_type']}] {l['content'][:30]}...": l['id'] for l in logs}
+        opts = {f"[{db.canonicalize_meta_type(l['meta_type'])}] {l['content'][:30]}...": l['id'] for l in logs}
         sel = st.selectbox("관측 대상", list(opts.keys()))
         if sel:
             log = logic.get_log_by_id(opts[sel])
@@ -282,10 +282,10 @@ def render_desk_mode():
 # ============================================================
 def main():
     init_page_config(); init_session_state()
-    red = logic.is_red_mode()
-    apply_atmosphere(red); render_sidebar(red)
+    is_entropy = logic.is_entropy_mode()
+    apply_atmosphere(is_entropy); render_sidebar(is_entropy)
     
-    if red:
+    if is_entropy:
         st.error(f"{icons.get_icon('shield-alert')} ENTROPY ALERT: DRIFT DETECTED")
         with st.form("apology"):
             consts = db.get_constitutions()
@@ -293,7 +293,7 @@ def main():
             reason = st.text_area("Gap Log (100자 이상)")
             plan = st.text_area("내일의 약속")
             if st.form_submit_button("제출") and len(reason) >= 100:
-                logic.process_apology(reason, [c['id'] for c in consts if c['content']==sel][0], plan)
+                logic.process_gap(reason, [c['id'] for c in consts if c['content']==sel][0], plan)
                 st.rerun()
         return
 
