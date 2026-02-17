@@ -457,8 +457,8 @@ MAX_CONTEXT_TURNS = 10
 
 # Visual Styles for Graph
 META_TYPE_STYLES = {
-    "Core": {"shape": "star", "size": 50, "color": "#FFD700", "mass": 100, "fixed": True},
-    "Gap": {"shape": "square", "size": 30, "color": "#00FF7F", "mass": 50, "fixed": False},
+    "Core": {"shape": "star", "size": 30, "color": "#FFD700", "mass": 30, "fixed": False},
+    "Gap": {"shape": "box", "size": 20, "color": "#fb3e3e", "mass": 20, "fixed": False}, # Entropy/Red
     "Log": {"shape": "dot", "size": 15, "color": "#FFFFFF", "mass": 10, "fixed": False}
 }
 
@@ -889,23 +889,23 @@ def run_gatekeeper() -> dict:
     # 1. Check for Broken Promise from yesterday
     broken_promise_log = check_yesterday_promise()
     
-    # 2. Check for Conflicts with Constitution (Using PolicyEngine)
+    # 2. Check for Conflicts with Core (Using PolicyEngine)
     conflicts = []
     
     all_logs = load_logs()
-    fragments = [l for l in all_logs if l.get('meta_type') == 'Fragment']
-    constitutions = [l for l in all_logs if l.get('meta_type') == 'Constitution']
+    logs = [l for l in all_logs if l.get('meta_type') == 'Log']
+    cores = [l for l in all_logs if l.get('meta_type') == 'Core']
     
-    if fragments and constitutions:
-        latest_fragment = fragments[-1] # The most recent thought
+    if logs and cores:
+        latest_log = logs[-1] # The most recent thought
         
         # Policy Engine Check
-        is_violation, reason, const = policy.detect_violation(latest_fragment.get('content'), constitutions, gateway)
+        is_violation, reason, const = policy.detect_violation(latest_log.get('content'), cores, gateway)
         
         if is_violation:
             conflicts.append({
                 "content": const.get('content'),
-                "violation": latest_fragment.get('content'),
+                "violation": latest_log.get('content'),
                 "reason": reason
             })
 
@@ -1240,8 +1240,8 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
         log_id = log.get("id")
         id_to_idx[log_id] = i
         
-        meta_type = log.get("meta_type", "Fragment")
-        style = META_TYPE_STYLES.get(meta_type, META_TYPE_STYLES["Fragment"])
+        meta_type = log.get("meta_type", "Log")
+        style = META_TYPE_STYLES.get(meta_type, META_TYPE_STYLES["Log"])
         
         text = log.get("content", log.get("text", ""))
         label = text[:15] + "..." if len(text) > 15 else text
@@ -1251,7 +1251,7 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
         
         # Dynamic Size Calculation (The Evolution)
         base_size = style["size"]
-        if meta_type in ["Constitution", "Apology"]:
+        if meta_type in ["Core", "Gap"]:
             # Grow based on connections
             count = connection_counts.get(log_id, 0)
             node_size = base_size + (count * 2)
@@ -1271,9 +1271,9 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
             mass=style["mass"]
         )
     
-    # Add edges (Apology -> Constitution = Cyan Edge)
+    # Add edges (Gap -> Core = Cyan Edge)
     for log in logs:
-        if log.get("meta_type") == "Apology" and log.get("parent_id"):
+        if log.get("meta_type") == "Gap" and log.get("parent_id"):
             parent_idx = id_to_idx.get(log["parent_id"])
             child_idx = id_to_idx.get(log["id"])
             
@@ -1282,12 +1282,12 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
                     child_idx, parent_idx,
                     color="#00FFFF",  # Cyan - Permanent constellation link
                     width=4,
-                    title="Apology Link"
+                    title="Gap Link"
                 )
     
-    # [NEW v5] Add edges for Chronos-docked Fragments → Constitution
+    # [NEW v5] Add edges for Chronos-docked Logs → Core
     for log in logs:
-        if log.get("meta_type") == "Fragment" and log.get("linked_constitutions"):
+        if log.get("meta_type") == "Log" and log.get("linked_constitutions"):
             child_idx = id_to_idx.get(log["id"])
             for const_id in log["linked_constitutions"]:
                 parent_idx = id_to_idx.get(const_id)
@@ -1315,10 +1315,10 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
                 title="Manual Constellation"
             )
     
-    # Add keyword-based edges (Fragment <-> Fragment)
+    # Add keyword-based edges (Log <-> Log)
     G = nx.Graph()
     for i, log in enumerate(logs):
-        if log.get("meta_type") == "Fragment":
+        if log.get("meta_type") == "Log":
             G.add_node(i, keywords=set(log.get("keywords", [])))
     
     for i in G.nodes():
@@ -1354,7 +1354,7 @@ def save_chronos_log(content: str, constitution_ids: list, duration: int) -> dic
     
     log = db.create_log(
         content=content,
-        meta_type="Fragment",
+        meta_type="Log",
         embedding=embedding,
         emotion=metadata["emotion"],
         dimension=metadata["dimension"],
@@ -1373,7 +1373,7 @@ def get_finviz_data() -> list:
     Get portfolio data for Soul Finviz Treemap.
     Returns list of dicts ready for Plotly treemap.
     """
-    return db.get_constitutions_with_stats()
+    return db.get_cores_with_stats()
 
 
 # ============================================================
@@ -1445,15 +1445,15 @@ def check_streak_and_apply_penalty() -> dict:
 
 def evaluate_input_integrity(text: str) -> tuple[str, dict]:
     """
-    [Red Protocol] Check if input violates constitution before saving.
-    Returns: (status, constitution_ref)
+    [Entropy Alert] Check if input violates Core before saving.
+    Returns: (status, core_ref)
     Status: "SAFE", "VIOLATION"
     """
-    constitutions = db.get_constitutions()
-    if not constitutions:
+    cores = db.get_cores()
+    if not cores:
         return "SAFE", None
         
-    is_violation, reason, const = policy.detect_violation(text, constitutions, gateway)
+    is_violation, reason, const = policy.detect_violation(text, cores, gateway)
     
     if is_violation:
         return "VIOLATION", const
