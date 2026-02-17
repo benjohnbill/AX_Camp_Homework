@@ -445,7 +445,7 @@ def hybrid_search(query_text, top_k=10, alpha=0.7):
 import db_manager as db
 
 # 3-Body Hierarchy
-META_TYPES = ["Constitution", "Apology", "Fragment"]
+META_TYPES = ["Core", "Gap", "Log"]
 
 # Thresholds
 SIMILARITY_THRESHOLD = 0.55
@@ -454,9 +454,9 @@ MAX_CONTEXT_TURNS = 10
 
 # Visual Styles for Graph
 META_TYPE_STYLES = {
-    "Constitution": {"shape": "star", "size": 50, "color": "#FFD700", "mass": 100, "fixed": True},
-    "Apology": {"shape": "square", "size": 30, "color": "#00FF7F", "mass": 50, "fixed": False},
-    "Fragment": {"shape": "dot", "size": 15, "color": "#FFFFFF", "mass": 10, "fixed": False}
+    "Core": {"shape": "star", "size": 50, "color": "#FFD700", "mass": 100, "fixed": True},
+    "Gap": {"shape": "square", "size": 30, "color": "#00FF7F", "mass": 50, "fixed": False},
+    "Log": {"shape": "dot", "size": 15, "color": "#FFFFFF", "mass": 10, "fixed": False}
 }
 
 
@@ -506,7 +506,7 @@ def save_log(text: str) -> dict:
     
     log = db.create_log(
         content=text,
-        meta_type="Fragment",
+        meta_type="Log",
         embedding=embedding,
         emotion=metadata["emotion"],
         dimension=metadata["dimension"],
@@ -526,7 +526,7 @@ def get_log_by_id(log_id: str) -> dict:
 def get_fragments_paginated(page: int = 1, per_page: int = 10) -> tuple[list, int]:
     """Get fragments for a specific page and total count"""
     offset = (page - 1) * per_page
-    fragments = db.get_logs_paginated(limit=per_page, offset=offset, meta_type="Fragment")
+    fragments = db.get_logs_paginated(limit=per_page, offset=offset, meta_type="Log")
     total_count = db.get_fragment_count()
     return fragments, total_count
 
@@ -618,7 +618,7 @@ def validate_fragment_relation(fragment_text: str, constitution: dict) -> tuple[
 
 
 def process_apology(content: str, constitution_id: str, action_plan: str) -> dict:
-    """Process and save an Apology, decrement debt"""
+    """Process and save a Gap log, decrement debt"""
     embedding = get_embedding(content)
     quality_score = score_apology_quality(content, action_plan)
     reward_points = calculate_apology_reward(content, quality_score)
@@ -650,7 +650,7 @@ def get_temporal_patterns() -> pd.DataFrame:
     logs = db.get_logs_for_analytics()
     
     # Filter for Apologies (Failures)
-    data = [l for l in logs if l['meta_type'] == 'Apology']
+    data = [l for l in logs if db.canonicalize_meta_type(l['meta_type']) == 'Gap']
     
     if not data:
         return pd.DataFrame()
@@ -691,7 +691,7 @@ def get_activity_pulse() -> pd.DataFrame:
     df['date'] = df['created_at'].dt.date
     
     # Filter for relevant types
-    df = df[df['meta_type'].isin(['Fragment', 'Apology'])]
+    df = df[df['meta_type'].apply(lambda t: db.canonicalize_meta_type(t)).isin(['Log', 'Gap'])]
     
     # Group by Date and Type
     pulse_data = df.groupby(['date', 'meta_type']).size().reset_index(name='count')
@@ -754,7 +754,7 @@ def get_daily_apology_trend(days: int = 30) -> pd.DataFrame:
     Get daily count of Apologies for the last N days.
     """
     logs = db.get_logs_for_analytics()
-    data = [l for l in logs if l['meta_type'] == 'Apology']
+    data = [l for l in logs if db.canonicalize_meta_type(l['meta_type']) == 'Gap']
     
     if not data:
         return pd.DataFrame()
@@ -785,8 +785,8 @@ def run_gatekeeper() -> dict:
     conflicts = []
     
     all_logs = load_logs()
-    fragments = [l for l in all_logs if l.get('meta_type') == 'Fragment']
-    constitutions = [l for l in all_logs if l.get('meta_type') == 'Constitution']
+    fragments = [l for l in all_logs if db.canonicalize_meta_type(l.get('meta_type')) == 'Log']
+    constitutions = [l for l in all_logs if db.canonicalize_meta_type(l.get('meta_type')) == 'Core']
     
     if fragments and constitutions:
         latest_fragment = fragments[-1] # The most recent thought
@@ -824,7 +824,7 @@ def check_yesterday_promise() -> dict:
     
     # Filter for Apology
     apologies = [l for l in logs 
-                 if l.get('meta_type') == 'Apology' 
+                 if db.canonicalize_meta_type(l.get('meta_type')) == 'Gap' 
                  and l.get('created_at', '').startswith(y_str)]
     
     if apologies:
@@ -947,10 +947,10 @@ def get_zoom_level() -> float:
 # ============================================================
 # AI Persona (P1: Variation Engine)
 # ============================================================
-RED_MODE_PERSONA = """너는 피 흘리는 우주다. 매우 냉정하고 가차없다.
-사용자가 헌법 위반을 해명할 때까지 일반 대화를 거부한다.
+ENTROPY_ALERT_PERSONA = """너는 시스템 안정성을 지키는 우주 관제자다.
+사용자가 Core와 현실 사이의 Gap을 기록할 때까지 일반 대화를 제한한다.
 응답은 짧고 단호하게:
-"우주가 피를 흘리고 있다. [{constitution}] 위반을 먼저 해명하라."
+"Entropy Alert 활성화. [{constitution}]와의 Gap을 먼저 기록하라."
 """
 
 PERSONAS = {
@@ -1132,8 +1132,9 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
         log_id = log.get("id")
         id_to_idx[log_id] = i
         
-        meta_type = log.get("meta_type", "Fragment")
-        style = META_TYPE_STYLES.get(meta_type, META_TYPE_STYLES["Fragment"])
+        meta_type_raw = log.get("meta_type", "Log")
+        meta_type = db.canonicalize_meta_type(meta_type_raw)
+        style = META_TYPE_STYLES.get(meta_type, META_TYPE_STYLES["Log"])
         
         text = log.get("content", log.get("text", ""))
         label = text[:15] + "..." if len(text) > 15 else text
@@ -1143,7 +1144,7 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
         
         # Dynamic Size Calculation (The Evolution)
         base_size = style["size"]
-        if meta_type in ["Constitution", "Apology"]:
+        if meta_type in ["Core", "Gap"]:
             # Grow based on connections
             count = connection_counts.get(log_id, 0)
             node_size = base_size + (count * 2)
@@ -1165,7 +1166,7 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
     
     # Add edges (Apology -> Constitution = Cyan Edge)
     for log in logs:
-        if log.get("meta_type") == "Apology" and log.get("parent_id"):
+        if db.canonicalize_meta_type(log.get("meta_type")) == "Gap" and log.get("parent_id"):
             parent_idx = id_to_idx.get(log["parent_id"])
             child_idx = id_to_idx.get(log["id"])
             
@@ -1179,7 +1180,7 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
     
     # [NEW v5] Add edges for Chronos-docked Fragments → Constitution
     for log in logs:
-        if log.get("meta_type") == "Fragment" and log.get("linked_constitutions"):
+        if db.canonicalize_meta_type(log.get("meta_type")) == "Log" and log.get("linked_constitutions"):
             child_idx = id_to_idx.get(log["id"])
             for const_id in log["linked_constitutions"]:
                 parent_idx = id_to_idx.get(const_id)
@@ -1210,7 +1211,7 @@ def generate_graph_html(zoom_level: float = 1.0) -> str:
     # Add keyword-based edges (Fragment <-> Fragment)
     G = nx.Graph()
     for i, log in enumerate(logs):
-        if log.get("meta_type") == "Fragment":
+        if db.canonicalize_meta_type(log.get("meta_type")) == "Log":
             G.add_node(i, keywords=set(log.get("keywords", [])))
     
     for i in G.nodes():
@@ -1246,7 +1247,7 @@ def save_chronos_log(content: str, constitution_ids: list, duration: int) -> dic
     
     log = db.create_log(
         content=content,
-        meta_type="Fragment",
+        meta_type="Log",
         embedding=embedding,
         emotion=metadata["emotion"],
         dimension=metadata["dimension"],

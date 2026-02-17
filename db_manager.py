@@ -1,7 +1,7 @@
 """
 db_manager.py
 Antigravity v5: SQLite Database Layer
-3-Body Hierarchy: Constitution (Sun) / Apology (Planet) / Fragment (Dust)
+3-Body Hierarchy: Core (Sun) / Gap (Planet) / Log (Dust)
 + Chronos Docking / Soul Finviz / Narrative Kanban
 """
 
@@ -18,18 +18,42 @@ import os
 # ============================================================
 DB_PATH = "data/narrative.db"
 
-# Genesis Data (Seed for Testing Red Protocol)
+# Genesis Data (Seed for Testing Entropy Alert)
+LEGACY_META_TYPE_MAP = {
+    "Constitution": "Core",
+    "Apology": "Gap",
+    "Fragment": "Log",
+}
+
+CANONICAL_META_TYPES = ("Core", "Gap", "Log")
+
+
+def canonicalize_meta_type(meta_type: Optional[str]) -> str:
+    if not meta_type:
+        return "Log"
+    return LEGACY_META_TYPE_MAP.get(meta_type, meta_type)
+
+
+def get_meta_aliases(meta_type: str) -> List[str]:
+    canonical = canonicalize_meta_type(meta_type)
+    aliases = [canonical]
+    for legacy, mapped in LEGACY_META_TYPE_MAP.items():
+        if mapped == canonical:
+            aliases.append(legacy)
+    return aliases
+
+
 GENESIS_DATA = [
     {
-        "meta_type": "Constitution",
+        "meta_type": "Core",
         "content": "순간의 열정이나 강렬한 욕망을 통한 동기부여를 지속가능하게 만들고 싶다."
     },
     {
-        "meta_type": "Fragment",
+        "meta_type": "Log",
         "content": "플래너에 적힌 과업을 무시하고 하루종일 코딩만 했다."
     },
     {
-        "meta_type": "Fragment",
+        "meta_type": "Log",
         "content": "12시에 자겠다고 했지만 지금 12시 39분이다."
     }
 ]
@@ -57,6 +81,7 @@ def init_database():
     _create_base_tables(cursor)
     _init_user_stats(cursor)
     _run_schema_migrations(cursor)
+    _migrate_legacy_meta_types(cursor)
     _init_fts_table(cursor)
     
     conn.commit()
@@ -70,7 +95,7 @@ def _create_base_tables(cursor):
         CREATE TABLE IF NOT EXISTS logs (
             id TEXT PRIMARY KEY,
             content TEXT NOT NULL,
-            meta_type TEXT DEFAULT 'Fragment',
+            meta_type TEXT DEFAULT 'Log',
             parent_id TEXT REFERENCES logs(id),
             action_plan TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -142,6 +167,13 @@ def _run_schema_migrations(cursor):
             cursor.execute(f"ALTER TABLE logs ADD COLUMN {col} {ctype}")
         except sqlite3.OperationalError: pass
 
+
+
+
+def _migrate_legacy_meta_types(cursor):
+    """Best-effort migration from legacy terms to canonical terms."""
+    for legacy, canonical in LEGACY_META_TYPE_MAP.items():
+        cursor.execute("UPDATE logs SET meta_type = ? WHERE meta_type = ?", (canonical, legacy))
 
 def _init_fts_table(cursor):
     """Full-Text Search를 위한 가상 테이블을 초기화합니다."""
@@ -342,7 +374,7 @@ def reset_debt() -> None:
 # ============================================================
 def create_log(
     content: str,
-    meta_type: str = "Fragment",
+    meta_type: str = "Log",
     embedding: list = None,
     emotion: str = None,
     dimension: str = None,
@@ -359,7 +391,8 @@ def create_log(
 ) -> dict:
     """Create a new log entry"""
     log_id = str(uuid.uuid4())
-    
+    meta_type = canonicalize_meta_type(meta_type)
+
     # [FIX] Use BLOB for embedding storage (consistent with schema)
     embedding_blob = np.array(embedding).tobytes() if embedding else None
     
@@ -411,7 +444,7 @@ def create_apology(
     """Create an Apology linked to a Constitution"""
     return create_log(
         content=content,
-        meta_type="Apology",
+        meta_type="Gap",
         embedding=embedding,
         parent_id=constitution_id,
         action_plan=action_plan,
@@ -486,12 +519,17 @@ def get_logs_paginated(limit: int = 10, offset: int = 0, meta_type: str = None) 
     cursor = conn.cursor()
     
     if meta_type:
-        cursor.execute("""
-            SELECT * FROM logs 
-            WHERE meta_type = ?
-            ORDER BY created_at DESC 
+        aliases = get_meta_aliases(meta_type)
+        placeholders = ",".join(["?"] * len(aliases))
+        cursor.execute(
+            f"""
+            SELECT * FROM logs
+            WHERE meta_type IN ({placeholders})
+            ORDER BY created_at DESC
             LIMIT ? OFFSET ?
-        """, (meta_type, limit, offset))
+            """,
+            tuple(aliases) + (limit, offset),
+        )
     else:
         cursor.execute("""
             SELECT * FROM logs 
@@ -508,7 +546,7 @@ def get_fragment_count() -> int:
     """Get total count of fragments"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM logs WHERE meta_type = 'Fragment'")
+    cursor.execute("SELECT COUNT(*) FROM logs WHERE meta_type IN ('Log', 'Fragment')")
     count = cursor.fetchone()[0]
     conn.close()
     return count
@@ -525,10 +563,11 @@ def get_log_counts() -> dict:
     rows = cursor.fetchall()
     conn.close()
     
-    counts = {"Constitution": 0, "Apology": 0, "Fragment": 0}
+    counts = {"Core": 0, "Gap": 0, "Log": 0}
     for meta_type, count in rows:
-        if meta_type in counts:
-            counts[meta_type] = count
+        canonical = canonicalize_meta_type(meta_type)
+        if canonical in counts:
+            counts[canonical] += count
     return counts
 
 
@@ -547,25 +586,30 @@ def get_logs_by_type(meta_type: str) -> List[dict]:
     """Get logs by meta_type"""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM logs WHERE meta_type = ? ORDER BY created_at DESC", (meta_type,))
+    aliases = get_meta_aliases(meta_type)
+    placeholders = ",".join(["?"] * len(aliases))
+    cursor.execute(
+        f"SELECT * FROM logs WHERE meta_type IN ({placeholders}) ORDER BY created_at DESC",
+        tuple(aliases),
+    )
     rows = cursor.fetchall()
     conn.close()
     return [_row_to_dict(row) for row in rows]
 
 
 def get_constitutions() -> List[dict]:
-    """Get all Constitution logs"""
-    return get_logs_by_type("Constitution")
+    """Get all Core logs"""
+    return get_logs_by_type("Core")
 
 
 def get_apologies() -> List[dict]:
-    """Get all Apology logs"""
-    return get_logs_by_type("Apology")
+    """Get all Gap logs"""
+    return get_logs_by_type("Gap")
 
 
 def get_fragments() -> List[dict]:
-    """Get all Fragment logs"""
-    return get_logs_by_type("Fragment")
+    """Get all Log entries"""
+    return get_logs_by_type("Log")
 
 
 def get_yesterday_apology() -> Optional[dict]:
@@ -578,7 +622,7 @@ def get_yesterday_apology() -> Optional[dict]:
     
     cursor.execute("""
         SELECT * FROM logs 
-        WHERE meta_type = 'Apology' 
+        WHERE meta_type IN ('Gap', 'Apology') 
         AND date(created_at) >= ? AND date(created_at) < ?
         ORDER BY created_at DESC LIMIT 1
     """, (yesterday, today))
@@ -761,13 +805,13 @@ def _fetch_single_constitution_stats(cursor, const: dict) -> dict:
     const_id = const["id"]
     
     # Fragment 통계 집계
-    cursor.execute("SELECT duration, linked_constitutions, created_at FROM logs WHERE meta_type = 'Fragment'")
+    cursor.execute("SELECT duration, linked_constitutions, created_at FROM logs WHERE meta_type IN ('Log', 'Fragment')")
     rows = cursor.fetchall()
     
     duration, count, last_act = _aggregate_fragment_data(rows, const_id, const.get("created_at", ""))
     
     # Apology 통계 집계
-    cursor.execute("SELECT COUNT(*) as cnt FROM logs WHERE meta_type = 'Apology' AND parent_id = ?", (const_id,))
+    cursor.execute("SELECT COUNT(*) as cnt FROM logs WHERE meta_type IN ('Gap', 'Apology') AND parent_id = ?", (const_id,))
     apology_count = cursor.fetchone()["cnt"]
     
     health = _calculate_constitution_health(duration, count, last_act)
@@ -881,7 +925,7 @@ def create_kanban_card(content: str, constitution_id: str, status: str = "draft"
         raise ValueError("A Kanban card cannot be born without a mother star (constitution_id required).")
     return create_log(
         content=content,
-        meta_type="Fragment",
+        meta_type="Log",
         parent_id=constitution_id,
         linked_constitutions=[constitution_id],
         kanban_status=status
@@ -1027,4 +1071,3 @@ def ensure_fts_index():
     except:
         pass
     conn.close()
-

@@ -64,12 +64,14 @@ def init_session_state():
             st.session_state[key] = val
 
 def apply_atmosphere(red_mode: bool):
-    bg = "linear-gradient(to bottom, #330000 0%, #000000 100%)" if red_mode else \
-         "radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
-    
+    bg = "radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+    filter_style = "filter: grayscale(70%) contrast(0.9) brightness(0.9);" if red_mode else ""
+    noise_opacity = "0.08" if red_mode else "0"
+
     st.markdown(f"""
         <style>
-        .stApp {{ background: {bg} !important; color: #e94560 !important; }}
+        .stApp {{ background: {bg} !important; color: #e6e9ef !important; {filter_style} }}
+        .stApp::before {{ content: ""; position: fixed; inset: 0; pointer-events: none; opacity: {noise_opacity}; background-image: radial-gradient(rgba(255,255,255,0.08) 0.5px, transparent 0.5px); background-size: 3px 3px; mix-blend-mode: overlay; }}
         .kanban-card {{
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -89,8 +91,8 @@ def render_sidebar(red_mode: bool):
         st.divider()
         
         if red_mode:
-            st.warning("⚠️ RED MODE ACTIVE")
-            st.info("해명을 완료할 때까지 모든 기능이 잠깁니다.")
+            st.warning("⚠️ ENTROPY ALERT ACTIVE")
+            st.info("Gap 로그를 제출할 때까지 주요 기능이 잠깁니다.")
         else:
             mode = st.radio("Select Mode", ["Stream", "Chronos", "Universe", "Control", "Desk"],
                             index=["stream", "chronos", "universe", "control", "desk"].index(st.session_state['mode']))
@@ -102,8 +104,8 @@ def render_sidebar(red_mode: bool):
         st.metric("Longest Streak", f"{streak.get('longest', 0)} days")
         
         debt = logic.get_debt_count()
-        if debt > 0: st.error(f"Unpaid Debts: {debt}")
-        else: st.success("No active debts.")
+        if debt > 0: st.error(f"Active Entropy Alerts: {debt}")
+        else: st.success("No active entropy alerts.")
 
 # ============================================================
 # MODES
@@ -180,14 +182,14 @@ def start_timer(m: int):
     st.rerun()
 
 def render_chronos_docking():
-    st.info(f"{icons.get_icon('anchor')} 이 시간은 어떤 헌법에 귀속됩니까?")
+    st.info(f"{icons.get_icon('anchor')} 이 시간은 어떤 Core에 귀속됩니까?")
     consts = db.get_constitutions()
     options = {c['content'][:50]: c['id'] for c in consts}
     
     if not options:
-        st.warning("헌법이 없습니다."); return
+        st.warning("Core가 없습니다."); return
 
-    sel = st.multiselect("헌법 선택", list(options.keys()))
+    sel = st.multiselect("Core 선택", list(options.keys()))
     acc = st.text_area("성취 기록 (최소 10자)")
     if st.button(f"{icons.get_icon_svg('anchor', size=18)} Dock", use_container_width=True, type="primary", disabled=len(sel)==0 or len(acc)<10):
         logic.save_chronos_log(acc, [options[n] for n in sel], st.session_state['chronos_duration'])
@@ -204,7 +206,7 @@ def render_universe_mode():
         sel = st.selectbox("관측 대상", list(opts.keys()))
         if sel:
             log = logic.get_log_by_id(opts[sel])
-            st.info(f"**{log['meta_type']}** | {log['content']}")
+            st.info(f"**{db.canonicalize_meta_type(log['meta_type'])}** | {log['content']}")
             
     with t2:
         st.markdown(f"### {icons.get_icon('layout-dashboard')} Soul Finviz")
@@ -226,7 +228,7 @@ def render_control_mode():
     if options:
         c1, c2 = st.columns([2, 1])
         thought = c1.text_input("새로운 생각", key="kb_new")
-        star = c2.selectbox("소속 헌법", list(options.keys()), key="kb_const")
+        star = c2.selectbox("Linked Core", list(options.keys()), key="kb_const")
         if st.button(f"{icons.get_icon_svg('sparkles', size=18)} 궤도 투입") and thought:
             logic.create_kanban_card(thought, options[star]); st.rerun()
     
@@ -251,7 +253,7 @@ def render_control_mode():
 def render_kanban_docking(options):
     st.divider()
     st.markdown(f"### {icons.get_icon('anchor')} Kanban Docking")
-    sel = st.multiselect("헌법 선택", list(options.keys()), key="k_dock_sel")
+    sel = st.multiselect("Core 선택", list(options.keys()), key="k_dock_sel")
     acc = st.text_input("성취 요약", key="k_dock_acc")
     dur = st.number_input("시간(분)", 0, 480, 0, key="k_dock_dur")
     if st.button(f"{icons.get_icon_svg('anchor', size=18)} Confirm Dock", type="primary"):
@@ -262,7 +264,7 @@ def render_desk_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('book-open', size=40)} THE DESK</h1></div>", unsafe_allow_html=True)
     l, r = st.columns([1, 1.5])
     with l:
-        st.markdown(f"#### {icons.get_icon('sparkles')} Fragments")
+        st.markdown(f"#### {icons.get_icon('sparkles')} Logs")
         frags, count = logic.get_fragments_paginated(st.session_state['desk_page'])
         for f in frags:
             with st.expander(f['content'][:40]):
@@ -284,11 +286,11 @@ def main():
     apply_atmosphere(red); render_sidebar(red)
     
     if red:
-        st.error(f"{icons.get_icon('shield-alert')} RED PROTOCOL: VIOLATION DETECTED")
+        st.error(f"{icons.get_icon('shield-alert')} ENTROPY ALERT: DRIFT DETECTED")
         with st.form("apology"):
             consts = db.get_constitutions()
-            sel = st.selectbox("위반한 헌법", [c['content'] for c in consts])
-            reason = st.text_area("해명 (100자 이상)")
+            sel = st.selectbox("Drifted Core", [c['content'] for c in consts])
+            reason = st.text_area("Gap Log (100자 이상)")
             plan = st.text_area("내일의 약속")
             if st.form_submit_button("제출") and len(reason) >= 100:
                 logic.process_apology(reason, [c['id'] for c in consts if c['content']==sel][0], plan)
