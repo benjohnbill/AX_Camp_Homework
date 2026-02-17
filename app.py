@@ -22,7 +22,7 @@ import plotly.graph_objects as go
 def init_page_config():
     st.set_page_config(
         page_title="Antigravity",
-        page_icon=icons.get_icon_svg("galaxy"),
+        page_icon=":milky_way:",
         layout="wide"
     )
 
@@ -93,8 +93,42 @@ def apply_atmosphere(entropy_mode: bool):
     """, unsafe_allow_html=True)
 
 # ============================================================
-# Navigation
+# API Key
 # ============================================================
+def render_api_key_section():
+    with st.expander("OpenAI API Key", expanded=False):
+        session_key = st.session_state.get("openai_api_key", "")
+        has_any_key = logic.is_api_key_configured()
+
+        if session_key:
+            st.success("Using API key from this session.")
+        elif has_any_key:
+            st.info("Using API key from deployment secrets/env.")
+        else:
+            st.warning("No API key detected. Enter your key to enable AI responses.")
+
+        entered = st.text_input(
+            "API Key",
+            type="password",
+            value=session_key,
+            placeholder="sk-...",
+            key="openai_api_key_input"
+        )
+
+        c1, c2 = st.columns(2)
+        if c1.button("Apply Key", use_container_width=True):
+            if entered and entered.strip():
+                logic.set_api_key(entered.strip())
+                st.success("Session key applied.")
+                st.rerun()
+            else:
+                st.error("Enter a valid API key.")
+
+        if c2.button("Clear Session Key", use_container_width=True):
+            st.session_state.pop("openai_api_key", None)
+            st.session_state["openai_api_key_input"] = ""
+            st.info("Session key cleared.")
+            st.rerun()
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
         st.title(f"{icons.get_icon('orbit')} Antigravity")
@@ -117,6 +151,9 @@ def render_sidebar(entropy_mode: bool):
         debt = logic.get_debt_count()
         if debt > 0: st.error(f"E-Levels: {debt}")
         else: st.success("System Stable")
+
+        st.divider()
+        render_api_key_section()
 
 # ============================================================
 # MODES
@@ -397,3 +434,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+

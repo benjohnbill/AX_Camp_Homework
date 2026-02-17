@@ -194,7 +194,7 @@ def inject_genesis_data(embedding_func):
     
     cursor.execute("SELECT COUNT(*) FROM logs")
     if cursor.fetchone()[0] == 0:
-        print("🌱 Injecting Genesis Data...")
+        print("Injecting Genesis Data...")
         for data in GENESIS_DATA:
             # Migration check: if genesis data still uses old terms, map them on insert
             # But let's just assume we insert them as is, and migration fixes them if needed.
@@ -1122,4 +1122,5 @@ def ensure_fts_index():
     except:
         pass
     conn.close()
+
 
