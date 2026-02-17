@@ -109,12 +109,12 @@ def render_sidebar(red_mode: bool):
 # MODES
 # ============================================================
 def render_stream_mode():
-    st.markdown("<div style='text-align:center;'><h1>🌊 THE STREAM</h1><p>Atomic thoughts. Hot state. Think aloud.</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('waves', size=40)} THE STREAM</h1><p>Atomic thoughts. Hot state. Think aloud.</p></div>", unsafe_allow_html=True)
     
     echo = st.session_state.get('current_echo')
     if echo:
         st.markdown(f"""<div style="background: rgba(255, 255, 255, 0.05); border-left: 3px solid #888; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-style: italic; color: #ccc;">
-            <small>✨ Echo from {echo.get('created_at', '')[:10]}</small><br>"{echo.get('content', '')}"</div>""", unsafe_allow_html=True)
+            <small>{icons.get_icon('sparkles', size=14)} Echo from {echo.get('created_at', '')[:10]}</small><br>"{echo.get('content', '')}"</div>""", unsafe_allow_html=True)
     
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]): st.markdown(msg["content"])
@@ -140,7 +140,7 @@ def process_stream_input(user_input: str):
     st.rerun()
 
 def render_chronos_mode():
-    st.markdown("<div style='text-align:center;'><h1>⏱️ CHRONOS</h1><p>Time is the currency.</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('timer', size=40)} CHRONOS</h1><p>Time is the currency.</p></div>", unsafe_allow_html=True)
     
     if st.session_state['chronos_running'] and st.session_state['chronos_end_time']:
         if (st.session_state['chronos_end_time'] - datetime.now(timezone.utc)).total_seconds() <= 0:
@@ -154,14 +154,14 @@ def render_chronos_mode():
 def render_chronos_timer():
     rem = st.session_state['chronos_end_time'] - datetime.now(timezone.utc)
     mins, secs = divmod(max(0, int(rem.total_seconds())), 60)
-    st.markdown(f"<h1 style='text-align:center; font-size:80px;'>{mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h1 style='text-align:center; font-size:80px; color:#00FFFF;'>{mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
     
     c1, c2 = st.columns(2)
-    if c1.button("⏹️ 완료", use_container_width=True):
+    if c1.button(f"{icons.get_icon_svg('check-circle', size=18)} 완료", use_container_width=True):
         st.session_state['chronos_running'] = False
         st.session_state['chronos_finished'] = True
         st.rerun()
-    if c2.button("❌ 취소", use_container_width=True):
+    if c2.button(f"{icons.get_icon_svg('shield-alert', size=18)} 취소", use_container_width=True):
         st.session_state['chronos_running'] = False
         st.rerun()
     time.sleep(2); st.rerun()
@@ -180,7 +180,7 @@ def start_timer(m: int):
     st.rerun()
 
 def render_chronos_docking():
-    st.info("⚓ 이 시간은 어떤 헌법에 귀속됩니까?")
+    st.info(f"{icons.get_icon('anchor')} 이 시간은 어떤 헌법에 귀속됩니까?")
     consts = db.get_constitutions()
     options = {c['content'][:50]: c['id'] for c in consts}
     
@@ -189,12 +189,12 @@ def render_chronos_docking():
 
     sel = st.multiselect("헌법 선택", list(options.keys()))
     acc = st.text_area("성취 기록 (최소 10자)")
-    if st.button("⚓ Dock", use_container_width=True, type="primary", disabled=len(sel)==0 or len(acc)<10):
+    if st.button(f"{icons.get_icon_svg('anchor', size=18)} Dock", use_container_width=True, type="primary", disabled=len(sel)==0 or len(acc)<10):
         logic.save_chronos_log(acc, [options[n] for n in sel], st.session_state['chronos_duration'])
         st.balloons(); st.session_state['chronos_finished'] = False; st.rerun()
 
 def render_universe_mode():
-    st.markdown("<div style='text-align:center;'><h1>🌌 THE UNIVERSE</h1></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('orbit', size=40)} THE UNIVERSE</h1></div>", unsafe_allow_html=True)
     t1, t2, t3, t4 = st.tabs(["Cosmos", "Finviz", "Rhythm", "Pulse"])
     
     with t1:
@@ -207,7 +207,7 @@ def render_universe_mode():
             st.info(f"**{log['meta_type']}** | {log['content']}")
             
     with t2:
-        st.markdown("### 📊 Soul Finviz")
+        st.markdown(f"### {icons.get_icon('layout-dashboard')} Soul Finviz")
         data = logic.get_finviz_data()
         if data:
             fig = go.Figure(go.Treemap(
@@ -219,7 +219,7 @@ def render_universe_mode():
             st.plotly_chart(fig, use_container_width=True)
 
 def render_control_mode():
-    st.markdown("<div style='text-align:center;'><h1>📋 CONTROL</h1></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('layout-dashboard', size=40)} CONTROL</h1></div>", unsafe_allow_html=True)
     
     consts = db.get_constitutions()
     options = {c['content'][:50]: c['id'] for c in consts}
@@ -227,7 +227,7 @@ def render_control_mode():
         c1, c2 = st.columns([2, 1])
         thought = c1.text_input("새로운 생각", key="kb_new")
         star = c2.selectbox("소속 헌법", list(options.keys()), key="kb_const")
-        if st.button("🌀 궤도 투입") and thought:
+        if st.button(f"{icons.get_icon_svg('sparkles', size=18)} 궤도 투입") and thought:
             logic.create_kanban_card(thought, options[star]); st.rerun()
     
     cards = logic.get_kanban_cards()
@@ -250,19 +250,19 @@ def render_control_mode():
 
 def render_kanban_docking(options):
     st.divider()
-    st.markdown("### ⚓ Kanban Docking")
+    st.markdown(f"### {icons.get_icon('anchor')} Kanban Docking")
     sel = st.multiselect("헌법 선택", list(options.keys()), key="k_dock_sel")
     acc = st.text_input("성취 요약", key="k_dock_acc")
     dur = st.number_input("시간(분)", 0, 480, 0, key="k_dock_dur")
-    if st.button("⚓ Confirm Dock", type="primary"):
+    if st.button(f"{icons.get_icon_svg('anchor', size=18)} Confirm Dock", type="primary"):
         logic.land_kanban_card(st.session_state['docking_card_id'], [options[n] for n in sel], acc, dur)
         st.session_state['docking_modal_active'] = False; st.rerun()
 
 def render_desk_mode():
-    st.markdown("<div style='text-align:center;'><h1>📖 THE DESK</h1></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('book-open', size=40)} THE DESK</h1></div>", unsafe_allow_html=True)
     l, r = st.columns([1, 1.5])
     with l:
-        st.markdown("#### Fragments")
+        st.markdown(f"#### {icons.get_icon('sparkles')} Fragments")
         frags, count = logic.get_fragments_paginated(st.session_state['desk_page'])
         for f in frags:
             with st.expander(f['content'][:40]):
@@ -270,7 +270,7 @@ def render_desk_mode():
                 if st.button("에세이 추가", key=f"add_{f['id']}"): 
                     st.session_state['selected_cards'].append(f['id']); st.rerun()
     with r:
-        st.markdown("#### Essay")
+        st.markdown(f"#### {icons.get_icon('pencil', size=18)} Essay")
         essay = st.text_area("Connect your story", height=400)
         if st.button("Save Essay") and essay:
             logic.save_log(essay); st.toast("Saved!"); st.rerun()
@@ -284,7 +284,7 @@ def main():
     apply_atmosphere(red); render_sidebar(red)
     
     if red:
-        st.error("🟥 RED PROTOCOL: VIOLATION DETECTED")
+        st.error(f"{icons.get_icon('shield-alert')} RED PROTOCOL: VIOLATION DETECTED")
         with st.form("apology"):
             consts = db.get_constitutions()
             sel = st.selectbox("위반한 헌법", [c['content'] for c in consts])
