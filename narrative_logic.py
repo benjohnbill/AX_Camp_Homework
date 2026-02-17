@@ -445,7 +445,7 @@ def hybrid_search(query_text, top_k=10, alpha=0.7):
 # ============================================================
 # Constants
 # ============================================================
-import db_manager as db
+
 
 # 3-Body Hierarchy
 META_TYPES = ["Core", "Gap", "Log"] # [Refactor] Constitution->Core, Apology->Gap, Fragment->Log
