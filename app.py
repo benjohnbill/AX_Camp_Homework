@@ -186,8 +186,10 @@ def render_stream_mode():
 
     echo = st.session_state.get('current_echo')
     if echo:
+        echo_created_at = str(echo.get('created_at') or '')
+        echo_content = str(echo.get('content') or '')
         st.markdown(f"""<div style="background: rgba(255, 255, 255, 0.05); border-left: 3px solid #666; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-style: italic; color: #aaa;">
-            <small>{icons.get_icon('sparkles', size=14)} Echo from {echo.get('created_at', '')[:10]}</small><br>"{echo.get('content', '')}"</div>""", unsafe_allow_html=True)
+            <small>{icons.get_icon('sparkles', size=14)} Echo from {echo_created_at[:10]}</small><br>"{echo_content}"</div>""", unsafe_allow_html=True)
     
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]): st.markdown(msg["content"])
