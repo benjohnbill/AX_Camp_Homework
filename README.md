@@ -137,6 +137,7 @@ streamlit run app.py
 배포 전/후 표준 절차는 아래 Runbook을 따릅니다.
 
 - `SUPABASE_RUNBOOK.md`
+- 아래 명령은 모두 `Narrative_Loop/` 루트에서 실행합니다.
 
 Post-deploy smoke 체크:
 ```bash
@@ -147,6 +148,21 @@ python tools/check_postdeploy_smoke.py --strict-postgres
 ```bash
 python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_report.json
 ```
+
+Preflight 인증 체크(권장):
+```bash
+python tools/preflight_postgres_auth.py
+```
+
+Goal-A 게이트 일괄 실행(권장):
+```bash
+python tools/run_agent_a_gate.py
+```
+
+주의:
+- `DATASTORE`는 반드시 문자열 `postgres`여야 합니다.
+- `DATABASE_URL`에는 Postgres URI를 넣어야 합니다.
+- Session Pooler(`*.pooler.supabase.com:6543`)를 쓸 때 username은 `postgres.<project_ref>` 형식이어야 합니다.
 
 ---
 

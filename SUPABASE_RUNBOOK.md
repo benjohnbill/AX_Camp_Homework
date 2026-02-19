@@ -4,15 +4,31 @@
 This runbook standardizes deploy checks for Supabase-backed production runs.
 
 ## Preconditions
+- Run commands from project root: `Narrative_Loop/`
 - `DATASTORE=postgres`
 - `DATABASE_URL` is set
 - App secrets include `OPENAI_API_KEY` (if AI response is required)
+- If env vars are missing in shell, checks will auto-read `.streamlit/secrets.toml`
+
+## Quick Gate (Recommended)
+Run all goal-A checks in one command:
+
+```bash
+python tools/run_agent_a_gate.py
+```
+
+Equivalent steps include:
+- preflight auth (`tools/preflight_postgres_auth.py`)
+- bootstrap schema check (`tools/check_supabase_phase1.py`)
+- smoke check (`tools/check_postdeploy_smoke.py --strict-postgres`)
+- integrity check (`tools/check_data_integrity.py --expect-postgres --max-dup-chat 0`)
 
 ## Pre-Deploy Checklist
-1. `python tools/check_supabase_phase1.py`
-2. `python -m pytest -q tests/test_phase4_phase5_stability.py`
-3. `python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_pre.json`
-4. Verify branch is clean and pushed.
+1. `python tools/preflight_postgres_auth.py`
+2. `python tools/check_supabase_phase1.py`
+3. `python -m pytest -q tests/test_phase4_phase5_stability.py`
+4. `python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_pre.json`
+5. Verify branch is clean and pushed.
 
 ## Deploy Steps
 1. Deploy latest `main` to Streamlit Cloud.
@@ -35,6 +51,14 @@ This runbook standardizes deploy checks for Supabase-backed production runs.
    - `logs` increased
    - `chat_history` increased
    - `connections` unchanged or increased depending on action
+
+## Auth Failure Triage
+If you see `password authentication failed` or `circuit breaker open`:
+1. Run `python tools/preflight_postgres_auth.py`.
+2. Confirm `DATASTORE` is exactly `postgres` (not a URL).
+3. Confirm `DATABASE_URL` is Session Pooler URI (`*.pooler.supabase.com:6543`).
+4. For Session Pooler URI, username must be `postgres.<project_ref>`.
+5. Reset DB password in Supabase, then update all `DATABASE_URL` locations (local env + Streamlit secrets).
 
 ## Failure Handling
 1. If app fails to load:

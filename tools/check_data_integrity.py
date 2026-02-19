@@ -12,6 +12,17 @@ try:
 except Exception:
     psycopg2 = None
 
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+from tools._env_utils import (
+    connection_failure_hints,
+    datastore_misconfigured_hint,
+    load_runtime_env_from_secrets,
+    short_error,
+)
+
 
 TABLES = ("logs", "user_stats", "chat_history", "connections")
 
@@ -117,6 +128,10 @@ def load_postgres_stats(database_url: str) -> Dict:
 
 def main() -> int:
     args = parse_args()
+    env_info = load_runtime_env_from_secrets(PROJECT_ROOT)
+    if env_info.get("loaded_keys"):
+        print(f"[INFO] loaded from secrets: {', '.join(env_info['loaded_keys'])}")
+
     datastore = os.getenv("DATASTORE", "").strip().lower()
     database_url = os.getenv("DATABASE_URL")
 
@@ -131,6 +146,9 @@ def main() -> int:
     if args.expect_postgres and datastore != "postgres":
         report["checks"]["datastore"] = {"ok": False, "detail": f"DATASTORE={datastore or '(unset)'}"}
         print(f"[FAIL] DATASTORE is '{datastore or '(unset)'}' (expected: 'postgres').")
+        hint = datastore_misconfigured_hint(datastore)
+        if hint:
+            print(f"[HINT] {hint}")
         if args.report_json:
             report_dir = os.path.dirname(args.report_json)
             if report_dir:
@@ -151,7 +169,9 @@ def main() -> int:
     try:
         pg_stats = load_postgres_stats(database_url)
     except Exception as exc:
-        print(f"[FAIL] Could not query postgres stats: {exc}")
+        print(f"[FAIL] Could not query postgres stats: {short_error(exc)}")
+        for hint in connection_failure_hints(database_url, exc):
+            print(f"[HINT] {hint}")
         return 1
 
     sqlite_counts = load_sqlite_counts(args.sqlite_path)

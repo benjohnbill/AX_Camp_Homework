@@ -8,6 +8,12 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
 
+from tools._env_utils import (
+    connection_failure_hints,
+    datastore_misconfigured_hint,
+    load_runtime_env_from_secrets,
+    short_error,
+)
 from db_backend import get_repository
 
 
@@ -38,12 +44,22 @@ def _parse_args() -> argparse.Namespace:
 
 
 def main(strict_postgres: bool = True) -> int:
+    env_info = load_runtime_env_from_secrets(ROOT_DIR)
+    if env_info.get("loaded_keys"):
+        print(f"[INFO] loaded from secrets: {', '.join(env_info['loaded_keys'])}")
+
     datastore = os.getenv("DATASTORE", "").strip().lower()
+    database_url = os.getenv("DATABASE_URL", "")
     if datastore != "postgres":
+        hint = datastore_misconfigured_hint(datastore)
         if strict_postgres:
             print(f"[FAIL] DATASTORE is '{datastore or '(unset)'}' (expected: 'postgres')")
+            if hint:
+                print(f"[HINT] {hint}")
             return 1
         print(f"[WARN] DATASTORE is '{datastore or '(unset)'}' (expected: 'postgres')")
+        if hint:
+            print(f"[HINT] {hint}")
     else:
         print("[OK] DATASTORE=postgres")
 
@@ -61,7 +77,9 @@ def main(strict_postgres: bool = True) -> int:
         recent_chat = repo.get_chat_history(limit=5)
         conn_counts = repo.get_connection_counts()
     except Exception as exc:
-        print(f"[FAIL] Smoke query failed: {exc}")
+        print(f"[FAIL] Smoke query failed: {short_error(exc)}")
+        for hint in connection_failure_hints(database_url, exc):
+            print(f"[HINT] {hint}")
         return 1
 
     print(f"[OK] fragment_count={fragment_count}")
