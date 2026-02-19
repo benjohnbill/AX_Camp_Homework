@@ -30,9 +30,10 @@ GENESIS_DATA = [
 
 @contextmanager
 def get_conn():
-    if not DATABASE_URL:
+    database_url = _resolve_database_url()
+    if not database_url:
         raise RuntimeError("DATABASE_URL is not set")
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(database_url, connect_timeout=10)
     register_vector(conn)
     try:
         yield conn
@@ -41,11 +42,36 @@ def get_conn():
 
 
 def get_connection():
-    if not DATABASE_URL:
+    database_url = _resolve_database_url()
+    if not database_url:
         raise RuntimeError("DATABASE_URL is not set")
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(database_url, connect_timeout=10)
     register_vector(conn)
     return conn
+
+
+def _resolve_database_url() -> Optional[str]:
+    """
+    Resolve DATABASE_URL dynamically so runtime secret updates are visible
+    without requiring a module reload.
+    """
+    url = os.getenv("DATABASE_URL")
+    if url:
+        return url
+
+    if DATABASE_URL:
+        return DATABASE_URL
+
+    try:
+        import streamlit as st  # Local import to avoid hard dependency in non-Streamlit contexts.
+
+        secret_url = st.secrets.get("DATABASE_URL")
+        if secret_url:
+            return str(secret_url)
+    except Exception:
+        pass
+
+    return None
 
 
 def _to_float32_vector(embedding: Optional[Iterable[float]]) -> Optional[List[float]]:

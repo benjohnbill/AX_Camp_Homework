@@ -8,6 +8,7 @@ import streamlit.components.v1 as components
 from datetime import datetime, timedelta, timezone
 import time
 import json
+import re
 
 import narrative_logic as logic
 import icons
@@ -25,6 +26,13 @@ def init_page_config():
         page_icon=":milky_way:",
         layout="wide"
     )
+
+
+def _safe_startup_error(exc: Exception) -> str:
+    """Format startup errors without leaking DSN-like credentials."""
+    line = str(exc).strip().splitlines()[0] if str(exc) else type(exc).__name__
+    line = re.sub(r"postgres(?:ql)?://[^\\s]+", "postgresql://***", line)
+    return f"{type(exc).__name__}: {line}"
 
 def init_session_state():
     if 'diagnostics_run' not in st.session_state:
@@ -392,7 +400,14 @@ def render_desk_mode():
 # Main Loop
 # ============================================================
 def main():
-    init_page_config(); init_session_state()
+    init_page_config()
+    try:
+        init_session_state()
+    except Exception as exc:
+        st.error("Database initialization failed. Check DATASTORE and DATABASE_URL settings.")
+        st.caption("Startup halted to prevent repeated runtime failures.")
+        st.code(_safe_startup_error(exc))
+        return
     is_entropy = logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
     
