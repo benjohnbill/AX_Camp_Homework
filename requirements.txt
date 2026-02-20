@@ -1,4 +1,7 @@
 streamlit
+fastapi
+uvicorn
+httpx
 openai
 python-dotenv
 scikit-learn

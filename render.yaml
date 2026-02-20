@@ -1,0 +1,48 @@
+services:
+  - type: web
+    name: ax-camp-debug-token-staging
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: .
+    buildCommand: pip install -r requirements.txt
+    startCommand: DEBUG_TOKEN_PORT=$PORT python debug_token_server.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: staging
+      - key: UNIVERSE_AUTH_ISSUER
+        value: ax-camp-staging
+      - key: UNIVERSE_AUTH_AUDIENCE
+        value: android-universe
+      - key: DEBUG_TOKEN_ALLOWED_AUDIENCES
+        value: android-universe
+      - key: DEBUG_TOKEN_TTL_DEFAULT_MINUTES
+        value: "60"
+      - key: UNIVERSE_JWT_SECRET
+        sync: false
+      - key: DEBUG_TOKEN_ADMIN_KEY
+        sync: false
+
+  - type: web
+    name: ax-camp-universe-gateway-staging
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: .
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn gateway_fastapi:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: staging
+      - key: UNIVERSE_AUTH_ISSUER
+        value: ax-camp-staging
+      - key: UNIVERSE_AUTH_AUDIENCE
+        value: android-universe
+      - key: UNIVERSE_UPSTREAM_EMBED_URL
+        value: https://benjohnbill-ax-camp-homework.streamlit.app/?embed=universe_3d
+      - key: UNIVERSE_JWT_SECRET
+        sync: false
+      - key: UNIVERSE_SESSION_SECRET
+        sync: false
