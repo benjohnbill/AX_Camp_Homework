@@ -101,8 +101,19 @@ def apply_atmosphere(entropy_mode: bool):
 
     st.markdown(f"""
         <style>
-        .stApp {{ background: {bg} !important; color: {text_color} !important; }}
-        h1, h2, h3, h4, h5, h6, p, div, span, label {{ color: {text_color} !important; }}
+        /* Force color on ALL elements to override inner Streamlit wrappers */
+        * {{
+            color: {text_color} !important;
+        }}
+        .stApp, .block-container {{
+            background: {bg} !important;
+        }}
+        /* Keep inputs legible */
+        input, textarea, select {{
+            color: #ffffff !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+            background-color: rgba(30,30,30,0.8) !important;
+        }}
         /* Global Text Adjustment for Entropy Mode */
         {'body { filter: grayscale(100%); }' if entropy_mode else ''}
         .kanban-card {{
