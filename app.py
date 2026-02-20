@@ -92,8 +92,8 @@ def init_session_state():
 def apply_atmosphere(entropy_mode: bool):
     # [Refactor] Entropy Mode: Desaturated, Glitchy, Cold Grey/White
     if entropy_mode:
-        bg = "linear-gradient(to bottom, #2b2b2b 0%, #000000 100%)" # Cold Grey/Black
-        text_color = "#a0a0a0" # Dimmed text
+        bg = "linear-gradient(to bottom, #252525 0%, #000000 100%)" # Cold Grey/Black
+        text_color = "#cccccc" # Lighter gray for better readability
     else:
         # Standard: Deep Space Blue
         bg = "radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
@@ -114,8 +114,6 @@ def apply_atmosphere(entropy_mode: bool):
             border: 1px solid rgba(255,255,255,0.2) !important;
             background-color: rgba(30,30,30,0.8) !important;
         }}
-        /* Global Text Adjustment for Entropy Mode */
-        {'body { filter: grayscale(100%); }' if entropy_mode else ''}
         .kanban-card {{
             background: rgba(40, 40, 40, 0.8) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
