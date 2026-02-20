@@ -39,6 +39,7 @@ REQUIRED_INDEXES = {
 }
 REQUIRED_COLUMNS = {
     ("chat_history", "source_chat_id"),
+    ("user_stats", "chronos_end_time"),
 }
 
 

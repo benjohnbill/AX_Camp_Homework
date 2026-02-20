@@ -30,6 +30,7 @@ Immediate next checks:
 1) Keep all new changes aligned to agent.md first.
 2) Ensure API field names stay consistent across all 3 tool-agent docs.
 3) Run project verification commands after implementation work:
+   - Ensure `user_stats.chronos_end_time` exists before runtime smoke (Chronos restore path).
    - python tools/preflight_postgres_auth.py
    - python tools/check_supabase_phase1.py
    - python tools/check_postdeploy_smoke.py --strict-postgres
