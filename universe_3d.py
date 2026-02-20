@@ -1,9 +1,75 @@
 import streamlit.components.v1 as components
 import json
+from datetime import date, datetime
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+
+def _json_default(value: Any):
+    """Convert non-JSON-native values to safe serializable forms."""
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    if isinstance(value, (set, tuple)):
+        return list(value)
+    return str(value)
+
+
+def _project_log(row: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(row, dict):
+        return None
+    content = str(row.get("content") or "").strip()
+    if not content:
+        return None
+    created_at = row.get("created_at")
+    if created_at is None:
+        created_at = row.get("timestamp")
+
+    return {
+        "id": str(row.get("id") or ""),
+        "content": content,
+        "meta_type": str(row.get("meta_type") or ""),
+        "created_at": _json_default(created_at) if created_at is not None else "",
+    }
+
+
+def _project_core(row: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(row, dict):
+        return None
+    content = str(row.get("content") or "").strip()
+    if not content:
+        return None
+    created_at = row.get("created_at")
+    if created_at is None:
+        created_at = row.get("timestamp")
+
+    return {
+        "id": str(row.get("id") or ""),
+        "content": content,
+        "meta_type": str(row.get("meta_type") or ""),
+        "created_at": _json_default(created_at) if created_at is not None else "",
+    }
+
+
+def _prepare_3d_payload(logs: Iterable[Any], cores: Iterable[Any]) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    safe_logs: List[Dict[str, Any]] = []
+    for row in logs or []:
+        projected = _project_log(row)
+        if projected:
+            safe_logs.append(projected)
+
+    safe_cores: List[Dict[str, Any]] = []
+    for row in cores or []:
+        projected = _project_core(row)
+        if projected:
+            safe_cores.append(projected)
+
+    return safe_logs, safe_cores
 
 def render_3d_universe(logs, cores):
-    logs_json = json.dumps(logs, ensure_ascii=False)
-    cores_json = json.dumps(cores, ensure_ascii=False)
+    safe_logs, safe_cores = _prepare_3d_payload(logs, cores)
+    logs_json = json.dumps(safe_logs, ensure_ascii=False, default=_json_default)
+    cores_json = json.dumps(safe_cores, ensure_ascii=False, default=_json_default)
 
     html_string = f"""
     <!DOCTYPE html>
