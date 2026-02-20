@@ -90,36 +90,93 @@ def init_session_state():
             st.session_state[key] = val
 
 def apply_atmosphere(entropy_mode: bool):
-    # [Refactor] Entropy Mode: Desaturated, Glitchy, Cold Grey/White
+    current_mode = st.session_state.get('mode', 'stream')
+    
+    # 1. Determine Mode-Specific CSS Variables
     if entropy_mode:
-        bg = "linear-gradient(to bottom, #252525 0%, #000000 100%)" # Cold Grey/Black
-        text_color = "#cccccc" # Lighter gray for better readability
+        blur_val = "15px"
+        overlay_color = "rgba(15, 0, 0, 0.85)" # Deep, suffocating dark tint
+        text_color = "#cccccc"
+    elif current_mode == "universe":
+        blur_val = "1.5px"
+        overlay_color = "rgba(0, 0, 0, 0.25)"  # Vivid, immersive
+        text_color = "#e94560"
     else:
-        # Standard: Deep Space Blue
-        bg = "radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
-        text_color = "#e94560" # Vivd Red/Pink accent
+        # Stream, Desk, Control, Chronos
+        blur_val = "12px"
+        overlay_color = "rgba(0, 0, 0, 0.65)"  # Frosted glass, high readability
+        text_color = "#e94560"
 
+    # Using a placeholder starry sky image. 
+    # TODO: The user should replace this link with the actual hosted version of their provided background image.
+    BG_IMAGE_URL = "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop"
+
+    # 2. Inject Dynamic CSS
     st.markdown(f"""
         <style>
-        /* Force color on ALL elements to override inner Streamlit wrappers */
-        * {{
-            color: {text_color} !important;
+        /* Base Variables injected by Python State */
+        :root {{
+            --bg-blur: {blur_val};
+            --bg-overlay: {overlay_color};
+            --primary-text: {text_color};
         }}
+
+        /* Wipe Streamlit's default background completely */
         .stApp, .block-container {{
-            background: {bg} !important;
+            background: transparent !important; 
+            background-color: transparent !important;
         }}
-        /* Keep inputs legible */
+
+        /* The Unified Background Entity */
+        .stApp::before {{
+            content: "";
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            
+            /* Stacks the dark overlay ON TOP of the image */
+            background-image: 
+                linear-gradient(var(--bg-overlay), var(--bg-overlay)), 
+                url('{BG_IMAGE_URL}');
+                
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            
+            /* Apply blur and scale up slightly to hide blurry edges */
+            filter: blur(var(--bg-blur));
+            transform: scale(1.05);
+            
+            /* Push to bottom layer */
+            z-index: -1;
+            
+            /* Transition for smooth mode switching */
+            transition: filter 0.8s ease, background-image 0.8s ease;
+        }}
+
+        /* Force foreground elements to remain visible over the background */
+        * {{ color: var(--primary-text) !important; }}
+        
+        /* Ensure Inputs and Kanban Cards have distinct, readable backgrounds */
         input, textarea, select {{
             color: #ffffff !important;
             border: 1px solid rgba(255,255,255,0.2) !important;
-            background-color: rgba(30,30,30,0.8) !important;
+            background-color: rgba(20, 20, 25, 0.85) !important; 
+            backdrop-filter: blur(5px);
         }}
+        
         .kanban-card {{
-            background: rgba(40, 40, 40, 0.8) !important;
+            background: rgba(30, 30, 40, 0.85) !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 10px; padding: 15px; margin-bottom: 10px; transition: all 0.3s ease;
+            border-radius: 10px; 
+            padding: 15px; 
+            margin-bottom: 10px; 
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }}
-        .kanban-card:hover {{ background: rgba(60, 60, 60, 0.9) !important; border-color: rgba(255, 255, 255, 0.4) !important; transform: translateY(-2px); }}
+        .kanban-card:hover {{ transform: translateY(-2px); border-color: rgba(255,255,255,0.5) !important; }}
         </style>
     """, unsafe_allow_html=True)
 
