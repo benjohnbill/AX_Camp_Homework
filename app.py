@@ -41,10 +41,10 @@ def init_session_state():
         st.session_state['diagnostics_run'] = True
 
     if 'streak_updated' not in st.session_state:
-        result = db.check_streak_and_apply_penalty() # [Refactor] Moved to db_manager
+        result = db.check_streak_and_apply_penalty()
         st.session_state['streak_info'] = result['streak_info']
-        if result['penalty_applied']:
-            st.session_state['entropy_mode_trigger'] = True # [Refactor]
+        # entropy_mode는 is_entropy_mode()가 DB debt_count를 실시간 조회하므로
+        # 별도 trigger 플래그 불필요 — penalty 적용 시 debt가 DB에서 이미 증가됨
         st.session_state['streak_updated'] = True
 
     if 'mode' not in st.session_state:
@@ -56,6 +56,14 @@ def init_session_state():
 
     if 'current_echo' not in st.session_state:
         st.session_state['current_echo'] = logic.get_current_echo()
+
+    # [B-2] 새로고침 후 Chronos 타이머 복원 — DB에 저장된 종료 시각이 미래이면 session_state에 복원
+    if 'chronos_running' not in st.session_state:
+        saved_end = db.get_chronos_timer()
+        if saved_end:
+            st.session_state['chronos_end_time'] = saved_end
+            st.session_state['chronos_running'] = True
+            st.session_state['chronos_finished'] = False
 
     defaults = {
         'gatekeeper_dismissed': False,
@@ -70,7 +78,6 @@ def init_session_state():
         'interventions_checked': False,
         'desk_page': 1,
         'violation_pending': None,
-        'entropy_mode_trigger': False # [Refactor]
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -263,9 +270,11 @@ def render_chronos_setup():
     if c3.button(f"{icons.get_icon_text('zap')} 시작", use_container_width=True): start_timer(mins)
 
 def start_timer(m: int):
+    end_time = datetime.now(timezone.utc) + timedelta(minutes=m)
     st.session_state['chronos_duration'] = m
-    st.session_state['chronos_end_time'] = datetime.now(timezone.utc) + timedelta(minutes=m)
+    st.session_state['chronos_end_time'] = end_time
     st.session_state['chronos_running'] = True
+    db.set_chronos_timer(end_time)  # [B-2] DB에 영속화
     st.rerun()
 
 def render_chronos_docking():
@@ -280,6 +289,7 @@ def render_chronos_docking():
     acc = st.text_area("성취 기록 (최소 10자)")
     if st.button(f"{icons.get_icon_text('anchor')} Dock", use_container_width=True, type="primary", disabled=len(sel)==0 or len(acc)<10):
         logic.save_chronos_log(acc, [options[n] for n in sel], st.session_state['chronos_duration'])
+        db.clear_chronos_timer()  # [B-2] Dock 완료 후 타이머 클리어
         st.balloons(); st.session_state['chronos_finished'] = False; st.rerun()
 
 def render_universe_mode():

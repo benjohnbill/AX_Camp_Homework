@@ -1,0 +1,22 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\LG\OneDrive\바탕 화면\Life_System\01_Active_Projects\08_AX 코딩 아카데미\venv\Scripts\python.exe
+rootdir: C:\Users\LG\OneDrive\바탕 화면\Life_System\01_Active_Projects\08_AX 코딩 아카데미\Narrative_Loop
+plugins: anyio-4.12.1
+collecting ... collected 3 items
+
+tests/test_interface_parity.py::test_postgres_has_required_functions PASSED [ 33%]
+tests/test_interface_parity.py::test_sqlite_has_required_functions FAILED [ 66%]
+tests/test_interface_parity.py::test_no_extra_critical_functions_only_in_postgres PASSED [100%]
+
+================================== FAILURES ===================================
+_____________________ test_sqlite_has_required_functions ______________________
+tests\test_interface_parity.py:69: in test_sqlite_has_required_functions
+    assert not missing, (
+E   AssertionError: db_manager.py(SQLite)에 누락된 함수:
+E       - get_all_embeddings
+E       - save_embedding
+E       - ensure_fts
+E   assert not ['get_all_embeddings', 'save_embedding', 'ensure_fts']
+=========================== short test summary info ===========================
+FAILED tests/test_interface_parity.py::test_sqlite_has_required_functions - A...
+========================= 1 failed, 2 passed in 3.21s =========================

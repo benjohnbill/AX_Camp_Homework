@@ -1,4 +1,4 @@
-"""
+﻿"""
 narrative_logic.py
 Antigravity v5: The Laws of Physics
 3-Body Hierarchy + Red Protocol + Dreaming Integration + Action Plan
@@ -697,8 +697,8 @@ def get_temporal_patterns() -> pd.DataFrame:
     """
     logs = db.get_logs_for_analytics()
     
-    # Filter for Apologies (Failures)
-    data = [l for l in logs if l['meta_type'] == 'Apology']
+    # Filter for Gaps/Failures (legacy rows may still have 'Apology')
+    data = [l for l in logs if l['meta_type'] in ('Gap', 'Apology')]
     
     if not data:
         return pd.DataFrame()
@@ -738,8 +738,8 @@ def get_activity_pulse() -> pd.DataFrame:
     df['created_at'] = pd.to_datetime(df['created_at'])
     df['date'] = df['created_at'].dt.date
     
-    # Filter for relevant types
-    df = df[df['meta_type'].isin(['Fragment', 'Apology'])]
+    # Filter for relevant types (support both old and new names post-refactor)
+    df = df[df['meta_type'].isin(['Log', 'Gap', 'Fragment', 'Apology'])]
     
     # Group by Date and Type
     pulse_data = df.groupby(['date', 'meta_type']).size().reset_index(name='count')
@@ -963,9 +963,9 @@ def check_yesterday_promise() -> dict:
     # 2. Find Apology from yesterday
     logs = load_logs()
     
-    # Filter for Apology
-    apologies = [l for l in logs 
-                 if l.get('meta_type') == 'Apology' 
+    # Filter for Gap (legacy rows may still have 'Apology')
+    apologies = [l for l in logs
+                 if l.get('meta_type') in ('Gap', 'Apology')
                  and _safe_text(l.get('created_at'), default='').startswith(y_str)]
     
     if apologies:

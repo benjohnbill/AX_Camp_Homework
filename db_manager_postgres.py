@@ -131,6 +131,8 @@ def init_database():
                     "CREATE UNIQUE INDEX IF NOT EXISTS uq_chat_history_source_chat_id "
                     "ON chat_history (source_chat_id)"
                 )
+                # [B-2] Chronos 타이머 영속화 컬럼 (이미 있으면 무시)
+                cur.execute("ALTER TABLE user_stats ADD COLUMN IF NOT EXISTS chronos_end_time TIMESTAMPTZ")
             conn.commit()
     except Exception:
         pass
@@ -793,3 +795,47 @@ def inject_genesis_data(embedding_func):
             embedding = None
         create_log(content=content, meta_type=row["meta_type"], embedding=embedding)
     increment_debt(1)
+
+
+# ============================================================
+# [B-2] Chronos Timer Persistence
+# ============================================================
+
+def set_chronos_timer(end_time: datetime) -> None:
+    """타이머 시작 시 종료 시각을 DB에 저장한다."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE user_stats SET chronos_end_time = %s WHERE id = 1",
+                (end_time,),
+            )
+        conn.commit()
+
+
+def get_chronos_timer() -> Optional[datetime]:
+    """저장된 타이머 종료 시각을 반환한다.
+    현재 시각보다 미래이면 반환, 과거이거나 없으면 None을 반환(자동 클리어).
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT chronos_end_time FROM user_stats WHERE id = 1")
+            row = cur.fetchone()
+    if not row or not row[0]:
+        return None
+    end_time = row[0]
+    if not end_time.tzinfo:
+        from datetime import timezone as _tz
+        end_time = end_time.replace(tzinfo=_tz.utc)
+    if end_time <= datetime.now(end_time.tzinfo):
+        clear_chronos_timer()
+        return None
+    return end_time
+
+
+def clear_chronos_timer() -> None:
+    """타이머 완료 또는 취소 시 DB의 chronos_end_time을 NULL로 초기화한다."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE user_stats SET chronos_end_time = NULL WHERE id = 1")
+        conn.commit()
+
