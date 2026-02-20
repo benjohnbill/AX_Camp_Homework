@@ -142,6 +142,19 @@ class DebugTokenHTTPRequestHandler(BaseHTTPRequestHandler):
         status, payload = issue_debug_token_response(body=body, headers=self.headers, environ=os.environ)
         self._send_json(status, payload)
 
+    def do_GET(self) -> None:
+        parsed = urlparse(self.path)
+        if parsed.path == "/healthz":
+            payload = {
+                "status": 200,
+                "code": "ok",
+                "service": "debug_token_server",
+                "app_env": str(os.environ.get("APP_ENV") or os.environ.get("ENV") or "staging"),
+            }
+            self._send_json(200, payload)
+            return
+        self._send_json(404, _error_payload(404, "not_found", "Endpoint not found."))
+
     def log_message(self, format: str, *args: Any) -> None:
         # Keep server logs concise and avoid request body/token leaks.
         LOGGER.info("%s - - %s", self.address_string(), format % args)
