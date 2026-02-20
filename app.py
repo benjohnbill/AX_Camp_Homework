@@ -15,6 +15,7 @@ import os
 import narrative_logic as logic
 import icons
 from universe_3d import render_3d_universe
+import universe_auth
 db = logic.db
 
 import plotly.express as px
@@ -44,6 +45,125 @@ def _safe_startup_error(exc: Exception) -> str:
     line = str(exc).strip().splitlines()[0] if str(exc) else type(exc).__name__
     line = re.sub(r"postgres(?:ql)?://[^\\s]+", "postgresql://***", line)
     return f"{type(exc).__name__}: {line}"
+
+
+def _query_param_value(name: str) -> str:
+    raw = st.query_params.get(name, "")
+    if isinstance(raw, list):
+        return str(raw[0] if raw else "")
+    return str(raw)
+
+
+def _is_universe_embed_request() -> bool:
+    return _query_param_value("embed").strip().lower() == "universe_3d"
+
+
+def _parse_positive_int(raw: str, default: int) -> int:
+    try:
+        value = int(str(raw).strip())
+        return value if value > 0 else default
+    except Exception:
+        return default
+
+
+def _get_runtime_secret(name: str, default: str = "") -> str:
+    value = os.getenv(name)
+    if value:
+        return str(value).strip()
+    try:
+        secret_value = st.secrets.get(name)
+        if secret_value:
+            return str(secret_value).strip()
+    except Exception:
+        pass
+    return default
+
+
+def _emit_universe_session_cookie(cookie_name: str, cookie_value: str, max_age: int) -> None:
+    """
+    Streamlit does not expose response Set-Cookie APIs.
+    We set Secure/SameSite cookie client-side for follow-up requests.
+    HttpOnly requires an upstream gateway/proxy.
+    """
+    cookie_literal = json.dumps(
+        f"{cookie_name}={cookie_value}; Max-Age={int(max_age)}; Path=/; Secure; SameSite=None"
+    )
+    components.html(
+        f"<script>document.cookie = {cookie_literal};</script>",
+        height=0,
+        scrolling=False,
+    )
+
+
+def _render_universe_auth_error(auth_result: universe_auth.AuthResult) -> None:
+    payload = dict(auth_result.payload or {})
+    payload.setdefault("status", auth_result.status)
+    payload.setdefault("route", "universe_3d_embed")
+    st.markdown("### Universe 3D Auth Error")
+    st.code(json.dumps(payload, ensure_ascii=False, indent=2), language="json")
+
+
+def _run_universe_embed_route() -> bool:
+    if not _is_universe_embed_request():
+        return False
+
+    jwt_secret = _get_runtime_secret("UNIVERSE_JWT_SECRET", "")
+    session_secret = _get_runtime_secret("UNIVERSE_SESSION_SECRET", "") or jwt_secret
+    issuer = _get_runtime_secret("UNIVERSE_AUTH_ISSUER", universe_auth.DEFAULT_ISSUER)
+    audience = _get_runtime_secret("UNIVERSE_AUTH_AUDIENCE", universe_auth.DEFAULT_AUDIENCE)
+    cookie_name = (
+        _get_runtime_secret("UNIVERSE_SESSION_COOKIE", universe_auth.DEFAULT_COOKIE_NAME)
+        or universe_auth.DEFAULT_COOKIE_NAME
+    )
+    session_ttl = _parse_positive_int(
+        _get_runtime_secret("UNIVERSE_SESSION_TTL_SECONDS", str(universe_auth.DEFAULT_SESSION_TTL_SECONDS)),
+        universe_auth.DEFAULT_SESSION_TTL_SECONDS,
+    )
+
+    headers = st.context.headers.to_dict() if hasattr(st, "context") else {}
+    cookies = st.context.cookies.to_dict() if hasattr(st, "context") else {}
+    auth_result = universe_auth.authenticate_request(
+        headers=headers,
+        cookies=cookies,
+        jwt_secret=jwt_secret,
+        session_secret=session_secret,
+        issuer=issuer,
+        audience=audience,
+        cookie_name=cookie_name,
+        session_ttl_seconds=session_ttl,
+    )
+
+    if not auth_result.ok:
+        _render_universe_auth_error(auth_result)
+        return True
+
+    if auth_result.session_cookie_name and auth_result.session_cookie_value:
+        _emit_universe_session_cookie(
+            cookie_name=auth_result.session_cookie_name,
+            cookie_value=auth_result.session_cookie_value,
+            max_age=auth_result.session_cookie_max_age or session_ttl,
+        )
+
+    try:
+        logs = logic.load_logs()
+        cores = db.get_cores()
+        render_3d_universe(logs, cores)
+    except Exception as exc:
+        st.markdown("### Universe 3D Render Error")
+        st.code(
+            json.dumps(
+                {
+                    "status": 500,
+                    "code": "render_failure",
+                    "message": "Universe 3D rendering failed after authentication.",
+                    "detail": _safe_startup_error(exc),
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            language="json",
+        )
+    return True
 
 def init_session_state():
     if 'db_bootstrap_done' not in st.session_state:
@@ -537,6 +657,8 @@ def render_desk_mode():
 # ============================================================
 def main():
     init_page_config()
+    if _run_universe_embed_route():
+        return
     try:
         init_session_state()
     except Exception as exc:
