@@ -121,11 +121,13 @@ def apply_atmosphere(entropy_mode: bool):
     BG_IMAGE_URL = "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop"
     
     # Seamlessly load local AI image if the user places it in the 'assets' directory
-    local_bg_path = os.path.join("assets", "bg.jpg")
+    bg_ext = next((ext for ext in ["png", "jpg", "jpeg", "webp"] if os.path.exists(os.path.join("assets", f"bg.{ext}"))), "jpg")
+    local_bg_path = os.path.join("assets", f"bg.{bg_ext}")
+    mime_type = "image/png" if bg_ext == "png" else "image/webp" if bg_ext == "webp" else "image/jpeg"
     bg_base64 = get_base64_of_bin_file(local_bg_path)
     if bg_base64:
         # Assuming jpeg format for the base64 MIME
-        BG_IMAGE_URL = f"data:image/jpeg;base64,{bg_base64}"
+        BG_IMAGE_URL = f"data:{mime_type};base64,{bg_base64}"
 
     # 2. Inject Dynamic CSS
     st.markdown(f"""
