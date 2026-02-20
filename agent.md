@@ -1,221 +1,179 @@
-# agent.md — Antigravity / Narrative Loop 에이전트 운영 헌법
+# agent.md — Narrative_Loop 통합 운영 문서 (SSOT)
 
-> **이 문서를 읽는 에이전트에게:**
-> 코드를 "수정"하는 것이 아니라 "철학과 로직을 정렬"하는 것이다.
-> 변경 전 반드시 이 문서를 끝까지 읽어라.
-
----
-
-## 0. 현재 시스템 상태 (2026-02 기준)
-
-| 항목            | 상태                                                     |
-| --------------- | -------------------------------------------------------- |
-| **운영 DB**     | Supabase (PostgreSQL) — `DATASTORE=postgres`             |
-| **Fallback DB** | SQLite (`data/narrative.db`) — 로컬 개발/롤백 전용       |
-| **AI 모델**     | `gpt-4o-mini` (응답) + `text-embedding-3-small` (임베딩) |
-| **런타임**      | Streamlit (Single Page App, 5-Mode)                      |
-| **배포**        | Streamlit Cloud                                          |
-
-> **GEMINI.md는 구버전입니다.** 해당 파일의 "SQLite 기반" 기술은 현재 상태를 반영하지 않습니다.
-> 이 `agent.md`가 유일한 진실의 원천(Single Source of Truth)입니다.
+이 문서는 Narrative_Loop의 단일 진실 원천이다.  
+모든 AI 도구(Codex CLI, Antigravity, Android Studio, Gemini 3.1 Pro)는 이 문서를 우선 기준으로 작업한다.
 
 ---
 
-## 1. 아키텍처 지도 — 파일별 역할
+## 0) 프로젝트 핵심 목적
 
-```
-app.py                   ← [UI Layer] Streamlit 렌더링, 세션 상태, 5개 모드 라우팅
-narrative_logic.py       ← [Mind Layer] EvidenceGateway + PolicyEngine (AI/비즈니스 로직)
-db_manager.py            ← [Memory Layer] 멀티 DB 라우터 — DATASTORE 값에 따라 분기
-db_manager_postgres.py   ← [Backend] Supabase/Postgres CRUD (현재 운영 경로)
-db_manager_sqlite.py     ← [Backend] SQLite CRUD (롤백/로컬 개발 전용)
-db_router.py             ← [Entry] 환경변수를 읽어 db_manager_postgres 또는 db_manager_sqlite를 반환
-icons.py                 ← [UI] 시스템 아이콘 상수 모음 (이모지/기호)
-tools/                   ← [DevOps] 마이그레이션·검증 스크립트 모음
-tests/                   ← [QA] pytest 기반 안정성 테스트
-sql/                     ← [Schema] Supabase 테이블 생성 SQL
-data/                    ← [Storage] 로컬 DB 및 JSON 보조 로그
-```
+이 프로젝트는 생산성 앱이 아니라, 다음 목적의 자기서사 도구다.
 
-### 핵심 2-클래스 구조 (`narrative_logic.py`)
+1. 과거 기록을 근거로 현재 감정을 회고한다.
+2. 스스로 원칙(Core) 기반의 결정을 선언한다.
+3. 반복 기록을 통해 "자기결정" 비중을 높인다.
 
-```
-EvidenceGateway   ← I/O 전담 (DB 조회, OpenAI API 호출, 임베딩 생성)
-                     결정을 내리지 않음. 오직 "증거"를 수집함.
+행동의 질서도(프로젝트 기준):
 
-PolicyEngine      ← 순수 로직 전담 (Silence 판정, Violation 탐지)
-                     DB에 직접 접근하지 않음. DTO를 받아 결정만 반환.
-```
+1. 무의식적 행동
+2. 충동/우발적 행동
+3. 결정을 미루며 시간을 보내는 행동
+4. 불확실성 속에서도 스스로 결정한 행동
 
-> **원칙:** 이 두 클래스의 역할 경계를 절대 섞지 마라.
-> `EvidenceGateway`에 if-else 의사결정 로직을 추가하거나,
-> `PolicyEngine`에서 DB를 직접 호출하는 코드는 아키텍처 위반이다.
+목표는 1~3의 비중을 줄이고 4의 비중을 늘리는 것이다.
 
 ---
 
-## 2. DB 라우팅 규칙
+## 1) 현재 시스템 스냅샷 (2026-02)
 
-```python
-# db_router.py 핵심 로직 (의사코드)
-DATASTORE = os.getenv("DATASTORE") or st.secrets.get("DATASTORE", "sqlite")
+- Runtime UI: Streamlit (`app.py`)
+- Core Logic: `narrative_logic.py`
+  - `EvidenceGateway` (I/O)
+  - `PolicyEngine` (판단 로직)
+- DB Router: `db_router.py`
+- DB Backend:
+  - 운영: `db_manager_postgres.py` (`DATASTORE=postgres`)
+  - fallback: `db_manager_sqlite.py` (로컬/롤백 전용)
+- Main DB: Supabase PostgreSQL
+  - `logs`, `chat_history`, `connections`, `user_stats`
 
-if DATASTORE == "postgres":
-    from db_manager_postgres import *   # ← 현재 운영 경로
-else:
-    from db_manager_sqlite import *     # ← fallback
-```
+중요 경계:
 
-### 환경변수 설정 위치
-
-| 환경                  | 설정 위치                        |
-| --------------------- | -------------------------------- |
-| 로컬 개발             | `.streamlit/secrets.toml`        |
-| 운영(Streamlit Cloud) | Streamlit Cloud Secrets 대시보드 |
-
-### 필수 환경변수
-
-```toml
-DATASTORE = "postgres"
-DATABASE_URL = "postgresql://postgres.<project_ref>:...@*.pooler.supabase.com:6543/postgres"
-OPENAI_API_KEY = "sk-..."
-```
-
-> **주의:** `DATABASE_URL`에서 Session Pooler 사용 시 username은 반드시
-> `postgres.<project_ref>` 형식이어야 한다. `postgres`만 쓰면 인증 실패.
+- Streamlit은 UI/상태 관리용이다.
+- 모바일 앱의 외부 POST 수신 API 서버 역할은 Streamlit이 아니라 별도 인제스트 계층이 담당한다.
 
 ---
 
-## 3. 데이터 스키마 — 3-Body Hierarchy
+## 2) 현재 코드 구조 요약
 
-```
-Core (Constitution / 헌법)   ← [Star] 사용자의 핵심 가치/원칙
-  └── Gap (Apology / 해명)   ← [Activity] 원칙 위반에 대한 해명 + 내일의 약속
-        └── Log (Fragment)   ← [Sparkles] 일상 기록/생각의 파편
-```
+### UI 라우팅 (`app.py`)
 
-### Supabase 테이블 목록
+- `process_stream_input()`
+- `render_stream_mode()`
+- `render_chronos_mode()`
+- `render_universe_mode()`
+- `render_control_mode()`
+- `render_desk_mode()`
+- `main()`
 
-| 테이블         | 역할                                           |
-| -------------- | ---------------------------------------------- |
-| `logs`         | 모든 기록 저장 (Log, Core, Gap, Kanban 통합)   |
-| `chat_history` | AI 대화 기록                                   |
-| `connections`  | 로그 간 연결 관계 (Universe 그래프용)          |
-| `user_stats`   | 스트릭/debt/회복 포인트 (항상 `id=1` 단일 row) |
+### 로직 핵심 (`narrative_logic.py`)
 
-### `logs` 테이블 핵심 컬럼
-
-```
-id, content, meta_type, embedding(BLOB/bytea),
-emotion, dimension, keywords(JSON), tags(JSON),
-linked_constitutions(JSON), duration, kanban_status,
-debt_repaid, quality_score, reward_points, created_at
-```
+- Search: `hybrid_search()`, `find_related_logs()`
+- Response: `generate_response()`
+- Write: `save_log()`, `save_chronos_log()`, `create_kanban_card()`, `land_kanban_card()`
+- Policy: `evaluate_input_integrity()`, `process_gap()`
+- Ops: `run_startup_diagnostics()`
 
 ---
 
-## 4. 5-Mode 동작 규칙
+## 3) 필수 아키텍처 원칙
 
-### Mode 1: Stream (채팅 & 기록)
-
-- **핵심 함수:** `process_stream_input()` in `app.py`
-- **DB 쓰기:** `create_log()` → `logs` 테이블 + `chat_history`
-- **AI 경로:** `EvidenceGateway.get_embedding_safe()` → `hybrid_search()` → `generate_response()`
-- **첫 입력:** "Silent Zoom" — AI 응답 없이 조용히 저장 (Meteor 저장)
-- **두 번째 입력부터:** 유사 과거 로그를 컨텍스트로 AI 응답 생성
-
-### Mode 2: Chronos (타이머)
-
-- **핵심 함수:** `render_chronos_timer()`, `render_chronos_docking()`
-- **DB 쓰기:** 타이머 종료 후 Docking 시 `create_log(meta_type="Log", duration=초)`
-- **연결:** Docking 시 특정 Constitution(`core_id`)과 연결
-
-### Mode 3: Universe (시각화)
-
-- **핵심 함수:** `render_universe_mode()`, `render_soul_analytics()`
-- **DB 읽기만:** `get_all_logs()`, `get_connection_counts()`, `get_logs_for_analytics()`
-- **렌더링:** PyVis 그래프 + Plotly 히트맵/트리맵
-- **이 모드에서는 쓰기 없음**
-
-### Mode 4: Control (칸반)
-
-- **핵심 함수:** `render_control_mode()`, `render_kanban_docking()`
-- **DB 쓰기:** `create_log(kanban_status="draft"|"orbit"|"landed")`
-- **상태 전이:** `draft → orbit → landed`
-
-### Mode 5: Desk (에세이 작성)
-
-- **핵심 함수:** `render_desk_mode()`
-- **DB 읽기+쓰기:** `get_fragments_paginated()` 조회 후 에세이 `create_log(meta_type="Log")`
+1. `EvidenceGateway`는 I/O만 담당한다.
+2. `PolicyEngine`은 DB를 직접 호출하지 않는다.
+3. `narrative_logic.py`에서 UI 상태(`st.session_state`) 직접 조작 금지.
+4. `DATABASE_URL`, API Key 등 민감값은 로그/문서에 절대 노출하지 않는다.
+5. SQLite는 운영 DB가 아니라 fallback/로컬 개발용이다.
 
 ---
 
-## 5. 레드 프로토콜 & Streak 시스템
+## 4) 멀티도구 역할 분담
 
-### 레드 프로토콜 (Red Protocol)
+### Codex CLI (기획/통합)
 
-```
-트리거: PolicyEngine.detect_violation() → True 반환 시
-상태: st.session_state["entropy_mode"] = True
-제약: 일반 대화 차단, 해명(Gap) + 내일의 약속 제출 필수
-해제: create_gap() 호출 후 debt_repaid로 debt 감소
-```
+- 철학 정렬, 아키텍처 결정, 통합 설계, 문서 기준 확정.
+- 에이전트 산출물 검토 및 충돌 해소.
 
-**절대 규칙:** `entropy_mode`가 True일 때는 `create_log()` 일반 경로를 막아야 한다.
-`PolicyEngine.detect_violation()`을 우회하는 코드를 추가하지 마라.
+### Antigravity (Backend + Streamlit)
 
-### Streak & Debt 시스템
+- 인제스트 API 계층 구현/운영.
+- `narrative_logic.py` 재사용 연결.
+- Supabase 저장 규약/무결성/운영 점검 책임.
 
-```python
-# db_manager.py 핵심 함수들
-check_streak_and_apply_penalty()  # 로그인 시 자동 호출 — streak 끊기면 debt +1
-update_streak()                   # 로그 작성 시 streak 갱신
-increment_debt(amount)            # debt 증가
-decrement_debt(amount)            # debt 감소 (Gap 제출 시)
-get_current_streak()              # 현재 streak 조회
-```
+### Android Studio (모바일)
 
-- `user_stats` 테이블의 `id=1` row가 항상 존재해야 한다.
-- `debt_count > 0` → `entropy_mode = True` 조건 성립
+- CameraX, OCR 입력 UX, 네트워크 재시도, 응답 렌더링 책임.
+- 키를 클라이언트에 두지 않고 토큰 기반 인증만 사용.
+
+### Gemini 3.1 Pro (UI 전문)
+
+- 내러티브 UX 개선.
+- 숙제화 없는 카피/인터랙션 설계.
+- Streamlit 화면 개선안 제안(구현은 Antigravity와 연동).
 
 ---
 
-## 6. 에이전트 작업 원칙 (황금률)
+## 5) Android OCR 통합 기준 워크플로우
 
-### 작업 전 반드시 확인
+기준 파이프라인:
 
-- [ ] `DATASTORE` 환경변수가 `postgres`로 설정되어 있는가?
-- [ ] 수정할 함수가 `EvidenceGateway`(I/O)인지 `PolicyEngine`(로직)인지 명확한가?
-- [ ] DB 스키마 변경 시 `sql/` 폴더에 마이그레이션 SQL이 준비되어 있는가?
-- [ ] Supabase `user_stats(id=1)` row가 존재하는가?
+1. Android에서 촬영(CameraX)
+2. 인제스트 API에 업로드
+3. OCR(Gemini Vision) 수행
+4. 정규화 텍스트를 기존 파이프라인으로 연결
+5. `save_log()` 계열 저장 + `find_related_logs()` + `generate_response()`
+6. Android에 응답 반환
+7. 동일 로그가 Streamlit Universe/Desk 회고에 반영
 
-### 절대 금지 사항
+---
 
-1. **`PolicyEngine`에서 DB 직접 호출 금지** — 반드시 `EvidenceGateway`를 통해야 함
-2. **`narrative_logic.py`에서 `st.session_state` 직접 수정 금지** — UI 레이어(app.py)의 역할
-3. **`entropy_mode` 강제 해제 금지** — Gap 제출 + debt 감소 절차 없이 해제 불가
-4. **`DATABASE_URL` 로그 출력 금지** — 인증 정보 마스킹 필수
-5. **SQLite 파일(`data/narrative.db`) 운영 DB로 취급 금지** — fallback 전용
+## 6) 공통 API 계약 (초안)
 
-### 코드 수정 후 검증 순서
+### `POST /v1/ocr/ingest`
+
+Request fields:
+
+- `user_id` (string)
+- `image_base64` (string)
+- `client_ts` (ISO8601 string)
+- `session_id` (string)
+- `mode_hint` (`stream` | `desk` | `auto`)
+- `manual_override_text` (optional string)
+
+Response fields:
+
+- `request_id`
+- `ocr_text_raw`
+- `ocr_text_normalized`
+- `confidence` (0~1)
+- `saved_log_id`
+- `ai_response`
+- `related_log_ids`
+- `warnings`
+
+Error codes:
+
+- `400`, `401`, `422`, `429`, `500`
+
+---
+
+## 7) 데이터 저장 규칙
+
+- `meta_type`: `Log`
+- `content`: 최종 확정 텍스트
+- `dimension`: 필요 시 `handwriting` 반영
+- `tags`: `source:android_ocr`, `input:handwritten` 계열 태깅
+- `keywords`: 기존 메타 추출 결과 유지
+
+원칙:
+
+- 외부 소스 구분 가능해야 한다.
+- 검색/회고 경로에서 동일한 1급 로그로 취급한다.
+
+---
+
+## 8) 품질 게이트
+
+실행 기준:
 
 ```powershell
-# 1. Postgres 연결 인증 확인
 python tools/preflight_postgres_auth.py
-
-# 2. 스키마 부트스트랩 검증
 python tools/check_supabase_phase1.py
-
-# 3. 스모크 테스트
 python tools/check_postdeploy_smoke.py --strict-postgres
-
-# 4. 데이터 무결성 검증
 python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_latest.json
-
-# 5. 유닛 테스트
 python -m pytest -q tests/
 ```
 
-**원스텝 Gate 실행 (권장):**
+원스텝:
 
 ```powershell
 python tools/run_agent_a_gate.py
@@ -223,60 +181,31 @@ python tools/run_agent_a_gate.py
 
 ---
 
-## 7. 검색 & 임베딩 시스템
+## 9) 보안 기준
 
-```python
-# narrative_logic.py 핵심 검색 함수
-
-hybrid_search(query_text, top_k=10, alpha=0.7)
-# alpha=0.7: 벡터 유사도 70% + 키워드 매칭 30% 가중치
-
-# 내부 흐름:
-# 1. EvidenceGateway.get_embedding_safe(text) → 벡터 생성
-# 2. ann_query(embedding) → Annoy 인덱스 ANN 검색
-# 3. simple_keyword_search(text) → SQLite FTS5 or Postgres LIKE
-# 4. RRF(Reciprocal Rank Fusion) → 최종 랭킹 병합
-```
-
-- 임베딩은 `numpy bytes` (`BLOB` in SQLite / `bytea` in Postgres)로 저장
-- Annoy 인덱스: `data/` 폴더에 캐시, `load_or_build_index()`로 초기화
-- 임베딩 없이도 키워드 검색만으로 fallback 동작 가능
+1. OpenAI/Gemini/DB 키는 서버에만 저장한다.
+2. Android 앱에는 키를 넣지 않는다.
+3. 로그 출력 시 DSN/키 마스킹을 기본으로 한다.
+4. OCR 이미지 원본은 최소 보관 원칙을 따른다.
 
 ---
 
-## 8. 흔한 버그 패턴 & 방지법
+## 10) 인계 포맷 (모든 도구 공통)
 
-| 버그 패턴                                        | 원인                                            | 방지법                                              |
-| ------------------------------------------------ | ----------------------------------------------- | --------------------------------------------------- |
-| `AttributeError: check_streak_and_apply_penalty` | 함수가 `narrative_logic.py`에 있다고 가정       | 항상 `db_manager.py`에 있어야 함                    |
-| Streamlit 검은 화면                              | `init_session_state()` 미실행 또는 DB 연결 실패 | `EvidenceGateway.check_system_health()` 리턴값 확인 |
-| `password authentication failed`                 | `DATABASE_URL` 비밀번호 불일치 또는 username 오류 | 비밀번호 재발급 후 반영, `postgres.<project_ref>` 확인 |
-| 임베딩 shape 불일치                              | 모델 변경 시 기존 BLOB과 차원 불일치            | 임베딩 모델 변경 시 인덱스 재빌드(`build_index.py`) |
-| Postgres `id=1` not found                        | `user_stats` 초기 row 없음                      | `check_supabase_phase1.py`로 확인 후 SQL 재실행     |
+각 작업 완료 보고는 아래 4블록으로 고정한다.
 
----
-
-## 9. 롤백 절차
-
-운영 중 Postgres 장애 발생 시:
-
-```toml
-# .streamlit/secrets.toml 또는 Streamlit Cloud Secrets
-DATASTORE = "sqlite"   # postgres → sqlite 변경
-```
-
-Streamlit Cloud에서 앱 재시작 후 로컬 `data/narrative.db`로 fallback.
-롤백 시각과 사유를 `handoff.txt`에 기록할 것.
+1. `What changed` (변경 사항 3~7줄)
+2. `Validation` (검증 명령/결과)
+3. `Risks` (남은 리스크)
+4. `Next 3 actions` (다음 액션 3개)
 
 ---
 
-## 10. 참고 문서
+## 11) 문서 정책
 
-| 문서                             | 용도                         |
-| -------------------------------- | ---------------------------- |
-| `SUPABASE_RUNBOOK.md`            | 배포 전후 표준 점검 절차     |
-| `README.md`                      | 프로젝트 개요 및 설치 가이드 |
-| `PROJECT_ANALYSIS_KR.md`         | 초보자용 데이터 플로우 설명  |
-| `handoff.txt`                    | 세션 간 인계 메모            |
-| `sql/1_create_logs_table.sql`    | Supabase 테이블 생성 SQL     |
-| `sql/2_create_system_tables.sql` | Supabase 보조 테이블 SQL     |
+이전의 분산 문서를 통합해 본 파일을 기준으로 운영한다.  
+도구별 실행 문서는 아래 3개를 사용한다.
+
+- `Antigravity_agent.md`
+- `Android_Studio_agent.md`
+- `Gemini-3.1-Pro_agent.md`

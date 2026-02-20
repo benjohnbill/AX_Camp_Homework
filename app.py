@@ -12,6 +12,7 @@ import re
 
 import narrative_logic as logic
 import icons
+from universe_3d import render_3d_universe
 db = logic.db
 
 import plotly.express as px
@@ -294,7 +295,7 @@ def render_chronos_docking():
 
 def render_universe_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('orbit', size=40)} SOUL ANALYTICS</h1></div>", unsafe_allow_html=True)
-    t1, t2, t3 = st.tabs(["Cosmos", "Soul Analytics", "Legacy"])
+    t1, t2, t3, t4 = st.tabs(["Cosmos", "Soul Analytics", "Legacy", "Deep Space (3D)"])
     
     with t1:
         st.caption("관측할 별을 선택하고, 새로운 별자리를 연결하세요.")
@@ -319,6 +320,12 @@ def render_universe_mode():
                 marker=dict(colors=[d['health_score'] for d in data], colorscale='Viridis')
             ))
             st.plotly_chart(fig, use_container_width=True)
+
+    with t4:
+        st.markdown(f"### {icons.get_icon_text('orbit')} 1st Person Explorer")
+        logs = logic.load_logs()
+        cores = db.get_cores()
+        render_3d_universe(logs, cores)
 
 def render_soul_analytics():
     st.markdown(f"### {icons.get_icon_text('calendar')} Willpower Density")

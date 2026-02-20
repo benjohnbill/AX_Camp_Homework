@@ -1,34 +1,37 @@
-M  README.md
-M  SUPABASE_RUNBOOK.md
-A  agent.md
-A  tools/_env_utils.py
-M  tools/check_data_integrity.py
-M  tools/check_postdeploy_smoke.py
-M  tools/check_supabase_phase1.py
-A  tools/preflight_postgres_auth.py
-A  tools/run_agent_a_gate.py
-?? handoff.txt
-babab83 Harden startup against DB connection failure and dynamic DATABASE_URL
-373aaf9 Align silence policy test expectation with current entropy message
-f0e550c Add integrity gate: idempotent chat migration, strict smoke, and data checks
-aa88388 Phase 6: add Supabase runbook and post-deploy smoke script
-6215c51 Phase 5: invalidate ANN cache on write paths
-b10a0f7 Phase 4: harden null handling and add stability tests
-aa04921 Update narrative logic
-89d901e Fix echo search arg and replace HTML icons in Streamlit widgets
-d369e3b Fix None-safe echo rendering for created_at/content
-1b178ad Fix migration script import path when run from tools
-.......                                                                  [100%]
-7 passed in 120.26s (0:02:00)
-[INFO] loaded from secrets: DATASTORE, DATABASE_URL, OPENAI_API_KEY
-[INFO] gate_started_utc=2026-02-19T08:18:22.937475+00:00
+Narrative_Loop handoff (updated 2026-02-20)
 
-=== A-0 Preflight Auth ===
-$ C:\Users\LG\OneDrive\���� ȭ��\Life_System\01_Active_Projects\08_AX �ڵ� ��ī����\venv\Scripts\python.exe tools/preflight_postgres_auth.py
-[OK] DATASTORE=postgres
-[INFO] DATABASE_URL(masked)=postgresql://postgres.hiffkmidaqkofoipepdl:***@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
-[INFO] host=aws-1-ap-southeast-1.pooler.supabase.com port=6543 db=postgres
-[FAIL] auth check failed: connection to server at "aws-1-ap-southeast-1.pooler.supabase.com" (3.1.167.181), port 6543 failed: FATAL:  password authentication failed for user "postgres"
-[exit=1]
+Current source-of-truth docs:
+- agent.md
+- Antigravity_agent.md
+- Android_Studio_agent.md
+- Gemini-3.1-Pro_agent.md
 
-[FAIL] Gate stopped at 'A-0 Preflight Auth'.
+Removed legacy docs:
+- README.md
+- PROJECT_ANALYSIS_KR.md
+- SUPABASE_RUNBOOK.md
+- GEMINI.md
+
+Why this file exists:
+- Keep a short session-to-session operational summary.
+- Record current ownership boundaries for tools.
+
+Active ownership split:
+- Codex CLI: system planning, architecture decisions, integration contracts
+- Antigravity: backend + Streamlit integration and DB integrity
+- Android Studio: camera capture, OCR UX, mobile API client
+- Gemini 3.1 Pro: Streamlit-focused UI/UX redesign proposals
+
+Current integration direction:
+- Streamlit stays as UI layer.
+- Mobile OCR ingestion goes through a separate API layer (not direct Streamlit POST).
+
+Immediate next checks:
+1) Keep all new changes aligned to agent.md first.
+2) Ensure API field names stay consistent across all 3 tool-agent docs.
+3) Run project verification commands after implementation work:
+   - python tools/preflight_postgres_auth.py
+   - python tools/check_supabase_phase1.py
+   - python tools/check_postdeploy_smoke.py --strict-postgres
+   - python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_latest.json
+   - python -m pytest -q tests/
