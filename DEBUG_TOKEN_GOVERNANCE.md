@@ -8,6 +8,7 @@
 
 ## Rotation Policy
 - Rotate `UNIVERSE_JWT_SECRET` immediately when token leakage is suspected.
+- Rotate `DEBUG_TOKEN_ADMIN_KEY` together with JWT/session secrets for staging debug flows.
 - Existing bearer debug tokens are invalidated after rotation.
 - Rotation command:
   - `python tools/rotate_universe_jwt_secret.py`
