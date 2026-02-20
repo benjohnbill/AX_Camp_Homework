@@ -36,6 +36,11 @@ def _safe_startup_error(exc: Exception) -> str:
     return f"{type(exc).__name__}: {line}"
 
 def init_session_state():
+    if 'db_bootstrap_done' not in st.session_state:
+        # Ensure required DB schema exists before any startup reads.
+        db.init_database()
+        st.session_state['db_bootstrap_done'] = True
+
     if 'diagnostics_run' not in st.session_state:
         db.inject_genesis_data(logic.get_embedding)
         logic.run_startup_diagnostics()
@@ -93,7 +98,7 @@ def apply_atmosphere(entropy_mode: bool):
         # Standard: Deep Space Blue
         bg = "radial-gradient(circle at center, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
         text_color = "#e94560" # Vivd Red/Pink accent
-    
+
     st.markdown(f"""
         <style>
         .stApp {{ background: {bg} !important; color: {text_color} !important; }}
