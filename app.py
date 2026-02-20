@@ -96,15 +96,16 @@ def apply_atmosphere(entropy_mode: bool):
     
     st.markdown(f"""
         <style>
-        .stApp {{ background: {bg} !important; }}
+        .stApp {{ background: {bg} !important; color: {text_color} !important; }}
+        h1, h2, h3, h4, h5, h6, p, div, span, label {{ color: {text_color} !important; }}
         /* Global Text Adjustment for Entropy Mode */
         {'body { filter: grayscale(100%); }' if entropy_mode else ''}
         .kanban-card {{
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(40, 40, 40, 0.8) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
             border-radius: 10px; padding: 15px; margin-bottom: 10px; transition: all 0.3s ease;
         }}
-        .kanban-card:hover {{ background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }}
+        .kanban-card:hover {{ background: rgba(60, 60, 60, 0.9) !important; border-color: rgba(255, 255, 255, 0.4) !important; transform: translateY(-2px); }}
         </style>
     """, unsafe_allow_html=True)
 
