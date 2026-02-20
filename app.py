@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, timezone
 import time
 import json
 import re
+import base64
+import os
 
 import narrative_logic as logic
 import icons
@@ -21,6 +23,14 @@ import plotly.graph_objects as go
 # ============================================================
 # Page Config & Initialization
 # ============================================================
+@st.cache_data
+def get_base64_of_bin_file(bin_file):
+    if not os.path.exists(bin_file):
+        return None
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
 def init_page_config():
     st.set_page_config(
         page_title="Antigravity",
@@ -108,8 +118,14 @@ def apply_atmosphere(entropy_mode: bool):
         text_color = "#e94560"
 
     # Using a placeholder starry sky image. 
-    # TODO: The user should replace this link with the actual hosted version of their provided background image.
     BG_IMAGE_URL = "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop"
+    
+    # Seamlessly load local AI image if the user places it in the 'assets' directory
+    local_bg_path = os.path.join("assets", "bg.jpg")
+    bg_base64 = get_base64_of_bin_file(local_bg_path)
+    if bg_base64:
+        # Assuming jpeg format for the base64 MIME
+        BG_IMAGE_URL = f"data:image/jpeg;base64,{bg_base64}"
 
     # 2. Inject Dynamic CSS
     st.markdown(f"""
