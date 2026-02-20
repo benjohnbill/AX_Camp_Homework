@@ -401,13 +401,30 @@ def render_universe_mode():
         st.markdown(f"### {icons.get_icon_text('layout-dashboard')} Soul Finviz (Legacy)")
         data = logic.get_finviz_data()
         if data:
-            fig = go.Figure(go.Treemap(
-                labels=[d['content'][:30] for d in data],
-                parents=["" for _ in data],
-                values=[d['size'] for d in data],
-                marker=dict(colors=[d['health_score'] for d in data], colorscale='Viridis')
-            ))
-            st.plotly_chart(fig, use_container_width=True)
+            safe_data = []
+            for d in data:
+                if not d or not d.get("content"):
+                    continue
+                log_count = int(d.get("log_count", 0) or 0)
+                duration = int(d.get("size", d.get("total_duration", d.get("duration", 0))) or 0)
+                safe_data.append(
+                    {
+                        "content": str(d.get("content", "")),
+                        "size": max(1, duration if duration > 0 else (log_count * 10 or 1)),
+                        "health_score": float(d.get("health_score", 0.0) or 0.0),
+                    }
+                )
+
+            if not safe_data:
+                st.info("표시할 Core 통계가 없습니다.")
+            else:
+                fig = go.Figure(go.Treemap(
+                    labels=[d['content'][:30] for d in safe_data],
+                    parents=["" for _ in safe_data],
+                    values=[d['size'] for d in safe_data],
+                    marker=dict(colors=[d['health_score'] for d in safe_data], colorscale='Viridis')
+                ))
+                st.plotly_chart(fig, use_container_width=True)
 
     with t4:
         st.markdown(f"### {icons.get_icon_text('orbit')} 1st Person Explorer")

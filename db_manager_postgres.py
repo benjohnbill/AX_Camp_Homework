@@ -388,7 +388,9 @@ def get_cores_with_stats() -> List[Dict]:
         c = dict(core)
         c["log_count"] = count
         c["duration"] = duration
+        c["total_duration"] = duration
         c["health_score"] = health
+        c["size"] = max(1, duration + count * 10)
         out.append(c)
     return out
 
@@ -838,4 +840,3 @@ def clear_chronos_timer() -> None:
         with conn.cursor() as cur:
             cur.execute("UPDATE user_stats SET chronos_end_time = NULL WHERE id = 1")
         conn.commit()
-
