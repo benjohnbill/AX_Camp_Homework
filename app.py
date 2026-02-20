@@ -430,9 +430,21 @@ def render_universe_mode():
 
     with t4:
         st.markdown(f"### {icons.get_icon_text('orbit')} 1st Person Explorer")
-        logs = logic.load_logs()
-        cores = db.get_cores()
-        render_3d_universe(logs, cores)
+        try:
+            logs = logic.load_logs()
+            cores = db.get_cores()
+            render_3d_universe(logs, cores)
+        except Exception as e:
+            st.error(f"{icons.get_icon_text('shield-alert')} **Deep Space 렌더링에 실패했습니다.**")
+            st.caption("데이터 동기화 충돌이 발생했을 수 있습니다. (서버 측 JSON 직렬화 문제 등)")
+            st.info("💡 **안내:** 이 오류는 3D 시각화에만 영향을 미치며, 좌측의 'Cosmos' 및 'Soul Analytics' 탭은 정상적으로 이용 가능합니다.")
+            
+            c1, c2 = st.columns([1, 3])
+            if c1.button("🔄 다시 시도 (Retry)", use_container_width=True):
+                st.rerun()
+                
+            with st.expander("Technical Details (For Debugging)"):
+                st.code(str(e))
 
 def render_soul_analytics():
     st.markdown(f"### {icons.get_icon_text('calendar')} Willpower Density")
