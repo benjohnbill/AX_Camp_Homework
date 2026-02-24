@@ -1,0 +1,64 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-cycle02",
+  "version": "1.0",
+  "source_task": "orchestration/task.json",
+  "deadline_utc": "2026-02-24T14:59:59Z",
+  "deadline_note": "All workers must return result artifacts today (2026-02-24 local workspace time).",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Required outputs are result.json and schema-valid canonical handoff JSON for CT final decision cycle.",
+    "Local gates run in warn mode; push/merge acceptance uses strict mode only.",
+    "Use dynamic runtime notation: LIFE_VENV_ROOT + Narrative_Loop.venv (narrative_loop alias allowed for compatibility).",
+    "Android canonical root is android/NarrativeLoopMobile in this repository; alias path may be used in Android Studio but must be reported in evidence."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260224T121500Z.backend.task.json",
+      "scope_in": [
+        "Staging secrets sync and restart evidence",
+        "Fixed HTTPS auth endpoint verification",
+        "gateway/universe_3d timeout root-cause resolution or mitigation evidence"
+      ],
+      "scope_out": [
+        "Android app-side implementation",
+        "Large frontend UX redesign",
+        "DB schema migration without explicit approval"
+      ],
+      "prompt": "You are backend_cli worker for Narrative_Loop cycle02 on 2026-02-24. Follow orchestration/tasks/20260224T121500Z.backend.task.json. Deliver result.json with exact commands, exit codes, and key logs proving: (1) staging secrets synced and restart completed, (2) fixed HTTPS debug token and gateway endpoints are reachable with expected auth statuses, (3) /gateway/universe_3d timeout cause is resolved or mitigated with re-test evidence. If approval-required action is not approved, stop and mark blocked with reason."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260224T121500Z.android.task.json",
+      "scope_in": [
+        "Gateway cutover runtime validation on device",
+        "Bearer first request and cookie follow-up evidence",
+        "401/403 UX and lifecycle stability evidence"
+      ],
+      "scope_out": [
+        "Gateway backend deployment",
+        "Large app architecture refactor",
+        "Policy rewrite outside assigned contract"
+      ],
+      "prompt": "You are android_ide worker for Narrative_Loop cycle02 on 2026-02-24. Canonical root is android/NarrativeLoopMobile (alias path may be used in Android Studio). Follow orchestration/tasks/20260224T121500Z.android.task.json. Execute device E2E checklist for bearer->cookie transition, 401/403 UX, and lifecycle stability. Return result.json with exact execution roots, device steps, and outcome logs/screenshots. If any step is blocked by gateway behavior, set status partial or blocked with precise mismatch evidence."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260224T121500Z.frontend.task.json",
+      "scope_in": [
+        "Staging-verified 401/403 friendly UX behavior",
+        "Runtime auth-state consistency around gateway responses",
+        "Minimal bug-fix for user-facing error handling"
+      ],
+      "scope_out": [
+        "Backend deployment",
+        "Android native behavior changes",
+        "New API contract expansion"
+      ],
+      "prompt": "You are frontend_ide worker for Narrative_Loop cycle02 on 2026-02-24. Follow orchestration/tasks/20260224T121500Z.frontend.task.json. Use the existing app.py 401/403 friendly warning implementation as baseline and verify it against real staging auth responses. Deliver result.json with reproducible steps and validation evidence. Escalate backend dependencies immediately if staging verification cannot be completed."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts only when strict gate evidence is complete, approvals are satisfied, and canonical handoff JSON is schema-valid with all three blocked causes addressed or formally mitigated."
+}

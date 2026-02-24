@@ -1,0 +1,62 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle01",
+  "task_id": "T-narrative_loop-20260224-cycle01",
+  "version": "1.0",
+  "source_task": "orchestration/task.json",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Required outputs are result.json and schema-valid canonical handoff JSON.",
+    "Local gates run in warn mode; push/merge acceptance uses strict mode only.",
+    "Use dynamic runtime notation: LIFE_VENV_ROOT + Narrative_Loop.venv (narrative_loop alias allowed for compatibility).",
+    "Android worker canonical root is android/NarrativeLoopMobile inside this Narrative_Loop repository; C:\\Users\\LG\\AndroidStudioProjects\\NarrativeLoopMobile may be used as a local Android Studio workspace alias."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260224T090000Z.backend.task.json",
+      "scope_in": [
+        "Staging secret sync",
+        "Fixed HTTPS deployment for debug token and gateway",
+        "Auth contract verification evidence"
+      ],
+      "scope_out": [
+        "Android app-side implementation",
+        "Large UI redesign",
+        "DB schema migration without explicit approval"
+      ],
+      "prompt": "You are backend_cli worker for Narrative_Loop cycle 2026-02-24..2026-02-25. Use orchestration/tasks/20260224T090000Z.backend.task.json as contract source. Deliver result.json with exact commands, exit codes, and key logs proving: (1) staging secrets synced and restart completed, (2) fixed HTTPS debug token and gateway endpoints are reachable, (3) auth flow evidence includes success and 401/403 failures. If any approval-required action is needed and not pre-approved, stop and mark blocked with reason."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260224T090000Z.frontend.task.json",
+      "scope_in": [
+        "Runtime UI/auth-state behavior around gateway flow",
+        "401/403 user-facing behavior consistency",
+        "Frontend validation evidence"
+      ],
+      "scope_out": [
+        "Backend auth service deployment",
+        "Android native lifecycle implementation",
+        "Security policy redefinition"
+      ],
+      "prompt": "You are frontend_ide worker for Narrative_Loop cycle 2026-02-24..2026-02-25. Follow orchestration/tasks/20260224T090000Z.frontend.task.json. Focus on runtime UX and auth-state handling around gateway integration. Produce result.json with changed files and reproducible validation evidence. Do not expand API contract or policy scope; escalate cross-domain dependencies immediately."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260224T090000Z.android.task.json",
+      "scope_in": [
+        "UNIVERSE_URL cutover to fixed HTTPS gateway",
+        "Bearer first request and cookie follow-up verification",
+        "401/403 UX and lifecycle stability evidence"
+      ],
+      "scope_out": [
+        "Gateway backend deployment",
+        "Large app architecture refactor",
+        "New paid LLM rewrite integration"
+      ],
+      "prompt": "You are android_ide worker for Narrative_Loop cycle 2026-02-24..2026-02-25. Canonical repository root is android/NarrativeLoopMobile within the Narrative_Loop repo (local Android Studio workspace alias path may be C:\\Users\\LG\\AndroidStudioProjects\\NarrativeLoopMobile). Follow orchestration/tasks/20260224T090000Z.android.task.json. Execute gateway cutover and collect E2E evidence for bearer->cookie transition, 401/403 handling, and lifecycle stability. Return result.json with exact repo root, build/run/test context, and outcome logs. If gateway endpoint or token contract mismatch blocks progress, set status blocked and include precise mismatch evidence."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts only when strict gate evidence is complete, approvals are satisfied, and canonical handoff JSON is schema-valid."
+}

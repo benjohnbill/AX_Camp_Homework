@@ -1,0 +1,80 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-android-cycle02",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Complete on-device E2E validation for gateway cutover with bearer->cookie transition, 401/403 UX behavior, and lifecycle stability evidence.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle02 CT baseline."
+    },
+    {
+      "kind": "folder",
+      "value": "android/NarrativeLoopMobile",
+      "description": "Canonical Android project path in the same repository."
+    },
+    {
+      "kind": "folder",
+      "value": "C:\\Users\\LG\\AndroidStudioProjects\\NarrativeLoopMobile",
+      "description": "Optional Android Studio workspace alias path."
+    },
+    {
+      "kind": "text",
+      "value": "Target gateway URL: https://ax-camp-universe-gateway-staging.onrender.com/gateway/universe_3d",
+      "description": "Fixed HTTPS endpoint for runtime E2E."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260224T101800Z.T-narrative_loop-20260224-android.result.json",
+      "description": "Previous Android partial result (device E2E pending)."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Blocked checklist and validation protocol."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Execute from android/NarrativeLoopMobile (canonical). If alias path is used in Android Studio, report both canonical and alias paths in evidence."
+  },
+  "acceptance": [
+    "First bearer-authenticated request succeeds and session cookie issuance is evidenced.",
+    "Cookie-only follow-up requests succeed without auth regression.",
+    "401/403 UX behavior and lifecycle smoke (tab switch/background/foreground) are evidenced on device."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Device/WebView cookie behavior mismatch can still block final acceptance even when build tests pass."
+  },
+  "next_actions": [
+    "Submit result.json with device checklist, logs, and screenshots or reproducible evidence paths.",
+    "If gateway timeout or auth mismatch occurs, include exact failing step and response evidence.",
+    "Hand off device E2E evidence to CT for final strict decision."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-24T12:15:00Z",
+  "context_docs": [
+    "Agent.md",
+    "DOMAIN_MAP.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Mobile Client Contract",
+    "priority": "P0",
+    "deadline_utc": "2026-02-24T14:59:59Z"
+  }
+}

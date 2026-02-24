@@ -1,0 +1,73 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-frontend-cycle02",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Finalize and verify Streamlit auth error UX against real staging responses, using the updated 401/403 friendly warning flow as baseline.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle02 CT baseline."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Streamlit runtime routing and auth error rendering."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260224T102000Z.T-narrative_loop-20260224-frontend.result.json",
+      "description": "Frontend report with 401/403 UX hardening already applied."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Cycle checklist and blocked reasons."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "assets/",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Do not change API/security contracts. Scope is UI/auth-state verification and minimal bug-fix only."
+  },
+  "acceptance": [
+    "401 and 403 cases show friendly UI messaging in staging flow, with reproducible steps and evidence.",
+    "Raw JSON error blobs are not exposed as the primary UX surface.",
+    "Frontend regression checks pass after any final UX patch."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Frontend UX pass is not valid unless tied to real gateway/auth responses."
+  },
+  "next_actions": [
+    "Submit result.json with changed files and staging verification evidence.",
+    "If backend dependency blocks verification, mark status partial with exact blocker.",
+    "Hand off verified UX evidence to CT for final decision."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-24T12:15:00Z",
+  "context_docs": [
+    "Agent.md",
+    "DOMAIN_MAP.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Runtime UI and Experience",
+    "priority": "P1",
+    "deadline_utc": "2026-02-24T14:59:59Z"
+  }
+}

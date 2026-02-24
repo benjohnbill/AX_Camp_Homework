@@ -11,7 +11,7 @@
 - Rotate `DEBUG_TOKEN_ADMIN_KEY` together with JWT/session secrets for staging debug flows.
 - Existing bearer debug tokens are invalidated after rotation.
 - Rotation command:
-  - `python tools/rotate_universe_jwt_secret.py`
+  - `.\tools\project_python.ps1 tools/rotate_universe_jwt_secret.py`
 - Secret material is never logged in full; only masked value + fingerprint.
 
 ## Issuance Endpoint

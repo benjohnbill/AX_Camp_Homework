@@ -18,6 +18,7 @@ import pandas as pd
 from openai import OpenAI
 import sqlite3
 from db_backend import get_repository
+from korean_query_rewrite import rewrite_query_for_hybrid
 
 db = get_repository()
 
@@ -405,6 +406,9 @@ def simple_keyword_search(query_text, limit=100):
         conn.close()
 
 def hybrid_search(query_text, top_k=10, alpha=0.7):
+    rewrite_result = rewrite_query_for_hybrid(query_text)
+    keyword_query = rewrite_result.rewritten_query or query_text
+
     # 1. Vector Search
     q_emb = get_embedding(query_text)
     if q_emb is None:
@@ -414,7 +418,7 @@ def hybrid_search(query_text, top_k=10, alpha=0.7):
     ann_ids, ann_scores = ann_query(q_emb, top_k=top_k*5)
     
     # 2. Keyword Search
-    kw_ids, kw_scores = simple_keyword_search(query_text, limit=top_k*5)
+    kw_ids, kw_scores = simple_keyword_search(keyword_query, limit=top_k*5)
     
     # 3. Fallback if ANN failed (Brute Force)
     if not ann_ids:

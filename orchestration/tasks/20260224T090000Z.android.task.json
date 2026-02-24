@@ -1,0 +1,74 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle01",
+  "task_id": "T-narrative_loop-20260224-android",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Cut over Android universe endpoint to fixed HTTPS gateway and verify bearer->cookie transition with lifecycle-stable E2E evidence.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "CT cycle baseline task."
+    },
+    {
+      "kind": "folder",
+      "value": "android/NarrativeLoopMobile",
+      "description": "Android worker canonical root inside the same Narrative_Loop repository."
+    },
+    {
+      "kind": "folder",
+      "value": "C:\\Users\\LG\\AndroidStudioProjects\\NarrativeLoopMobile",
+      "description": "Optional local Android Studio workspace alias path."
+    },
+    {
+      "kind": "text",
+      "value": "Target gateway URL: https://ax-camp-universe-gateway-staging.onrender.com/gateway/universe_3d",
+      "description": "Fixed HTTPS target endpoint."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Locked acceptance checklist and workflow."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Execute Android-side work from android/NarrativeLoopMobile (same repository canonical path). If using a local Android Studio workspace alias path, report both paths in evidence. Any permission elevation or destructive command requires explicit User approval."
+  },
+  "acceptance": [
+    "Android uses gateway URL for first bearer-authenticated request.",
+    "Cookie-based follow-up requests succeed without fallback regression.",
+    "401/403 behavior and lifecycle stability are validated with reproducible evidence."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "WebView cookie/session handling differences may break staging auth behavior."
+  },
+  "next_actions": [
+    "Submit result.json with E2E logs and reproducible checklist output.",
+    "Escalate immediately if gateway endpoint or token contract mismatch is detected.",
+    "Provide handoff-ready evidence for CT strict decision."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-24T09:00:00Z",
+  "context_docs": [
+    "Agent.md",
+    "DOMAIN_MAP.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Ingest and Auth Gateway / Mobile Client Contract",
+    "priority": "P0",
+    "cycle_window": "2026-02-24 to 2026-02-25"
+  }
+}

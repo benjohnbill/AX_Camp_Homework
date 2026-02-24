@@ -1,0 +1,68 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle01",
+  "task_id": "T-narrative_loop-20260224-frontend",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Harden runtime UI/auth-state behavior around gateway flow and verify user-facing handling for 401/403 and session transitions.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "CT cycle baseline task."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Streamlit runtime UI routing."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Locked E2E acceptance and workflow."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "assets/",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Do not expand API contracts or change security policy outside the locked scope."
+  },
+  "acceptance": [
+    "UI/auth-state handling for gateway session transition is documented and validated.",
+    "401/403 failure states are surfaced with consistent UX behavior.",
+    "Frontend-side evidence is provided as reproducible commands or test notes in result.json."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "UI-only changes may mask backend auth defects if E2E evidence is incomplete."
+  },
+  "next_actions": [
+    "Submit result.json with changed files and validation evidence.",
+    "Flag any cross-domain backend dependency immediately.",
+    "Hand off UX/auth-state evidence to CT."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-24T09:00:00Z",
+  "context_docs": [
+    "Agent.md",
+    "DOMAIN_MAP.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Runtime UI and Experience",
+    "priority": "P1",
+    "cycle_window": "2026-02-24 to 2026-02-25"
+  }
+}

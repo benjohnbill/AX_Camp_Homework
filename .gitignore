@@ -3,4 +3,27 @@
 data/
 __pycache__/
 venv/
+.venv/
+.venvs_hub/
+venv_backup*/
+venv_new/
 .DS_Store
+.pre-commit-cache/
+.pytest_cache/
+node_modules/
+site-packages/
+*.log
+.mypy_cache/
+.ruff_cache/
+pip-wheel-metadata/
+.env.*
+
+# Android workspace (single-repo integration)
+android/NarrativeLoopMobile/.gradle/
+android/NarrativeLoopMobile/.idea/
+android/NarrativeLoopMobile/.kotlin/
+android/NarrativeLoopMobile/**/build/
+android/NarrativeLoopMobile/**/captures/
+android/NarrativeLoopMobile/**/.externalNativeBuild/
+android/NarrativeLoopMobile/**/.cxx/
+android/NarrativeLoopMobile/**/local.properties

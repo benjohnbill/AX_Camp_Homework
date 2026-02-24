@@ -1,0 +1,123 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-cycle02",
+  "owner": "control_tower",
+  "assigned_worker": "generic_worker",
+  "goal": "Close all remaining integration blockers by end of 2026-02-24 local workspace time: deployment proof, Android device E2E proof, gateway timeout root-cause resolution, and strict-gate-ready CT decision evidence.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "Agent.md",
+      "description": "Project SSOT and architecture constraints."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Latest policy decisions and blocked reasons."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260224T102500Z.T-narrative_loop-20260224-cycle01.result.json",
+      "description": "Previous cycle blocked decision baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/handoff/20260224T102500Z.T-narrative_loop-20260224-cycle01.handoff.json",
+      "description": "Previous canonical blocked handoff."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260224T102000Z.T-narrative_loop-20260224-frontend.result.json",
+      "description": "Frontend 401/403 UX hardening report."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "orchestration/",
+      "tools/",
+      "tests/",
+      "gateway_fastapi.py",
+      "debug_token_server.py",
+      "render.yaml",
+      "app.py",
+      "android/NarrativeLoopMobile/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Approval-required operations (deploy/schema change/permission elevation/destructive commands) must be explicitly approved by User before execution."
+  },
+  "acceptance": [
+    "Backend deploy, secrets-sync, and restart evidence is attached with sanitized command logs.",
+    "Android device runtime E2E evidence covers bearer first load, cookie follow-up, 401/403 UX, and lifecycle stability.",
+    "Gateway /gateway/universe_3d timeout root cause is identified with mitigation evidence or fixed behavior proof.",
+    "Strict gate evidence is attached and CT final decision is recorded as accept or blocked with canonical handoff JSON."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Any missing runtime/deploy evidence keeps delivery blocked even if local tests pass."
+  },
+  "next_actions": [
+    "Dispatch worker-specific cycle02 tasks with end-of-day deadline.",
+    "Collect backend/android/frontend result artifacts with exact commands, exits, and evidence paths.",
+    "Run strict gate and publish final CT result plus canonical handoff JSON."
+  ],
+  "requires_human_approval": true,
+  "timestamp": "2026-02-24T12:15:00Z",
+  "context_docs": [
+    "USER_STARTER_PLAYBOOK.md",
+    "CT_BOOTSTRAP_BRIEF.md",
+    "SYSTEM_BLUEPRINT.md",
+    "SYSTEM_AGENT_POLICY.md",
+    "SYSTEM_HANDOFF_CONSTITUTION.md",
+    "Agent.md",
+    "DOMAIN_MAP.md",
+    "Harness_Policy.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle_window": {
+      "start_date": "2026-02-24",
+      "end_date": "2026-02-24"
+    },
+    "deadline_utc": "2026-02-24T14:59:59Z",
+    "deadline_note": "Finish by end of 2026-02-24 local workspace time.",
+    "gate_mode": {
+      "local": "warn",
+      "push_merge": "strict"
+    },
+    "approval_authority": {
+      "deploy": "User",
+      "schema_change": "User + Antigravity technical review",
+      "permission_elevation": "User",
+      "destructive_command": "User explicit one-time approval"
+    },
+    "runtime_venv_policy": {
+      "root_env_var": "LIFE_VENV_ROOT",
+      "default_root_rule": "If LIFE_VENV_ROOT is unset, use $env:USERPROFILE\\.venvs_hub (fallback C:\\venvs_hub for non-ASCII profile environments).",
+      "canonical_name": "Narrative_Loop.venv",
+      "compat_alias_name": "narrative_loop",
+      "log_notation": "Always record resolved venv root and canonical venv name in docs/logs."
+    },
+    "worker_plan": [
+      {
+        "worker": "backend_cli",
+        "focus": "deploy evidence, secret sync/restart evidence, gateway timeout RCA/fix"
+      },
+      {
+        "worker": "android_ide",
+        "focus": "device E2E evidence for bearer->cookie, 401/403 UX, lifecycle"
+      },
+      {
+        "worker": "frontend_ide",
+        "focus": "verify friendly 401/403 UX against real staging auth responses"
+      }
+    ]
+  }
+}

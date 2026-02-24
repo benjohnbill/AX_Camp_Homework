@@ -1,7 +1,18 @@
-# Android_Studio_agent.md
+# Android_Studio_Agent.md
 
 Android Studio는 이 프로젝트에서 모바일 클라이언트 구현 책임을 가진다.
-작업 전 `agent.md`를 반드시 확인한다.
+작업 전 `Agent.md`를 반드시 확인한다.
+보안/토큰 운영은 `DEBUG_TOKEN_GOVERNANCE.md`를 필독한다.
+
+---
+
+## 0) Repository Boundary
+
+- Android 작업 루트(독립 레포): `C:\Users\LG\AndroidStudioProjects\NarrativeLoopMobile`
+- 본 저장소(`Narrative_Loop`)는 backend/contracts/governance 기준 저장소다.
+- Android worker는 `result.json` 증적에 Android 실행 루트를 명시한다.
+- Android 작업 자체는 Python venv가 필수 아님.
+- backend 검증 명령이 필요할 때만 `Narrative_Loop` 저장소의 `.\tools\project_python.ps1`를 사용한다.
 
 ---
 
@@ -118,3 +129,4 @@ Error:
 - payload 샘플(민감값 마스킹)
 - 재현 절차
 - expected vs actual
+

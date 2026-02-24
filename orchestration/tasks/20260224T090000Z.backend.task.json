@@ -1,0 +1,73 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle01",
+  "task_id": "T-narrative_loop-20260224-backend",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Synchronize staging secrets, deploy fixed HTTPS auth services, and provide backend evidence for strict auth contract validation.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "CT cycle baseline task."
+    },
+    {
+      "kind": "file",
+      "value": "gateway_fastapi.py",
+      "description": "Strict auth gateway implementation."
+    },
+    {
+      "kind": "file",
+      "value": "debug_token_server.py",
+      "description": "Debug token service implementation."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Locked workflow and acceptance criteria."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "gateway_fastapi.py",
+      "debug_token_server.py",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Deploy, permission elevation, and destructive operations require explicit User approval before execution."
+  },
+  "acceptance": [
+    "Rotated secrets are synchronized to staging and restart evidence is provided.",
+    "Fixed HTTPS endpoints for debug token and gateway are reachable with command evidence.",
+    "Backend contract tests for auth flow and failure paths are provided in result evidence."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Environment mismatch or secret drift can block gateway auth validation."
+  },
+  "next_actions": [
+    "Submit result.json with command outputs and logs.",
+    "Escalate immediately if deployment approval is missing.",
+    "Hand off backend evidence for CT strict-gate review."
+  ],
+  "requires_human_approval": true,
+  "timestamp": "2026-02-24T09:00:00Z",
+  "context_docs": [
+    "Agent.md",
+    "Harness_Policy.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Ingest and Auth Gateway",
+    "priority": "P0",
+    "cycle_window": "2026-02-24 to 2026-02-25"
+  }
+}

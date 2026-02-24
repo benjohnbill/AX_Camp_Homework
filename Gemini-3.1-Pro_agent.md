@@ -1,7 +1,7 @@
-# Gemini-3.1-Pro_agent.md
+# Gemini-3.1-Pro_Agent.md
 
 Gemini 3.1 Pro는 이 프로젝트에서 UI/UX 전문 개선 책임을 가진다.
-작업 전 `agent.md`를 반드시 읽는다.
+작업 전 `Agent.md`를 반드시 읽는다.
 
 ---
 
@@ -94,3 +94,4 @@ Gemini는 아래 형식으로 결과를 제출한다.
 - After
 - Why (철학 정합성)
 - Implementation Notes
+

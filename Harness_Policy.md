@@ -1,0 +1,251 @@
+# Harness_Policy.md
+
+As-of snapshot: 2026-02-20  
+Scope: `Narrative_Loop` folder only
+
+## 1) Purpose
+
+This document defines the documentation harness for this project:
+- Single conflict-resolution rule across `.md` files
+- Shared metadata schema for documents
+- Automatic verification policy
+- Weekly/monthly maintenance loop
+
+This file is a governance document, not a feature/design spec.
+
+## 2) Principles
+
+1. Documents are executable constraints, not passive notes.
+2. When docs conflict, use a fixed authority order (do not debate ad hoc).
+3. Status documents report progress; they do not redefine policy.
+4. Temporary docs must have explicit sunset conditions.
+
+## 3) Authority Model (Conflict Resolution)
+
+System handoff constitution reference:
+- `02_Core_Resources/01_Agent_Orchastration_System/SYSTEM_HANDOFF_CONSTITUTION.md`
+- If local handoff wording conflicts, the constitution wins.
+
+### 3.1 Authority Levels
+
+- `L0`: SSOT
+  - `Agent.md`
+- `L1`: Cross-cutting policy/playbook
+  - `Harness_Policy.md`
+  - `BACKEND_HYBRID_CONTEXT_PLAYBOOK.md`
+  - `DEBUG_TOKEN_GOVERNANCE.md`
+  - `MCP_USAGE_POLICY.md`
+  - `SKILL_PROMOTION_POLICY.md`
+- `L2`: Role-specific execution guides
+  - `Antigravity_Agent.md`
+  - `Android_Studio_Agent.md`
+  - `Gemini-3.1-Pro_Agent.md`
+- `L3`: Operational status and tracking
+  - `integration_status.md`
+- `L4`: Temporary diagnostics and one-off checklists
+  - `oneoff_diagnostic_2026-02-20.md` (or future `oneoff_*`)
+
+### 3.2 Conflict Rule
+
+If statements conflict:
+0. If project docs conflict with system constitution docs, system docs win first.
+1. Higher authority level wins (`L0` highest).
+2. If same level conflicts, newest `last_updated` wins.
+3. If still unresolved, `Agent.md` is the tie-breaker.
+
+## 4) Document Types and Required Metadata
+
+### 4.1 Doc Types
+
+- `ssot`
+- `policy`
+- `playbook`
+- `role_guide`
+- `status`
+- `temporary`
+
+### 4.2 Required Front-Matter (for all new docs)
+
+```yaml
+---
+doc_type: policy
+owner: Antigravity
+authority_level: L1
+last_updated: 2026-02-20
+sync_with:
+  - Agent.md
+change_triggers:
+  - retrieval_policy_change
+sunset_condition: n/a
+---
+```
+
+Notes:
+- Existing legacy docs without front-matter are allowed temporarily.
+- Missing front-matter is `WARN` first, then promoted to `FAIL` after adoption phase.
+
+## 5) Sync Matrix (Current Project)
+
+### 5.1 Policy Change Propagation
+
+1. `Agent.md` changed (architecture/security/ownership/API contract):
+- Must review and sync:
+  - `Antigravity_Agent.md`
+  - `Android_Studio_Agent.md`
+  - `Gemini-3.1-Pro_Agent.md`
+  - `BACKEND_HYBRID_CONTEXT_PLAYBOOK.md` (if retrieval/context policy touched)
+  - `DEBUG_TOKEN_GOVERNANCE.md` (if auth/token policy touched)
+
+2. `BACKEND_HYBRID_CONTEXT_PLAYBOOK.md` changed:
+- Must sync:
+  - `Agent.md`
+  - `Antigravity_Agent.md`
+- `integration_status.md` may be updated with rollout evidence only.
+
+3. `DEBUG_TOKEN_GOVERNANCE.md` changed:
+- Must sync:
+  - `Agent.md`
+  - `integration_status.md` (risk/status fields only)
+
+4. `SKILL_PROMOTION_POLICY.md` changed:
+- Must sync:
+  - `Agent.md` (document index/usage note)
+
+5. `MCP_USAGE_POLICY.md` changed:
+- Must sync:
+  - `Agent.md`
+  - `Harness_Policy.md` (if authority/scope changed)
+
+### 5.2 Status Document Constraint
+
+`integration_status.md` is evidence/status only:
+- Allowed: progress, gaps, risks, validation logs
+- Not allowed: redefining architecture/security/retrieval policy
+
+Handoff constraint:
+- canonical handoff evidence is `orchestration/handoff/*.handoff.json` (schema-valid)
+- `handoff.txt` can be used as optional briefing summary only
+
+### 5.3 Temporary Document Constraint
+
+`temporary` docs must include:
+- explicit owner
+- explicit sunset condition
+- removal/review date
+
+## 6) Change Protocol
+
+### 6.1 Change Classes
+
+- `Policy change`: modifies constraints/contracts/authority
+- `Execution guide change`: modifies role workflow details
+- `Status update`: progress evidence only
+- `Temporary diagnostic`: short-lived operational checklist
+
+### 6.2 Required Actions by Class
+
+1. Policy change:
+- Update source doc + all required `sync_with` docs in the same change batch.
+- Include change summary with rationale and risk.
+
+2. Execution guide change:
+- Ensure no conflict with `Agent.md` and relevant `L1` docs.
+
+3. Status update:
+- Do not introduce new policy.
+- Reference existing policy doc name when needed.
+
+4. Temporary diagnostic:
+- Add sunset condition and cleanup owner at creation.
+
+## 7) Automatic Verification Policy
+
+Target checker: `tools/check_docs_contract.py`  
+Current mode: Stage B (`WARN`, non-blocking)
+
+### 7.1 Checks
+
+1. Required docs exist (`Agent.md`, key policy docs, role guides).
+2. Referenced markdown files in docs actually exist.
+3. Front-matter presence/shape for newly created docs.
+4. Sync matrix enforcement:
+- if a policy doc changed, required linked docs must also change in the same diff.
+5. Status policy guard:
+- block policy-like keywords in `status` docs when they contradict higher-level docs.
+6. Temporary TTL guard:
+- expired temporary docs raise warning/fail by phase.
+7. Secret leakage scan:
+- obvious key/token/DSN patterns in markdown.
+
+### 7.2 Severity Model
+
+- `FAIL`: hard gate block
+- `WARN`: non-blocking, must be triaged in weekly loop
+- `INFO`: informational
+
+### 7.3 Adoption Stages
+
+1. Stage A (completed): manual policy baseline
+2. Stage B (active): checker in `WARN` mode
+3. Stage C (planned): promote critical rules to `FAIL` in quality gate
+
+### 7.4 Baseline Command
+
+```powershell
+.\tools\project_python.ps1 tools/check_docs_contract.py --mode warn
+```
+
+### 7.5 Gate Mode Split (Local WARN / Push FAIL)
+
+Operating rule:
+- Local `WARN` is for fast feedback and must not be used as merge approval evidence.
+- Push/Merge `STRICT` is the only blocking acceptance mode.
+
+1. Local development (non-blocking):
+- `.\tools\project_python.ps1 tools/check_docs_contract.py --mode warn`
+- `.\tools\project_python.ps1 tools/check_skill_registry.py --mode warn`
+
+2. Push/Merge gate (blocking):
+- `.\tools\project_python.ps1 tools/check_docs_contract.py --mode strict`
+- `.\tools\project_python.ps1 tools/check_skill_registry.py --mode strict`
+
+3. One-step gate integration:
+- local default:
+  - `.\tools\project_python.ps1 tools/run_agent_a_gate.py --policy-mode warn`
+- CI/push default:
+  - `.\tools\project_python.ps1 tools/run_agent_a_gate.py --policy-mode strict`
+
+## 8) Maintenance Loop
+
+### 8.1 Weekly Loop (15-20 min)
+
+Owner: documentation coordinator (or designated agent)
+
+Checklist:
+1. `integration_status.md` freshness check
+2. unresolved `WARN` items check
+3. temporary docs sunset review
+4. sync drift scan (`Agent.md` vs role guides vs playbooks)
+
+### 8.2 Monthly Loop (30-45 min)
+
+1. Merge/remove obsolete docs
+2. Normalize naming and metadata coverage
+3. Reconfirm authority model and sync matrix
+4. Review whether any temporary doc should be archived/deleted
+
+## 9) Exceptions
+
+Emergency updates can bypass full sync only if:
+1. reason is documented in the same change
+2. follow-up sync task is explicitly added to `integration_status.md`
+3. follow-up due date is set
+
+## 10) Non-Goals
+
+This policy does not define:
+- application feature behavior
+- database schema details
+- Android UI implementation details
+
+Those belong to SSOT and domain-specific playbooks.

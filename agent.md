@@ -1,4 +1,4 @@
-# agent.md — Narrative_Loop 통합 운영 문서 (SSOT)
+# Agent.md — Narrative_Loop 통합 운영 문서 (SSOT)
 
 이 문서는 Narrative_Loop의 단일 진실 원천이다.  
 모든 AI 도구(Codex CLI, Antigravity, Android Studio, Gemini 3.1 Pro)는 이 문서를 우선 기준으로 작업한다.
@@ -22,6 +22,26 @@
 
 목표는 1~3의 비중을 줄이고 4의 비중을 늘리는 것이다.
 
+시스템 우선 규칙:
+- 본 문서는 프로젝트 SSOT이지만 시스템 헌법 문서와 충돌할 수 없다.
+- 충돌 시 시스템 문서가 우선한다:
+  - `02_Core_Resources/01_Agent_Orchastration_System/SYSTEM_BLUEPRINT.md`
+  - `02_Core_Resources/01_Agent_Orchastration_System/SYSTEM_AGENT_POLICY.md`
+  - `02_Core_Resources/01_Agent_Orchastration_System/SYSTEM_HANDOFF_CONSTITUTION.md`
+  - Optional on demand: `SYSTEM_HANDOFF_MIGRATION_POLICY.md`, `SYSTEM_SKILL_GOVERNANCE_POLICY.md`, `SYSTEM_MCP_POLICY.md`, `SYSTEM_REMOTE_POLICY.md`
+
+MVP 고정 경계(현재 단계):
+- 지금 고정: 권한 계층, handoff canonical(JSON), DDD-lite 도메인 경계, gate mode split, skill intake 통제.
+- 프로젝트 중 개선: skill 승격(candidate->pilot->core), 도메인 내부 모델 정밀화, 실행 스크립트 확대.
+
+Core-first loading (zero-context CT):
+1. `SYSTEM_BLUEPRINT.md`
+2. `SYSTEM_AGENT_POLICY.md`
+3. `SYSTEM_HANDOFF_CONSTITUTION.md`
+4. this `Agent.md`
+5. `DOMAIN_MAP.md`
+6. `orchestration/contracts/*.schema.json`
+
 ---
 
 ## 1) 현재 시스템 스냅샷 (2026-02)
@@ -36,6 +56,18 @@
   - fallback: `db_manager_sqlite.py` (로컬/롤백 전용)
 - Main DB: Supabase PostgreSQL
   - `logs`, `chat_history`, `connections`, `user_stats`
+- Backend retrieval/context 정책 기준: `BACKEND_HYBRID_CONTEXT_PLAYBOOK.md`
+- Documentation harness 정책 기준: `Harness_Policy.md`
+- MCP 최소 연결 설정: `.mcp.json` (Phase 1 read-only)
+- Python runtime policy:
+  - This repository is OneDrive-synced. Project-local `venv/.venv` is not canonical.
+  - Runtime root is resolved dynamically: `$env:LIFE_VENV_ROOT` -> default `$env:USERPROFILE\.venvs_hub` (fallback `C:\venvs_hub` for non-ASCII profile environments).
+  - Canonical runtime venv naming rule: `<resolved_vroot>\Narrative_Loop.venv`
+  - Compatibility alias naming rule: `<resolved_vroot>\narrative_loop` (junction may point to canonical venv).
+  - Docs/logs must record canonical venv name + resolved venv root for the current machine.
+  - Optional override: `$env:LIFE_VENV_ROOT`
+  - Detailed runbook: `LOCAL_ENV_SETUP.md`
+  - Bootstrap command: `.\tools\bootstrap_env.ps1 -Recreate -InstallPreCommit`
 
 중요 경계:
 
@@ -64,6 +96,19 @@
 - Policy: `evaluate_input_integrity()`, `process_gap()`
 - Ops: `run_startup_diagnostics()`
 
+### 2.1) Domain-Driven Ownership (Lite)
+
+도메인 소유권은 "파일 위치"보다 "업무 책임의 완결성"을 기준으로 판정한다.
+
+- `Narrative Core`: Codex(통합 정책) + Antigravity(구현) 공동 책임
+- `Ingest/Auth Gateway`: Antigravity 1차 책임, Android는 클라이언트 계약 책임
+- `Retrieval/Context Enrichment`: Antigravity 1차 책임
+- `Runtime UI/UX`: Gemini(설계) + Antigravity(구현) 공동 책임
+- `Governance/Orchestration`: Codex 1차 책임
+
+파일 경로는 소유권 판정의 보조 기준(거점)이며, 최종 판정은 `DOMAIN_MAP.md`와
+Control Tower 통합 게이트를 따른다.
+
 ---
 
 ## 3) 필수 아키텍처 원칙
@@ -73,6 +118,8 @@
 3. `narrative_logic.py`에서 UI 상태(`st.session_state`) 직접 조작 금지.
 4. `DATABASE_URL`, API Key 등 민감값은 로그/문서에 절대 노출하지 않는다.
 5. SQLite는 운영 DB가 아니라 fallback/로컬 개발용이다.
+6. 하이브리드 검색/컨텍스트 enrichment 정책 충돌 시 `BACKEND_HYBRID_CONTEXT_PLAYBOOK.md` 기준을 우선 적용한다.
+7. 문서 간 충돌 발생 시 권한/판정 규칙은 `Harness_Policy.md` 기준을 따른다.
 
 ---
 
@@ -88,6 +135,7 @@
 - 인제스트 API 계층 구현/운영.
 - `narrative_logic.py` 재사용 연결.
 - Supabase 저장 규약/무결성/운영 점검 책임.
+- 하이브리드 검색(RRF), context split 저장, sync/async enrichment 워크플로우 구현 책임.
 
 ### Android Studio (모바일)
 
@@ -166,17 +214,29 @@ Error codes:
 실행 기준:
 
 ```powershell
-python tools/preflight_postgres_auth.py
-python tools/check_supabase_phase1.py
-python tools/check_postdeploy_smoke.py --strict-postgres
-python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_latest.json
-python -m pytest -q tests/
+.\tools\project_python.ps1 tools/preflight_postgres_auth.py
+.\tools\project_python.ps1 tools/check_supabase_phase1.py
+.\tools\project_python.ps1 tools/check_postdeploy_smoke.py --strict-postgres
+.\tools\project_python.ps1 tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_latest.json
+.\tools\project_python.ps1 tools/check_docs_contract.py --mode warn
+.\tools\project_python.ps1 tools/check_skill_registry.py --mode warn
+.\tools\project_python.ps1 tools/validate_contracts.py
+.\tools\project_python.ps1 tools/run_risk_closure_gate.py
+.\tools\project_python.ps1 -m pytest -q tests/
 ```
 
 원스텝:
 
 ```powershell
-python tools/run_agent_a_gate.py
+.\tools\project_python.ps1 tools/run_agent_a_gate.py
+```
+
+Push/Merge gate (blocking):
+
+```powershell
+.\tools\project_python.ps1 tools/check_docs_contract.py --mode strict
+.\tools\project_python.ps1 tools/check_skill_registry.py --mode strict
+.\tools\project_python.ps1 tools/run_agent_a_gate.py --policy-mode strict
 ```
 
 ---
@@ -199,6 +259,10 @@ python tools/run_agent_a_gate.py
 3. `Risks` (남은 리스크)
 4. `Next 3 actions` (다음 액션 3개)
 
+Canonical artifact:
+- `orchestration/handoff/*.handoff.json` (schema-valid, machine-readable)
+- `handoff.txt`는 선택 브리핑 요약 아티팩트로 유지 가능
+
 ---
 
 ## 11) 문서 정책
@@ -206,6 +270,19 @@ python tools/run_agent_a_gate.py
 이전의 분산 문서를 통합해 본 파일을 기준으로 운영한다.  
 도구별 실행 문서는 아래 3개를 사용한다.
 
-- `Antigravity_agent.md`
-- `Android_Studio_agent.md`
-- `Gemini-3.1-Pro_agent.md`
+- `Antigravity_Agent.md`
+- `Android_Studio_Agent.md`
+- `Gemini-3.1-Pro_Agent.md`
+
+보안/운영 참고 문서:
+
+- `DEBUG_TOKEN_GOVERNANCE.md` (디버그 JWT 운영 규칙 및 책임 분담)
+- `BACKEND_HYBRID_CONTEXT_PLAYBOOK.md` (하이브리드 검색/컨텍스트 저장 실행 기준)
+- `Harness_Policy.md` (문서 하니스 권한 체계/동기화/자동검증/주기 루프 기준)
+- `MCP_USAGE_POLICY.md` (MCP 최소 연결, 호출 예산, 중단 규칙 기준)
+- `SKILL_PROMOTION_POLICY.md` (`SKILL.md` 승격 조건 및 추천 트리거 기준)
+- `LOCAL_ENV_SETUP.md` (OneDrive 동기화 환경에서의 로컬 venv 복구 기준)
+- `skills/integration-status-sync/SKILL.md` (`integration_status.md` 증적 동기화 파일럿 스킬)
+- `orchestration/README.md` (`task/result/handoff` 계약 및 샘플 아티팩트 기준)
+- `DOMAIN_MAP.md` (DDD-lite 도메인 경계 기준)
+

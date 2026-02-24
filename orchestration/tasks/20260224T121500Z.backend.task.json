@@ -1,0 +1,79 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-backend-cycle02",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Provide end-to-end backend evidence for deploy/secrets-sync/restart and resolve the gateway universe timeout cause with reproducible validation.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle02 CT baseline."
+    },
+    {
+      "kind": "file",
+      "value": "gateway_fastapi.py",
+      "description": "Gateway auth and universe route implementation."
+    },
+    {
+      "kind": "file",
+      "value": "debug_token_server.py",
+      "description": "Debug token issuance endpoint."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260224T101700Z.T-narrative_loop-20260224-backend.result.json",
+      "description": "Previous backend partial result (timeout unresolved)."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Current blocked reasons and acceptance checklist."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "gateway_fastapi.py",
+      "debug_token_server.py",
+      "render.yaml",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Deploy, permission elevation, and destructive commands require explicit User approval. Redact secret values in all evidence."
+  },
+  "acceptance": [
+    "Staging secrets-sync and service restart evidence is attached with timestamp and sanitized logs.",
+    "Fixed HTTPS endpoint probes are attached for /debug/token, /healthz, /gateway/session, and /gateway/universe_3d.",
+    "Timeout root cause for /gateway/universe_3d is either fixed or documented with mitigation and re-test evidence."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Without deploy evidence and timeout resolution, CT must keep final status blocked."
+  },
+  "next_actions": [
+    "Submit result.json with exact commands, exit codes, and evidence paths.",
+    "Escalate immediately if approval-dependent deploy action is blocked.",
+    "Hand off timeout RCA and auth validation evidence to CT."
+  ],
+  "requires_human_approval": true,
+  "timestamp": "2026-02-24T12:15:00Z",
+  "context_docs": [
+    "Agent.md",
+    "Harness_Policy.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Ingest and Auth Gateway",
+    "priority": "P0",
+    "deadline_utc": "2026-02-24T14:59:59Z"
+  }
+}

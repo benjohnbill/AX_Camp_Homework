@@ -1,0 +1,37 @@
+name: Policy Gates
+
+on:
+  push:
+    paths:
+      - "*.md"
+      - "skills/**"
+      - "tools/check_docs_contract.py"
+      - "tools/check_skill_registry.py"
+      - "tools/run_agent_a_gate.py"
+      - ".github/workflows/policy-gates.yml"
+  pull_request:
+    paths:
+      - "*.md"
+      - "skills/**"
+      - "tools/check_docs_contract.py"
+      - "tools/check_skill_registry.py"
+      - "tools/run_agent_a_gate.py"
+      - ".github/workflows/policy-gates.yml"
+
+jobs:
+  docs-and-supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Docs contract gate (strict)
+        run: python tools/check_docs_contract.py --mode strict
+
+      - name: Skill supply-chain gate (strict)
+        run: python tools/check_skill_registry.py --mode strict

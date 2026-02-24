@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "allowed_sources": [
+    "skills.sh:vercel",
+    "skills.sh:anthropic",
+    "skills.sh:community-approved"
+  ],
+  "skills": [
+    {
+      "name": "find-skills",
+      "source": "skills.sh:vercel",
+      "status": "candidate",
+      "checksum_sha256": null,
+      "reviewed_at": "2026-02-23",
+      "notes": "Candidate only. Checksum is required before pilot/core."
+    },
+    {
+      "name": "vercel-react-best-practices",
+      "source": "skills.sh:vercel",
+      "status": "candidate",
+      "checksum_sha256": null,
+      "reviewed_at": "2026-02-23",
+      "notes": "Candidate only. Checksum is required before pilot/core."
+    },
+    {
+      "name": "web-design-guidelines",
+      "source": "skills.sh:vercel",
+      "status": "candidate",
+      "checksum_sha256": null,
+      "reviewed_at": "2026-02-23",
+      "notes": "Candidate only. Checksum is required before pilot/core."
+    },
+    {
+      "name": "remotion-best-practices",
+      "source": "skills.sh:community-approved",
+      "status": "candidate",
+      "checksum_sha256": null,
+      "reviewed_at": "2026-02-23",
+      "notes": "Candidate only. Verify source trust before pilot."
+    },
+    {
+      "name": "frontend-design",
+      "source": "skills.sh:community-approved",
+      "status": "candidate",
+      "checksum_sha256": null,
+      "reviewed_at": "2026-02-23",
+      "notes": "Candidate only. Verify source trust before pilot."
+    }
+  ]
+}

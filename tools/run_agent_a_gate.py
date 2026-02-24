@@ -32,6 +32,12 @@ def parse_args() -> argparse.Namespace:
         help="Allowed duplicate source_chat_id groups in integrity check.",
     )
     parser.add_argument(
+        "--policy-mode",
+        choices=("warn", "strict"),
+        default="warn",
+        help="Mode for docs/skill policy gates (default: warn).",
+    )
+    parser.add_argument(
         "--from-secrets",
         dest="from_secrets",
         action="store_true",
@@ -83,6 +89,9 @@ def main() -> int:
             "A-0 Preflight Auth",
             [args.python, "tools/preflight_postgres_auth.py"] + ([] if args.from_secrets else ["--no-from-secrets"]),
         ),
+        ("A-1 Contract Check", [args.python, "tools/validate_contracts.py"]),
+        ("A-1.1 Docs Contract Gate", [args.python, "tools/check_docs_contract.py", "--mode", args.policy_mode]),
+        ("A-1.2 Skill Registry Gate", [args.python, "tools/check_skill_registry.py", "--mode", args.policy_mode]),
         ("A-2 Bootstrap Check", [args.python, "tools/check_supabase_phase1.py"]),
         ("A-3 Smoke Check", [args.python, "tools/check_postdeploy_smoke.py", "--strict-postgres"]),
         (

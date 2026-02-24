@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/spec/main/schema/mcp.schema.json",
+  "mcpServers": {
+    "docs-search": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "cwd": ".",
+      "env": {
+        "MCP_READ_ONLY": "1"
+      }
+    },
+    "db-observer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${DATABASE_URL}"
+      ],
+      "env": {
+        "PGOPTIONS": "-c default_transaction_read_only=on"
+      }
+    },
+    "deploy-health": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-fetch"
+      ],
+      "env": {
+        "FETCH_ALLOWED_HOSTS": "ax-camp-debug-token-staging.onrender.com,ax-camp-universe-gateway-staging.onrender.com,benjohnbill-ax-camp-homework.streamlit.app",
+        "FETCH_BLOCK_NON_HTTPS": "1"
+      }
+    }
+  }
+}

@@ -99,8 +99,23 @@ def _render_universe_auth_error(auth_result: universe_auth.AuthResult) -> None:
     payload = dict(auth_result.payload or {})
     payload.setdefault("status", auth_result.status)
     payload.setdefault("route", "universe_3d_embed")
-    st.markdown("### Universe 3D Auth Error")
-    st.code(json.dumps(payload, ensure_ascii=False, indent=2), language="json")
+    
+    st.markdown("### Universe 3D Access")
+    
+    if auth_result.status == 401:
+        st.error(f"{icons.get_icon_text('shield-alert')} **Authentication Required**")
+        st.markdown("Your session has expired or is invalid. Please log in again to access the Universe.")
+    elif auth_result.status == 403:
+        st.error(f"{icons.get_icon_text('lock')} **Access Denied**")
+        st.markdown("You do not have permission to view this resource.")
+    else:
+        st.error(f"{icons.get_icon_text('shield-alert')} **Authorization Error**")
+        st.markdown("We could not verify your access request.")
+        
+    st.info(f"Reason: {payload.get('message', 'Unknown error')} (Code: {payload.get('code', 'unknown')})")
+    
+    with st.expander("Technical Support (For Debugging)"):
+        st.code(json.dumps(payload, ensure_ascii=False, indent=2), language="json")
 
 
 def _run_universe_embed_route() -> bool:

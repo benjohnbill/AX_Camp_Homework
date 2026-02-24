@@ -1097,6 +1097,29 @@ def get_all_embeddings_as_float32():
     return ids, np.vstack(embeds)
 
 
+def get_all_embeddings():
+    """Compatibility helper expected by hybrid search callers."""
+    ids, arr = get_all_embeddings_as_float32()
+    if arr is None or getattr(arr, "size", 0) == 0:
+        return [], None
+    return ids, arr
+
+
+def save_embedding(log_id: str, emb) -> None:
+    """Persist embedding blob for a log id (sqlite fallback)."""
+    if not log_id:
+        return
+    arr = np.asarray(emb, dtype=np.float32).reshape(-1)
+    if arr.size == 0:
+        return
+    blob = arr.tobytes()
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE logs SET embedding = ? WHERE id = ?", (blob, log_id))
+    conn.commit()
+    conn.close()
+
+
 def load_logs_by_ids(log_ids: List[str]) -> List[dict]:
     """Bulk retrieve logs by ID list (preserves order)"""
     if not log_ids:
@@ -1129,6 +1152,11 @@ def ensure_fts_index():
     except:
         pass
     conn.close()
+
+
+def ensure_fts():
+    """Backward-compatible alias for callers expecting ensure_fts()."""
+    ensure_fts_index()
 
 
 if DATASTORE == "postgres":
@@ -1174,8 +1202,11 @@ if DATASTORE == "postgres":
         "get_kanban_cards",
         "update_kanban_status",
         "create_kanban_card",
+        "get_all_embeddings",
         "get_all_embeddings_as_float32",
+        "save_embedding",
         "load_logs_by_ids",
+        "ensure_fts",
         "ensure_fts_index",
     ]
 
