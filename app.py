@@ -859,21 +859,20 @@ def render_stream_mode():
         for m in st.session_state.get("messages", [])
     )
 
-        if not has_messages:
-            st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
-            st.markdown(f"<div class='stream-hero-title'>{icons.get_icon('sparkles', size=32)}<br>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
-            
-            # Action block starts
-            st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
-            render_stream_ocr_entrypoint(expanded=False) # Changed to collapsed to avoid cluttering title
-            st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)        
-            render_stream_mode_switch_cards(show_heading=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-            # Action block ends
-            
-            st.markdown("</div>", unsafe_allow_html=True)
-        else:
-    
+    if not has_messages:
+        st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
+        st.markdown(f"<div class='stream-hero-title'>{icons.get_icon('sparkles', size=32)}<br>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
+        
+        # Action block starts
+        st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
+        render_stream_ocr_entrypoint(expanded=False) # Changed to collapsed to avoid cluttering title
+        st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)        
+        render_stream_mode_switch_cards(show_heading=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        # Action block ends
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
         render_stream_chat_messages()
 
     # Workspace Toggle & Dock (Above Chat Input)
