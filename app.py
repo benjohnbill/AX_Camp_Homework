@@ -849,14 +849,16 @@ def render_stream_mode():
                 db.increment_debt(1)
                 text = v['text']
                 del st.session_state['violation_pending']
-                _save_and_respond(text)
+                with st.spinner("서사를 분석하는 중..."):
+                    _save_and_respond(text)
                 st.toast("Forced merge. Entropy increased.", icon="🚨")
                 st.rerun()
         else:
             if c1.button(f"{icons.get_icon_text('zap')} Merge Log (Standard)", use_container_width=True):
                 text = v['text']
                 del st.session_state['violation_pending']
-                _save_and_respond(text)
+                with st.spinner("서사를 분석하는 중..."):
+                    _save_and_respond(text)
                 st.rerun()
             
         if st.button(f"{icons.get_icon_text('trash')} Discard", use_container_width=True if not entropy_enabled else False):
@@ -967,7 +969,8 @@ def process_stream_input(user_input: str):
         st.session_state['violation_pending'] = {"text": user_input, "core": core}
         st.rerun()
         return
-    _save_and_respond(user_input)
+    with st.spinner("서사를 분석하는 중..."):
+        _save_and_respond(user_input)
     st.rerun()
 
 def render_chronos_mode():
