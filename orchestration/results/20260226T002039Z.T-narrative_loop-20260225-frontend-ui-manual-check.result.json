@@ -1,0 +1,78 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-frontend-ui-manual-check",
+  "worker": "frontend_ide",
+  "status": "partial",
+  "summary": "Manual browser UI check on deployed URL (Streamlit Cloud). Root shell fully passes: sidebar, mode selector, OCR entrypoints (sidebar + main CTA), and diagnostics badge all visible with correct values. Embed route BLOCKED: Streamlit Cloud does not forward query params to st.query_params, so is_embed_route remains False despite ?embed=universe_3d in URL. Entropy misfire check passes (ENABLE_ENTROPY=unset, is_entropy_mode=False).",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "data/evidence/20260226T002039Z_frontend_manual_browser_ui_check.md",
+      "description": "Structured manual browser verification report with per-item verdicts."
+    },
+    {
+      "kind": "file",
+      "path": "data/evidence/20260226T002039Z_frontend_root_shell_visible.png",
+      "description": "Screenshot of root URL showing sidebar, mode selector, OCR CTA, and diagnostics badge."
+    },
+    {
+      "kind": "file",
+      "path": "data/evidence/20260226T002039Z_frontend_embed_route_screen.png",
+      "description": "Screenshot of embed URL attempt showing query param not detected by Streamlit Cloud."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "Root URL - Sidebar visible",
+      "status": "pass",
+      "note": "verdict=pass; environment=deployed_url; evidence_path=data/evidence/20260226T002039Z_frontend_root_shell_visible.png"
+    },
+    {
+      "name": "Root URL - Mode selector",
+      "status": "pass",
+      "note": "verdict=pass; environment=deployed_url; modes=Stream,Desk,Chronos,Control,Universe"
+    },
+    {
+      "name": "Root URL - OCR sidebar expander",
+      "status": "pass",
+      "note": "verdict=pass; environment=deployed_url; text='📷 사진으로 서사 쓰기'"
+    },
+    {
+      "name": "Root URL - Main body OCR CTA",
+      "status": "pass",
+      "note": "verdict=pass; environment=deployed_url; text='📷 OCR Quick Entry' with file uploader"
+    },
+    {
+      "name": "Root URL - Diagnostics badge",
+      "status": "pass",
+      "note": "verdict=pass; environment=deployed_url; query.embed=<empty> | is_embed_route=False | ENABLE_ENTROPY=<unset> | is_entropy_mode=False | session.mode=stream"
+    },
+    {
+      "name": "Embed URL - Route detection",
+      "status": "fail",
+      "note": "verdict=blocked; environment=deployed_url; root_cause=Streamlit Cloud strips query params; evidence_path=data/evidence/20260226T002039Z_frontend_embed_route_screen.png"
+    },
+    {
+      "name": "Embed URL - Escape action",
+      "status": "fail",
+      "note": "verdict=blocked; environment=deployed_url; not rendered because embed route not detected"
+    },
+    {
+      "name": "Entropy misfire check",
+      "status": "pass",
+      "note": "verdict=pass; environment=deployed_url; ENABLE_ENTROPY=<unset>; is_entropy_mode=False"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Streamlit Cloud does not forward arbitrary query parameters to st.query_params. Embed route (?embed=universe_3d) is non-functional on deployed environment. Localhost testing may behave differently.",
+      "mitigation": "Validate embed route on localhost once environment is restored. Consider alternative embed detection (path-based or cookie-based) for cloud deployments."
+    }
+  ],
+  "next_actions": [
+    "CT to decide if embed route blocker is cycle4-blocking or acceptable-known-limitation for cloud deploy.",
+    "Re-test embed route on localhost when port issue is resolved to confirm local behavior."
+  ],
+  "timestamp": "2026-02-26T00:20:39Z"
+}

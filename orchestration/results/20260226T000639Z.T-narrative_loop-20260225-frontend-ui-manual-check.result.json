@@ -1,0 +1,42 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-frontend-ui-manual-check",
+  "worker": "frontend_ide",
+  "status": "blocked",
+  "summary": "Manual browser validation aborted. The Streamlit server could not be started or reached on port 8501, resulting in ERR_CONNECTION_REFUSED.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260226T000639Z.T-narrative_loop-20260225-frontend-ui-manual-check.result.json",
+      "description": "Schema-valid result document reporting the blocked status."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "Root URL Validation",
+      "status": "fail",
+      "note": "Blocked: Unable to reach http://localhost:8501. Server start command was interrupted or port is occupied."
+    },
+    {
+      "name": "Embed URL Validation",
+      "status": "fail",
+      "note": "Blocked for same reason as Root URL."
+    },
+    {
+      "name": "Diagnostics Badge & Entropy",
+      "status": "fail",
+      "note": "Blocked for same reason as Root URL."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Pre-cycle4 manual UI verification is blocked by environment/port issues. Cannot guarantee mode switching and OCR UX without this test."
+    }
+  ],
+  "next_actions": [
+    "CT to handle the blocked state: request environment fix for port 8501 or re-assign manual check.",
+    "User/CT needs to verify no rogue python/streamlit processes are holding port 8501."
+  ],
+  "timestamp": "2026-02-26T00:06:39Z"
+}
