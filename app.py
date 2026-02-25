@@ -25,10 +25,10 @@ import plotly.graph_objects as go
 _ALLOWED_MODES = ("stream", "desk", "chronos", "control", "universe")
 
 _MODE_CARD_CONFIG = (
-    ("desk", "DESK", "긴 글 작성과 정리", "📝"),
-    ("chronos", "CHRONOS", "집중 타이머와 회고", "⏱️"),
-    ("universe", "SOUL ANALYTICS", "분석과 3D 탐색", "🌌"),
-    ("control", "CONTROL", "칸반 기반 통제", "🧭"),
+    ("desk", "DESK", "긴 글 작성과 정리", "book-open"),
+    ("chronos", "CHRONOS", "집중 타이머와 회고", "timer"),
+    ("universe", "SOUL ANALYTICS", "분석과 3D 탐색", "orbit"),
+    ("control", "CONTROL", "칸반 기반 통제", "layout-dashboard"),
 )
 
 # ============================================================
@@ -729,10 +729,10 @@ def render_stream_mode_switch_cards(show_heading: bool = True, key_prefix: str =
     
     # Strictly 4 columns for a single horizontal row (ChatGPT style)
     cols = st.columns(4, gap="small")
-    for idx, (mode, title, subtitle, emoji) in enumerate(_MODE_CARD_CONFIG):
+    for idx, (mode, title, subtitle, icon_key) in enumerate(_MODE_CARD_CONFIG):
         with cols[idx % 4]:
-            # Consistent formatting: Emoji + Bold Title (ALL CAPS from config)
-            label = f"{emoji} **{title}**"
+            # Consistent formatting: System Icon + Bold Title
+            label = f"{icons.get_icon_text(icon_key)} **{title}**"
             if st.button(label, key=f"stream_hub_{key_prefix}_{mode}", use_container_width=True, help=subtitle):
                 st.session_state["mode"] = mode
                 st.rerun()
