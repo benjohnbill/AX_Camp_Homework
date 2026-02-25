@@ -457,22 +457,39 @@ def apply_atmosphere(entropy_mode: bool):
         }
 
         .stream-empty-center {
-            width: min(100%, 880px);
+            width: min(100%, 720px);
             margin: 0 auto;
+            padding-top: 18vh; /* Fixed offset for visual stability like ChatGPT */
+            padding-bottom: 10vh;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            min-height: 65vh;
+            align-items: center;
         }
 
         .stream-hero-title {
-            font-size: clamp(1.35rem, 1.05rem + 1.3vw, 1.85rem);
-            line-height: 1.2;
+            font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.1rem);
+            line-height: 1.3;
             font-weight: 700;
-            letter-spacing: -0.02em;
-            margin-bottom: 1.2rem;
+            letter-spacing: -0.03em;
+            margin-bottom: 2.5rem; /* Increased spacing to separate from action block */
             text-align: center;
             color: var(--app-text);
+        }
+
+        /* Group container for OCR and Switcher */
+        .empty-action-block {
+            width: 100%;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        /* Streamlit expander styling for empty state */
+        .empty-action-block .stExpander {
+            border: 1px solid var(--app-border) !important;
+            background: var(--app-surface-soft) !important;
+            border-radius: 12px !important;
         }
 
         .kanban-card {
@@ -842,14 +859,21 @@ def render_stream_mode():
         for m in st.session_state.get("messages", [])
     )
 
-    if not has_messages:
-        st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
-        st.markdown("<div class='stream-hero-title'>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
-        render_stream_ocr_entrypoint(expanded=True)
-        st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-        render_stream_mode_switch_cards(show_heading=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-    else:
+        if not has_messages:
+            st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
+            st.markdown(f"<div class='stream-hero-title'>{icons.get_icon('sparkles', size=32)}<br>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
+            
+            # Action block starts
+            st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
+            render_stream_ocr_entrypoint(expanded=False) # Changed to collapsed to avoid cluttering title
+            st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)        
+            render_stream_mode_switch_cards(show_heading=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+            # Action block ends
+            
+            st.markdown("</div>", unsafe_allow_html=True)
+        else:
+    
         render_stream_chat_messages()
 
     # Workspace Toggle & Dock (Above Chat Input)
