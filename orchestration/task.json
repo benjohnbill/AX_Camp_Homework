@@ -1,123 +1,90 @@
 {
-  "trace_id": "trace-narrative_loop-20260224-cycle02",
-  "task_id": "T-narrative_loop-20260224-cycle02",
+  "trace_id": "trace-narrative_loop-20260225-cycle03-ui-auth-copy",
+  "task_id": "T-narrative_loop-20260225-cycle03-ui-auth-copy",
   "owner": "control_tower",
-  "assigned_worker": "generic_worker",
-  "goal": "Close all remaining integration blockers by end of 2026-02-24 local workspace time: deployment proof, Android device E2E proof, gateway timeout root-cause resolution, and strict-gate-ready CT decision evidence.",
+  "assigned_worker": "Antigravity",
+  "goal": "Define and execute Cycle03 frontend scope by implementing 401/403 narrative auth copy in app.py, aligned with orchestration/handoff_scenarios_copy.md, while keeping current gateway auth status contract and debug visibility intact.",
   "inputs": [
     {
-      "kind": "file",
-      "value": "Agent.md",
-      "description": "Project SSOT and architecture constraints."
+      "kind": "artifact_ref",
+      "value": "orchestration/handoff/latest.handoff.json",
+      "description": "Accepted cycle02 canonical baseline and cycle03 kickoff direction."
     },
     {
       "kind": "file",
       "value": "integration_status.md",
-      "description": "Latest policy decisions and blocked reasons."
+      "description": "Current cycle03 board, priorities, and no-regression guidance."
     },
     {
-      "kind": "artifact_ref",
-      "value": "orchestration/results/20260224T102500Z.T-narrative_loop-20260224-cycle01.result.json",
-      "description": "Previous cycle blocked decision baseline."
+      "kind": "file",
+      "value": "orchestration/handoff_scenarios_copy.md",
+      "description": "Design source for 401/403 scenario copy and UX intent."
     },
     {
-      "kind": "artifact_ref",
-      "value": "orchestration/handoff/20260224T102500Z.T-narrative_loop-20260224-cycle01.handoff.json",
-      "description": "Previous canonical blocked handoff."
-    },
-    {
-      "kind": "artifact_ref",
-      "value": "orchestration/results/20260224T102000Z.T-narrative_loop-20260224-frontend.result.json",
-      "description": "Frontend 401/403 UX hardening report."
+      "kind": "file",
+      "value": "app.py",
+      "description": "Target implementation file for _render_universe_auth_error."
     }
   ],
   "constraints": {
     "allow_write": true,
     "allow_execute": true,
     "allowed_paths": [
-      "orchestration/",
-      "tools/",
-      "tests/",
-      "gateway_fastapi.py",
-      "debug_token_server.py",
-      "render.yaml",
       "app.py",
-      "android/NarrativeLoopMobile/",
-      "integration_status.md"
+      "tests/",
+      "orchestration/proposals/",
+      "orchestration/results/",
+      "data/evidence/"
     ],
     "forbidden_paths": [
       ".git/",
       ".env",
-      "secrets/"
+      "secrets/",
+      "gateway_fastapi.py",
+      "debug_token_server.py",
+      "universe_auth.py"
     ],
-    "notes": "Approval-required operations (deploy/schema change/permission elevation/destructive commands) must be explicitly approved by User before execution."
+    "notes": "Keep auth semantics unchanged (401/403 routing and payload contract). No secret exposure. Default UI must be narrative-first; raw payload remains debug-only."
   },
   "acceptance": [
-    "Backend deploy, secrets-sync, and restart evidence is attached with sanitized command logs.",
-    "Android device runtime E2E evidence covers bearer first load, cookie follow-up, 401/403 UX, and lifecycle stability.",
-    "Gateway /gateway/universe_3d timeout root cause is identified with mitigation evidence or fixed behavior proof.",
-    "Strict gate evidence is attached and CT final decision is recorded as accept or blocked with canonical handoff JSON."
+    "app.py _render_universe_auth_error applies narrative-first Korean copy for 401 and 403 states aligned with orchestration/handoff_scenarios_copy.md.",
+    "401 state communicates reconnect/access path (mobile or authenticated gateway) without exposing raw token jargon in default UI.",
+    "403 state communicates permission boundary using design-aligned key/door or observer-area metaphor and provides clear next guidance.",
+    "Technical JSON payload is still available only inside a debug expander for diagnostics.",
+    "Strict-gate-first evidence is attached (or clearly marked blocked) and confirms no auth-flow behavior regression."
   ],
   "risk": {
-    "level": "high",
-    "note": "Any missing runtime/deploy evidence keeps delivery blocked even if local tests pass."
+    "level": "medium",
+    "note": "Copy-only changes can still regress auth UX if status-code branching or fallback wording diverges from runtime contract expectations."
   },
   "next_actions": [
-    "Dispatch worker-specific cycle02 tasks with end-of-day deadline.",
-    "Collect backend/android/frontend result artifacts with exact commands, exits, and evidence paths.",
-    "Run strict gate and publish final CT result plus canonical handoff JSON."
+    "Implement and review 401/403 narrative copy changes in app.py.",
+    "Run targeted frontend/auth checks under strict-gate-first policy and collect evidence artifact paths.",
+    "Publish schema-valid result/handoff artifacts for CT cycle03 decision."
   ],
-  "requires_human_approval": true,
-  "timestamp": "2026-02-24T12:15:00Z",
+  "requires_human_approval": false,
+  "timestamp": "2026-02-25T06:05:00Z",
   "context_docs": [
-    "USER_STARTER_PLAYBOOK.md",
-    "CT_BOOTSTRAP_BRIEF.md",
-    "SYSTEM_BLUEPRINT.md",
-    "SYSTEM_AGENT_POLICY.md",
-    "SYSTEM_HANDOFF_CONSTITUTION.md",
     "Agent.md",
-    "DOMAIN_MAP.md",
     "Harness_Policy.md",
-    "integration_status.md"
+    "integration_status.md",
+    "orchestration/handoff_scenarios_copy.md"
   ],
   "metadata": {
     "project": "narrative_loop",
-    "cycle_window": {
-      "start_date": "2026-02-24",
-      "end_date": "2026-02-24"
-    },
-    "deadline_utc": "2026-02-24T14:59:59Z",
-    "deadline_note": "Finish by end of 2026-02-24 local workspace time.",
-    "gate_mode": {
-      "local": "warn",
-      "push_merge": "strict"
-    },
-    "approval_authority": {
-      "deploy": "User",
-      "schema_change": "User + Antigravity technical review",
-      "permission_elevation": "User",
-      "destructive_command": "User explicit one-time approval"
-    },
-    "runtime_venv_policy": {
-      "root_env_var": "LIFE_VENV_ROOT",
-      "default_root_rule": "If LIFE_VENV_ROOT is unset, use $env:USERPROFILE\\.venvs_hub (fallback C:\\venvs_hub for non-ASCII profile environments).",
-      "canonical_name": "Narrative_Loop.venv",
-      "compat_alias_name": "narrative_loop",
-      "log_notation": "Always record resolved venv root and canonical venv name in docs/logs."
-    },
-    "worker_plan": [
-      {
-        "worker": "backend_cli",
-        "focus": "deploy evidence, secret sync/restart evidence, gateway timeout RCA/fix"
-      },
-      {
-        "worker": "android_ide",
-        "focus": "device E2E evidence for bearer->cookie, 401/403 UX, lifecycle"
-      },
-      {
-        "worker": "frontend_ide",
-        "focus": "verify friendly 401/403 UX against real staging auth responses"
-      }
+    "cycle": "cycle03",
+    "domain": "frontend_auth_copy",
+    "priority": "P1",
+    "baseline_trace": "trace-narrative_loop-20260224-cycle02",
+    "baseline_task_id": "T-narrative_loop-20260224-cycle02",
+    "design_focus": [
+      "401_missing_or_expired",
+      "403_forbidden_audience_or_scope"
+    ],
+    "out_of_scope": [
+      "gateway_fastapi.py behavior changes",
+      "debug_token_server.py behavior changes",
+      "android runtime automation updates"
     ]
   }
 }

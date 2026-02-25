@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-android-cycle02",
+  "worker": "android_ide",
+  "status": "blocked",
+  "summary": "Android retry report for cycle02 unit recovery-02 was received and reviewed. The worker could not execute any on-device runtime scenario because deployment module resolution failed and no ADB-visible device was available, so all mandatory runtime evidence items remain blocked.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "android/ANDROID_REPORT.md",
+      "description": "Android worker retry report for cycle02-android-e2e-recovery-02."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260224T162033Z.T-narrative_loop-20260224-android-cycle02.result.json",
+      "description": "Canonical Android worker result artifact reflecting blocked runtime evidence."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "android_retry_report_received",
+      "status": "pass",
+      "note": "android/ANDROID_REPORT.md updated with execution unit cycle02-android-e2e-recovery-02."
+    },
+    {
+      "name": "android_deploy_module_resolution",
+      "command": "deploy(module=':app', ...)",
+      "status": "fail",
+      "note": "Report states module resolution failed: 'Module :app not found.'"
+    },
+    {
+      "name": "adb_device_presence",
+      "command": "adb_shell_input(command='keyevent', args=['3'])",
+      "status": "fail",
+      "note": "Report states no running devices found, blocking runtime execution."
+    },
+    {
+      "name": "mandatory_runtime_scenarios",
+      "command": "First bearer / cookie follow-up / 401 UX / 403 UX / lifecycle smoke",
+      "status": "fail",
+      "note": "All mandatory scenarios are explicitly marked Blocked in android/ANDROID_REPORT.md."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "critical",
+      "description": "Android runtime E2E evidence cannot be produced until IDE module mapping and device connectivity are fixed.",
+      "mitigation": "Manual environment recovery: re-import project module and connect physical/virtual device visible to ADB."
+    },
+    {
+      "severity": "high",
+      "description": "Cycle02 final acceptance remains blocked without Android runtime proof.",
+      "mitigation": "Re-run cycle02 android E2E unit immediately after environment recovery with runtime logs/screenshots."
+    }
+  ],
+  "next_actions": [
+    "Manually re-import android/NarrativeLoopMobile so the Gradle app module is recognized for deployment.",
+    "Connect a physical device or start an AVD and confirm ADB visibility before rerun.",
+    "Re-execute cycle02-android-e2e-recovery-02 and overwrite android/ANDROID_REPORT.md with runtime evidence."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-24T16:20:33Z"
+}

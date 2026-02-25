@@ -1,0 +1,77 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-android-cycle03",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Close cycle3 product MVP on Android by proving end-user flow on emulator and physical device: write/save/restart/re-query/universe/auth fallback/lifecycle.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle3 CT baseline."
+    },
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/CYCLE3_PRODUCT_MVP_RUNBOOK.md",
+      "description": "Execution runbook."
+    },
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/ANDROID_PRODUCT_MVP_REPORT_TEMPLATE.md",
+      "description": "Cycle3 report template."
+    },
+    {
+      "kind": "file",
+      "value": "tools/android_cycle3_product_mvp_runner.ps1",
+      "description": "Automation runner for auth/device precheck and evidence template generation."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "android/NarrativeLoopMobile/evidence/20260224T200057Z.runtime_auth_e2e_manual.md",
+      "description": "Cycle02 auth baseline evidence."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "tools/",
+      "data/evidence/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Report both canonical root and alias workspace availability. Do not expose raw token/admin key values."
+  },
+  "acceptance": [
+    "Emulator and physical-device runs both contain product journey pass evidence: write/save/re-query/universe/lifecycle.",
+    "Auth fallback scenarios are explicit with status proof: empty token 401 and forbidden audience token 403.",
+    "ANDROID_REPORT.md and evidence markdown are updated with reproducible commands and sanitized paths."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "UI-coordinate drift and manual token operations can cause false negatives unless automation runner is used."
+  },
+  "next_actions": [
+    "Run tools/android_cycle3_product_mvp_runner.ps1 in all mode and attach generated json/markdown outputs.",
+    "Execute product journey on emulator then physical device and capture screenshots/logcat snippets.",
+    "Publish android cycle03 result artifact with pass/fail matrix and blocker class if any."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-24T20:25:00Z",
+  "context_docs": [
+    "Agent.md",
+    "integration_status.md",
+    "android/NarrativeLoopMobile/CT_INBOX_ANDROID.md"
+  ],
+  "metadata": {
+    "domain": "Mobile Product MVP",
+    "priority": "P0",
+    "deadline_utc": "2026-02-25T14:59:59Z"
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-backend-cycle03",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Keep cycle3 product-MVP runtime stable by monitoring fixed HTTPS auth contracts and providing refreshed backend evidence while Android user-journey validation is running.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle3 CT baseline."
+    },
+    {
+      "kind": "file",
+      "value": "tools/probe_staging_auth_contract.py",
+      "description": "Reusable backend auth probe."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260224T174839Z.T-narrative_loop-20260224-backend-cycle02-refresh.result.json",
+      "description": "Cycle02 backend recovery baseline."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "Current board and risk context."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "tools/",
+      "data/evidence/",
+      "data/staging_auth_probe_latest.json",
+      "orchestration/",
+      "integration_status.md",
+      "gateway_fastapi.py",
+      "debug_token_server.py"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "If deploy/secrets sync is required, request explicit User approval before execution."
+  },
+  "acceptance": [
+    "Cycle3 backend probe confirms stable contract: /debug/token admin 200 issued, no-auth 401, bearer/cookie 307, forbidden 403.",
+    "Strict gate remains pass during cycle3 execution window.",
+    "Backend result artifact documents any drift and mitigation for product-MVP window."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Any auth drift during Android product-journey run can invalidate mobile evidence and force rerun."
+  },
+  "next_actions": [
+    "Run probe_staging_auth_contract.py and attach refreshed evidence paths.",
+    "Re-run strict gate and attach latest pass log.",
+    "Publish backend cycle03 result with explicit contract snapshot."
+  ],
+  "requires_human_approval": true,
+  "timestamp": "2026-02-24T20:25:00Z",
+  "context_docs": [
+    "Agent.md",
+    "Harness_Policy.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Auth Gateway Stability",
+    "priority": "P1",
+    "deadline_utc": "2026-02-25T14:59:59Z"
+  }
+}

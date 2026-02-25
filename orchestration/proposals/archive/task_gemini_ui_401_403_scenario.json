@@ -1,0 +1,48 @@
+{
+  "trace_id": "T-narrative_loop-20260225-ui-401-403",
+  "task_id": "ui-401-403-scenario-design",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Propose 5 error scenarios and narrative UI copy for the Streamlit UI based on potential 401/403 responses from the gateway, and review app.py for potential rerun loops to ensure UI stability.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Streamlit main application file to review for rerun loops"
+    },
+    {
+      "kind": "file",
+      "value": "CT_INBOX_GEMINI_UI.md",
+      "description": "Task origin and inbox context"
+    },
+    {
+      "kind": "file",
+      "value": "Gemini-3.1-Pro_agent.md",
+      "description": "Agent operational rules and design North Star"
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": false,
+    "forbidden_paths": [
+      "universe_auth.py",
+      "gateway_fastapi.py",
+      "narrative_logic.py"
+    ]
+  },
+  "acceptance": [
+    "5 specific 401/403 error scenarios are defined with UI layout (Empty state, Error state) and narrative copy (avoiding generic warnings).",
+    "app.py rerun loops are identified and optimization strategy is documented.",
+    "Handoff format document (Screen/Before/After/Why/Implementation Notes) is generated for Antigravity."
+  ],
+  "risk": {
+    "level": "low",
+    "note": "Design and analysis phase. No project code execution or structural modifications will be made without explicit CT review."
+  },
+  "next_actions": [
+    "Analyze potential 401/403 error surfaces",
+    "Draft UI layout and copy following design North Star",
+    "Review app.py state management"
+  ],
+  "timestamp": "2026-02-24T17:40:00Z"
+}

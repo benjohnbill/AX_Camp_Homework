@@ -1,0 +1,59 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-android-cycle02",
+  "worker": "android_ide",
+  "status": "success",
+  "summary": "Android cycle02 runtime E2E closure was completed on emulator after token-flow recovery. Mandatory scenarios are all pass: bearer first 307, cookie follow-up 307, empty token 401, forbidden token 403, and lifecycle smoke pass.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+      "description": "Refreshed Android runtime report with all mandatory scenario results."
+    },
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/evidence/20260224T200057Z.runtime_auth_e2e_manual.md",
+      "description": "Sanitized manual runtime evidence bundle (ADB + status outputs + checklist results)."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "adb_connectivity",
+      "command": "adb devices",
+      "status": "pass",
+      "note": "emulator-5554 is online."
+    },
+    {
+      "name": "token_contract_precheck_valid",
+      "command": "curl -H Authorization: Bearer <valid_token> --max-redirs 0 /gateway/universe_3d",
+      "status": "pass",
+      "note": "VALID_STATUS=307."
+    },
+    {
+      "name": "token_contract_precheck_forbidden",
+      "command": "curl -H Authorization: Bearer <forbidden_token> --max-redirs 0 /gateway/universe_3d",
+      "status": "pass",
+      "note": "FORBIDDEN_STATUS=403."
+    },
+    {
+      "name": "runtime_mandatory_scenarios",
+      "command": "Debug tab runtime checks (valid/cookie/empty/forbidden/lifecycle)",
+      "status": "pass",
+      "note": "Mandatory scenario table is all pass in ANDROID_REPORT.md."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "low",
+      "description": "Runtime closure is currently manual; instrumented Android E2E regression coverage is not yet implemented.",
+      "mitigation": "Add automated instrumented tests for bearer/cookie/401/403/lifecycle contract paths."
+    }
+  ],
+  "next_actions": [
+    "Retain the local forbidden-token issuance fallback for 403 UX verification when debug-token audience allowlist blocks issuance.",
+    "Automate Android E2E contract checks in instrumented tests.",
+    "Monitor staging auth contract stability with periodic probe reruns."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-24T20:00:57Z"
+}

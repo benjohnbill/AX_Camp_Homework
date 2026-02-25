@@ -1,0 +1,87 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-backend-cycle03",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "Cycle03 fixed HTTPS auth contract evidence refreshed on 2026-02-24; strict gate rerun passed and probe confirms /debug/token admin 200, no-admin 401, bearer/cookie 307, and forbidden audience 403.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "data/staging_auth_probe_latest.json",
+      "description": "Latest sanitized fixed-HTTPS auth contract snapshot."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260224T212119Z.run_agent_a_gate_strict.log",
+      "description": "Strict gate rerun log for cycle03."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260224T212310Z.probe_staging_auth_contract.log",
+      "description": "Staging auth probe rerun log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "strict_gate_rerun",
+      "command": "& 'C:\\venvs_hub\\narrative_loop\\Scripts\\python.exe' tools/run_agent_a_gate.py --policy-mode strict *> 'data/evidence/20260224T212119Z.run_agent_a_gate_strict.log'; exit $LASTEXITCODE",
+      "status": "pass",
+      "note": "Strict gate completed with PASS; preflight, contract, docs, skill, bootstrap, smoke, integrity checks all succeeded."
+    },
+    {
+      "name": "auth_probe_rerun",
+      "command": "& 'C:\\venvs_hub\\narrative_loop\\Scripts\\python.exe' tools/probe_staging_auth_contract.py --json-report data/staging_auth_probe_latest.json *> 'data/evidence/20260224T212310Z.probe_staging_auth_contract.log'; exit $LASTEXITCODE",
+      "status": "pass",
+      "note": "Probe reports fixed HTTPS endpoints behave as expected."
+    },
+    {
+      "name": "debug_token_admin_200",
+      "command": "data/staging_auth_probe_latest.json -> core_endpoints.debug_token_with_admin",
+      "status": "pass",
+      "note": "status=200, code=issued, token_issued=true."
+    },
+    {
+      "name": "debug_token_no_admin_401",
+      "command": "data/staging_auth_probe_latest.json -> core_endpoints.debug_token_no_admin",
+      "status": "pass",
+      "note": "status=401, code=unauthorized_admin."
+    },
+    {
+      "name": "gateway_no_auth_401",
+      "command": "data/staging_auth_probe_latest.json -> core_endpoints.gateway_session_no_auth and gateway_universe_no_auth",
+      "status": "pass",
+      "note": "session=401 missing_token, universe_no_auth=401 missing_token."
+    },
+    {
+      "name": "bearer_cookie_307_contract",
+      "command": "data/staging_auth_probe_latest.json -> bearer_cookie_contract.bearer_first and bearer_cookie_contract.cookie_follow_up",
+      "status": "pass",
+      "note": "bearer_first=307, cookie_follow_up=307, X-Auth-Source transitions bearer->cookie."
+    },
+    {
+      "name": "forbidden_audience_403",
+      "command": "data/staging_auth_probe_latest.json -> bearer_cookie_contract.forbidden_audience",
+      "status": "pass",
+      "note": "status=403, code=forbidden_audience."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Cycle03 acceptance waits on Android emulator + physical-device MVP evidence delivery.",
+      "mitigation": "Keep backend contract stable while Android worker publishes runtime matrix."
+    },
+    {
+      "severity": "low",
+      "description": "Gate/probe commands require elevated runtime path usage in this environment.",
+      "mitigation": "Logs record the exact invocations for traceability."
+    }
+  ],
+  "next_actions": [
+    "Push this backend result into CT cycle03 aggregation.",
+    "Continue rerunning tools/probe_staging_auth_contract.py if any auth contract drift appears during Android validation.",
+    "Coordinate with Android/frontend workers so CT merges backend snapshot with their MVP evidence before final decision."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-24T21:24:29Z"
+}

@@ -1,0 +1,70 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-backend-cycle02",
+  "worker": "backend_cli",
+  "status": "blocked",
+  "summary": "Backend cycle02 fixed-HTTPS auth contract evidence was refreshed via an automated sanitized probe report, confirming responsive gateway behavior and bearer-cookie contract. Final closure remains blocked because deployment credential variables are unavailable in this workspace, so deploy/secrets-sync/restart evidence cannot be executed here.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "data/staging_auth_probe_latest.json",
+      "description": "Sanitized staging auth and gateway probe report."
+    },
+    {
+      "kind": "artifact",
+      "path": "tools/probe_staging_auth_contract.py",
+      "description": "Reusable backend probe script for fixed HTTPS contract evidence."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "staging_auth_probe_script",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\project_python.ps1 tools/probe_staging_auth_contract.py --json-report data/staging_auth_probe_latest.json",
+      "status": "pass",
+      "note": "Report confirms /healthz=200, /gateway/session=401 missing_token, /gateway/universe_3d=401 missing_token, bearer=307, cookie follow-up=307, forbidden audience=403."
+    },
+    {
+      "name": "debug_token_admin_probe",
+      "command": "Included in tools/probe_staging_auth_contract.py report",
+      "status": "fail",
+      "note": "debug_token_with_admin remains 401 unauthorized_admin in data/staging_auth_probe_latest.json."
+    },
+    {
+      "name": "deploy_credential_presence",
+      "command": "presence check for RENDER_API_KEY/RENDER_OWNER_ID/RENDER_*_SERVICE_ID/STREAMLIT_CLOUD_API_KEY",
+      "status": "fail",
+      "note": "All checked deployment credential variables are absent in this workspace runtime."
+    },
+    {
+      "name": "deploy_secrets_sync_restart_execution",
+      "command": "N/A in this workspace without deploy credentials and explicit deploy execution context",
+      "status": "info",
+      "note": "Awaiting user-approved backend environment execution logs."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Deploy/secrets-sync/restart proof is still missing for cycle02 acceptance.",
+      "mitigation": "Execute deploy and restart in credentialed environment and attach sanitized logs."
+    },
+    {
+      "severity": "high",
+      "description": "Debug token admin key mismatch persists on fixed HTTPS endpoint.",
+      "mitigation": "Synchronize DEBUG_TOKEN_ADMIN_KEY on staging service and re-probe token issuance."
+    },
+    {
+      "severity": "medium",
+      "description": "Gateway stability can vary by cold-start conditions.",
+      "mitigation": "Keep repeated /healthz probes and auth route checks in deployment checklist."
+    }
+  ],
+  "next_actions": [
+    "Run approved staging deploy/secrets-sync/restart in credentialed environment and collect logs.",
+    "Re-run probe script after secret sync until debug_token_with_admin is 200 with token_issued=true.",
+    "Hand off updated backend result to CT for final accept/blocked reevaluation."
+  ],
+  "human_approval_needed": true,
+  "approval_reason": "Deployment, secret sync, and service restart are approval-required operations and need credentialed environment execution.",
+  "timestamp": "2026-02-24T15:59:26Z"
+}

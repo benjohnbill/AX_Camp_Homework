@@ -1,0 +1,73 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-frontend-cycle03",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Support cycle3 product MVP confirmation by validating narrative write/read and Universe UX from mobile-oriented runtime flow without regressing existing 401/403 friendly handling.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle3 CT baseline."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Streamlit runtime behavior and auth UX."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260224T153400Z.T-narrative_loop-20260224-frontend-cycle02.result.json",
+      "description": "Cycle02 frontend baseline."
+    },
+    {
+      "kind": "file",
+      "value": "integration_status.md",
+      "description": "MVP board and open gaps."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "assets/",
+      "tests/",
+      "tools/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No backend API contract changes. Keep UX-focused and evidence-backed."
+  },
+  "acceptance": [
+    "Narrative write/save/re-open flow is verified with reproducible steps and evidence paths.",
+    "Universe entry path remains stable for mobile flow and does not regress friendly auth handling.",
+    "Frontend regression checks pass after any cycle3 adjustments."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "UI-only validation without real mobile flow evidence can produce false confidence."
+  },
+  "next_actions": [
+    "Capture mobile-oriented user journey evidence for write/save/re-query/universe UX.",
+    "Attach regression check outputs for auth-focused tests.",
+    "Publish frontend cycle03 result with clear pass/fail matrix."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-24T20:25:00Z",
+  "context_docs": [
+    "Agent.md",
+    "DOMAIN_MAP.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "Runtime UI and Product Journey",
+    "priority": "P1",
+    "deadline_utc": "2026-02-25T14:59:59Z"
+  }
+}

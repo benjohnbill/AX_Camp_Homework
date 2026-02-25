@@ -1,0 +1,87 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-backend-cycle03",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "Cycle03 backend contract evidence was refreshed on 2026-02-24. Strict gate rerun passed, and fixed HTTPS auth contract remains stable: /debug/token admin 200 issued, no-admin 401, bearer first 307, cookie follow-up 307, forbidden audience 403.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "data/staging_auth_probe_latest.json",
+      "description": "Latest sanitized fixed-HTTPS auth contract snapshot."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260224T204134Z.run_agent_a_gate_strict.log",
+      "description": "Strict gate rerun log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260224T210806Z.probe_staging_auth_contract.log",
+      "description": "Staging auth probe rerun log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "strict_gate_rerun",
+      "command": "& 'C:\\venvs_hub\\narrative_loop\\Scripts\\python.exe' tools/run_agent_a_gate.py --policy-mode strict *> 'data/evidence/20260224T204134Z.run_agent_a_gate_strict.log'; exit $LASTEXITCODE",
+      "status": "pass",
+      "note": "Exit 0. Agent A strict gate completed with final PASS."
+    },
+    {
+      "name": "auth_probe_rerun",
+      "command": "& 'C:\\venvs_hub\\narrative_loop\\Scripts\\python.exe' tools/probe_staging_auth_contract.py --json-report data/staging_auth_probe_latest.json *> 'data/evidence/20260224T210806Z.probe_staging_auth_contract.log'; exit $LASTEXITCODE",
+      "status": "pass",
+      "note": "Exit 0. Probe reported fixed HTTPS endpoints reachable with expected auth-coded behavior."
+    },
+    {
+      "name": "debug_token_admin_200",
+      "command": "data/staging_auth_probe_latest.json -> core_endpoints.debug_token_with_admin",
+      "status": "pass",
+      "note": "status=200, code=issued, token_issued=true."
+    },
+    {
+      "name": "debug_token_no_admin_401",
+      "command": "data/staging_auth_probe_latest.json -> core_endpoints.debug_token_no_admin",
+      "status": "pass",
+      "note": "status=401, code=unauthorized_admin."
+    },
+    {
+      "name": "gateway_no_auth_401",
+      "command": "data/staging_auth_probe_latest.json -> core_endpoints.gateway_session_no_auth and core_endpoints.gateway_universe_no_auth",
+      "status": "pass",
+      "note": "session=401 missing_token, universe_no_auth=401 missing_token."
+    },
+    {
+      "name": "bearer_cookie_307_contract",
+      "command": "data/staging_auth_probe_latest.json -> bearer_cookie_contract.bearer_first and bearer_cookie_contract.cookie_follow_up",
+      "status": "pass",
+      "note": "bearer_first=307, cookie_follow_up=307, X-Auth-Source transitions bearer->cookie."
+    },
+    {
+      "name": "forbidden_audience_403",
+      "command": "data/staging_auth_probe_latest.json -> bearer_cookie_contract.forbidden_audience",
+      "status": "pass",
+      "note": "status=403, code=forbidden_audience."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Cycle03 final acceptance still depends on Android emulator + physical-device product-MVP evidence.",
+      "mitigation": "Keep backend contract unchanged and continue monitoring while Android worker publishes required runtime matrix."
+    },
+    {
+      "severity": "low",
+      "description": "Gate/probe execution in this shell required elevated execution path for external interpreter.",
+      "mitigation": "Retain command+log evidence in this artifact for auditability and rerun with same command prefix if needed."
+    }
+  ],
+  "next_actions": [
+    "Ingest this backend cycle03 result into CT cycle03 aggregation.",
+    "Keep re-running tools/probe_staging_auth_contract.py during Android runtime window if drift is suspected.",
+    "Proceed to cycle03 final decision after Android/frontend evidence merge and strict gate review."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-24T21:15:06Z"
+}

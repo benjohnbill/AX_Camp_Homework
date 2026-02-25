@@ -1,0 +1,91 @@
+{
+  "trace_id": "trace-narrative_loop-20260224-cycle02",
+  "task_id": "T-narrative_loop-20260224-backend-cycle02",
+  "worker": "backend_cli",
+  "status": "blocked",
+  "summary": "Cycle02 backend re-validation was re-run on 2026-02-24 with user-provided venv root. Strict gate passed and fixed HTTPS auth contract evidence remains reproducible, but deploy/secrets-sync/restart execution is still blocked in this workspace due missing Render deploy credentials. Remote /debug/token admin-key path remains 401 unauthorized_admin while local issuance path with the same admin-key fingerprint returns 200 issued.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "data/staging_auth_probe_latest.json",
+      "description": "Sanitized fixed-HTTPS auth contract probe report (core endpoints + bearer/cookie + 403 audience)."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260224T161427Z.probe_staging_auth_contract.log",
+      "description": "Probe execution log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260224T161440Z.run_agent_a_gate_strict.log",
+      "description": "Strict gate execution log."
+    },
+    {
+      "kind": "report",
+      "path": "data/evidence/deploy_credentials_presence_latest.json",
+      "description": "Masked deploy credential presence/fingerprint snapshot."
+    },
+    {
+      "kind": "report",
+      "path": "data/evidence/deploy_secrets_sync_restart_attempt_latest.json",
+      "description": "Deploy/secrets-sync/restart attempt status report (blocked_missing_credentials)."
+    },
+    {
+      "kind": "report",
+      "path": "data/evidence/debug_token_local_issue_probe_latest.json",
+      "description": "Local debug token issuance contract probe (token not persisted)."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "strict_gate_rerun",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\project_python.ps1 -VenvRoot %USERPROFILE%\\.venvs_hub tools/run_agent_a_gate.py --policy-mode strict",
+      "status": "pass",
+      "note": "Exit 0. Agent A strict gate passed."
+    },
+    {
+      "name": "core_endpoints_rerun",
+      "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\tools\\project_python.ps1 -VenvRoot %USERPROFILE%\\.venvs_hub tools/probe_staging_auth_contract.py --json-report data/staging_auth_probe_latest.json",
+      "status": "fail",
+      "note": "healthz=200, session_no_auth=401 missing_token, universe_no_auth=401 missing_token, debug_token_with_admin=401 unauthorized_admin"
+    },
+    {
+      "name": "bearer_cookie_403_contract_rerun",
+      "command": "Included in tools/probe_staging_auth_contract.py",
+      "status": "pass",
+      "note": "bearer_first=307(set-cookie present), cookie_follow_up=307(auth-source cookie), forbidden_audience=403"
+    },
+    {
+      "name": "deploy_secrets_sync_restart_attempt",
+      "command": "credential gate check for Render deploy keyset",
+      "status": "fail",
+      "note": "RENDER_API_KEY/RENDER_OWNER_ID/RENDER_DEBUG_TOKEN_SERVICE_ID/RENDER_GATEWAY_SERVICE_ID missing in this workspace runtime."
+    },
+    {
+      "name": "debug_admin_key_local_vs_remote",
+      "command": "local issue_debug_token_response probe + fixed HTTPS probe",
+      "status": "fail",
+      "note": "Same local admin-key fingerprint(3e980e3adbb1) yields local status=200 issued, while remote endpoint returns 401 unauthorized_admin."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Deploy/secrets-sync/restart proof is still missing.",
+      "mitigation": "Run secrets sync + restart from credentialed backend environment and attach sanitized logs."
+    },
+    {
+      "severity": "high",
+      "description": "Remote debug admin key mismatch remains unresolved.",
+      "mitigation": "Synchronize DEBUG_TOKEN_ADMIN_KEY to ax-camp-debug-token-staging and restart service, then re-probe until /debug/token with admin key is 200 issued."
+    }
+  ],
+  "next_actions": [
+    "Execute approved Render secrets sync and restart in credentialed environment (mask+fingerprint only).",
+    "Re-run probe script and verify debug_token_with_admin status 200 code=issued.",
+    "Publish updated backend result and handoff artifacts for CT final accept/blocked decision refresh."
+  ],
+  "human_approval_needed": true,
+  "approval_reason": "Deploy/secrets-sync/restart requires credentialed environment and user-approved deploy authority.",
+  "timestamp": "2026-02-24T16:17:30Z"
+}

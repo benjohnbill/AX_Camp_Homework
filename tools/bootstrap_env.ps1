@@ -43,7 +43,12 @@ $defaultVenvRoot = Join-Path $env:USERPROFILE ".venvs_hub"
 if ($env:USERPROFILE -match "[^\u0000-\u007F]") {
     $defaultVenvRoot = "C:\venvs_hub"
 }
-$resolvedVenvRoot = if ($VenvRoot) { $VenvRoot } elseif ($env:LIFE_VENV_ROOT) { $env:LIFE_VENV_ROOT } else { $defaultVenvRoot }
+
+$persistedUserVenvRoot = [Environment]::GetEnvironmentVariable("LIFE_VENV_ROOT", "User")
+$persistedMachineVenvRoot = [Environment]::GetEnvironmentVariable("LIFE_VENV_ROOT", "Machine")
+$persistedVenvRoot = if ($persistedUserVenvRoot) { $persistedUserVenvRoot } elseif ($persistedMachineVenvRoot) { $persistedMachineVenvRoot } else { "" }
+
+$resolvedVenvRoot = if ($VenvRoot) { $VenvRoot } elseif ($env:LIFE_VENV_ROOT) { $env:LIFE_VENV_ROOT } elseif ($persistedVenvRoot) { $persistedVenvRoot } else { $defaultVenvRoot }
 
 if ($resolvedVenvRoot -match "OneDrive") {
     throw "Venv root must be outside OneDrive. Current value: $resolvedVenvRoot"

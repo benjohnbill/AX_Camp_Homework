@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-cycle03",
+  "version": "1.0",
+  "source_task": "orchestration/task.json",
+  "deadline_utc": "2026-02-25T14:59:59Z",
+  "deadline_note": "Cycle3 product MVP decision (accept/blocked) must be published by 2026-02-25 local workspace time.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "Android evidence must include both emulator and physical-device product journey outcomes.",
+    "Automation-first: prefer tools/android_cycle3_product_mvp_runner.ps1 over repetitive manual token/device steps."
+  ],
+  "workers": [
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260224T202500Z.android.task.json",
+      "scope_in": [
+        "Product journey verification on emulator and physical device",
+        "Auth fallback and lifecycle stability proof",
+        "Sanitized runtime evidence and report updates"
+      ],
+      "scope_out": [
+        "Backend deployment",
+        "Large app architecture refactor",
+        "API contract expansion"
+      ],
+      "prompt": "You are android_ide worker for Narrative_Loop cycle03. Follow orchestration/tasks/20260224T202500Z.android.task.json and android/NarrativeLoopMobile/CYCLE3_PRODUCT_MVP_RUNBOOK.md. Start with tools/android_cycle3_product_mvp_runner.ps1 -Mode all to generate precheck evidence, then complete write/save/restart/re-query/universe/auth/lifecycle product journey on emulator and physical device. Publish result.json with sanitized evidence paths."
+    },
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260224T202500Z.backend.task.json",
+      "scope_in": [
+        "Fixed HTTPS auth contract stability check during cycle3",
+        "Strict gate health",
+        "Backend evidence refresh for CT decision support"
+      ],
+      "scope_out": [
+        "Android native UI behavior changes",
+        "Frontend UX redesign",
+        "Unapproved deploy changes"
+      ],
+      "prompt": "You are backend_cli worker for Narrative_Loop cycle03. Follow orchestration/tasks/20260224T202500Z.backend.task.json. Re-probe staging auth contracts and strict gate health while Android product-journey tests run. Publish refreshed backend result with explicit contract snapshot and mitigation if drift occurs."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260224T202500Z.frontend.task.json",
+      "scope_in": [
+        "Narrative write/read user flow verification",
+        "Universe mobile-path UX stability",
+        "Auth-friendly UX non-regression checks"
+      ],
+      "scope_out": [
+        "Backend contract changes",
+        "Android-specific native implementation",
+        "Non-essential visual redesign"
+      ],
+      "prompt": "You are frontend_ide worker for Narrative_Loop cycle03. Follow orchestration/tasks/20260224T202500Z.frontend.task.json. Validate write/save/re-open/re-query and universe mobile flow while preserving 401/403 friendly UX. Publish result.json with reproducible evidence."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts cycle3 only when product journey evidence passes on emulator and physical device, backend contract remains stable, strict gate is pass, and canonical handoff JSON is schema-valid."
+}
