@@ -356,6 +356,7 @@ def init_session_state():
         'desk_page': 1,
         'violation_pending': None,
         'workspace_dock_open': False,
+        'sidebar_open': True,
         'profile_settings_open': False,
     }
     for key, val in defaults.items():
@@ -371,7 +372,22 @@ def apply_atmosphere(entropy_mode: bool):
     Applies minimal essential CSS. Heavy styling is now handled by .streamlit/config.toml
     to ensure native Streamlit components function correctly without breaking.
     """
-    
+    sidebar_closed_css = ""
+    if not bool(st.session_state.get("sidebar_open", True)):
+        sidebar_closed_css = """
+        [data-testid="stSidebar"] {
+            transform: translateX(-108%);
+            opacity: 0;
+            margin-left: calc(-1 * var(--sidebar-width));
+            pointer-events: none;
+        }
+        .block-container {
+            max-width: min(1380px, 96vw) !important;
+            padding-left: 1.2rem !important;
+            padding-right: 1.2rem !important;
+        }
+        """
+
     st.markdown(
         """
         <style>
@@ -398,31 +414,30 @@ def apply_atmosphere(entropy_mode: bool):
 
         [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
 
-        /* Sidebar: border + transition only. Width/collapse fully managed by Streamlit native. */
+        /* Sidebar: border + transition. Native expand button hidden (we use Python button). */
+        [data-testid="stSidebarCollapsedControl"] { display: none !important; }
         [data-testid="stSidebar"] {
             border-right: 1px solid var(--app-border);
-            transition: width 0.26s ease, transform 0.26s ease, opacity 0.26s ease;
+            width: var(--sidebar-width) !important;
+            min-width: var(--sidebar-width) !important;
+            max-width: var(--sidebar-width) !important;
+            transition: transform 0.22s ease, opacity 0.22s ease, margin-left 0.22s ease;
         }
 
-        /* Ensure sidebar open/close buttons are always clickable */
-        [data-testid="stSidebarCollapsedControl"],
-        [data-testid="stSidebarCollapseButton"] {
-            z-index: 99999 !important;
-            pointer-events: all !important;
-            visibility: visible !important;
-            opacity: 1 !important;
+        .layout-toolbar {
+            position: fixed;
+            top: 0.62rem;
+            left: 0.68rem;
+            z-index: 1200;
         }
-        [data-testid="stSidebarCollapsedControl"] button,
-        [data-testid="stSidebarCollapseButton"] button {
+        .layout-toolbar .stButton button {
             border-radius: 999px !important;
-            background: var(--app-surface-soft) !important;
+            height: 2rem !important;
+            width: 2rem !important;
+            padding: 0 !important;
             border: 1px solid var(--app-border) !important;
+            background: var(--app-surface-soft) !important;
             color: var(--app-muted) !important;
-        }
-        [data-testid="stSidebarCollapsedControl"] button:hover,
-        [data-testid="stSidebarCollapseButton"] button:hover {
-            border-color: var(--app-accent) !important;
-            color: var(--app-text) !important;
         }
 
         .stream-shell {
@@ -545,6 +560,7 @@ def apply_atmosphere(entropy_mode: bool):
         }
         </style>
         """
+        + sidebar_closed_css
         ,
         unsafe_allow_html=True,
     )
@@ -602,12 +618,22 @@ def render_api_key_section():
 
 
 def render_sidebar_toggle_control() -> None:
-    pass  # Native Streamlit sidebar collapse button handles this (no rerun, CSS transition only)
+    if bool(st.session_state.get("sidebar_open", True)):
+        return
+    st.markdown("<div class='layout-toolbar'>", unsafe_allow_html=True)
+    if st.button("⟩", key="main_sidebar_open", help="사이드바 열기"):
+        st.session_state["sidebar_open"] = True
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
-        st.markdown("### Narrative Loop")
+        head_left, head_right = st.columns([5, 1])
+        head_left.markdown("### Narrative Loop")
+        if head_right.button("⟨", key="sidebar_close_btn", help="사이드바 접기", use_container_width=True):
+            st.session_state["sidebar_open"] = False
+            st.rerun()
 
         if st.button("새 스트림", use_container_width=True, key="sidebar_new_stream"):
             st.session_state["mode"] = "stream"
