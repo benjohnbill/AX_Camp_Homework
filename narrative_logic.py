@@ -1056,6 +1056,8 @@ def _get_system_prompt_with_persona() -> str:
 def _call_ai_api(system_prompt: str, user_input: str, context: str) -> str:
     """실제 OpenAI API 호출을 담당하며 예외를 처리합니다."""
     client = get_client()
+    if not client:
+        return "API 키가 설정되지 않아 응답할 수 없습니다. 별들의 목소리가 들리지 않네요."
     try:
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -1106,7 +1108,7 @@ def refine_narrative_with_ai(raw_input: str) -> str:
 
 import base64
 
-def refine_image_to_narrative_with_ai(image_bytes: bytes) -> str:
+def refine_image_to_narrative_with_ai(image_bytes: bytes, mime_type: str = "image/jpeg") -> str:
     """
     [Vision] 이미지를 OpenAI 비전 모델로 분석하여 서사로 변환합니다.
     """
@@ -1125,9 +1127,11 @@ def refine_image_to_narrative_with_ai(image_bytes: bytes) -> str:
 한국어로만 응답하라."""
 
     client = get_client()
+    if not client:
+        return "API 키가 설정되지 않았습니다."
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini", # gpt-4o-mini also supports vision now
+            model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {
@@ -1137,7 +1141,7 @@ def refine_image_to_narrative_with_ai(image_bytes: bytes) -> str:
                         {
                             "type": "image_url",
                             "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
+                                "url": f"data:{mime_type};base64,{base64_image}"
                             }
                         }
                     ]

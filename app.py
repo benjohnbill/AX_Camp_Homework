@@ -747,7 +747,8 @@ def render_ocr_fallback_entrypoint() -> None:
     if uploaded and st.button("본문에서 OCR 추출 실행", key="vision_uploader_main_btn", use_container_width=True):
         with st.spinner("이미지에서 서사를 추출하는 중..."):
             image_bytes = uploaded.read()
-            vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
+            mime = "image/png" if uploaded.name.lower().endswith(".png") else "image/jpeg"
+            vision_result = logic.refine_image_to_narrative_with_ai(image_bytes, mime_type=mime)
             st.session_state["refined_memo"] = vision_result
             st.success("OCR 기반 서사 초안을 생성했습니다. 사이드바 AI Assistant 또는 Stream에서 저장할 수 있습니다.")
     st.divider()
@@ -766,6 +767,8 @@ def render_stream_mode_switch_cards(show_heading: bool = True, key_prefix: str =
             label = f"{icons.get_icon_text(icon_key)} **{title}**"
             if st.button(label, key=f"stream_hub_{key_prefix}_{mode}", use_container_width=True, help=subtitle):
                 st.session_state["mode"] = mode
+                st.session_state.pop("refined_memo", None)
+                st.session_state.pop("refined_memo_edit", None)
                 st.rerun()
 
 
@@ -780,7 +783,8 @@ def render_stream_ocr_entrypoint(expanded: bool = False) -> None:
             st.session_state.pop("refined_memo_edit", None)  # reset previous edit state
             with st.spinner("이미지에서 서사를 추출하는 중..."):
                 image_bytes = uploaded.read()
-                vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
+                mime = "image/png" if uploaded.name.lower().endswith(".png") else "image/jpeg"
+                vision_result = logic.refine_image_to_narrative_with_ai(image_bytes, mime_type=mime)
             if vision_result and not vision_result.startswith("API 키가"):
                 st.session_state["refined_memo"] = vision_result
             else:
