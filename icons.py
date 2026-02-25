@@ -27,6 +27,9 @@ ICON_TEXT = {
     "calendar": "📅",
     "pencil": "✍️",
     "save": "💾",
+    "lock": "🔒",
+    "clock": "⏰",
+    "zap-off": "🔌",
 }
 
 def get_icon_svg(name, size=24, color="currentColor"):

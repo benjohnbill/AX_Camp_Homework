@@ -95,25 +95,67 @@ def _emit_universe_session_cookie(cookie_name: str, cookie_value: str, max_age: 
     )
 
 
+# ---------------------------------------------------------------------------
+# Auth error copy mapping: keyed by 'code' string from gateway payload.
+# Each entry: (icon_key, headline, body)
+# ---------------------------------------------------------------------------
+_AUTH_ERROR_COPY = {
+    "missing_token": (
+        "shield-alert",
+        "연결이 필요합니다.",
+        "우주에 입장하기 위해서는 모바일 디바이스 또는 인증된 게이트웨이를 통한 안전한 접근이 필요합니다.",
+    ),
+    "token_expired": (
+        "clock",
+        "시간이 오래 지났습니다.",
+        "안전을 위해 연결이 일시적으로 해제되었습니다. 안드로이드 앱에서 다시 연결해 주세요.",
+    ),
+    "forbidden_audience": (
+        "lock",
+        "접근 권한이 없습니다.",
+        "현재 사용하신 열쇠로는 이 공간의 문을 열 수 없습니다.",
+    ),
+    "forbidden_issuer": (
+        "lock",
+        "접근 권한이 없습니다.",
+        "현재 사용하신 열쇠로는 이 공간의 문을 열 수 없습니다.",
+    ),
+    "invalid_token": (
+        "zap-off",
+        "기억의 흐름이 끊겼습니다.",
+        "인증 정보를 확인할 수 없습니다. 앱에서 다시 접속해 연결 상태를 점검해주세요.",
+    ),
+    "invalid_authorization": (
+        "zap-off",
+        "기억의 흐름이 끊겼습니다.",
+        "인증 정보를 확인할 수 없습니다. 앱에서 다시 접속해 연결 상태를 점검해주세요.",
+    ),
+}
+
+_AUTH_ERROR_FALLBACK = (
+    "shield-alert",
+    "우주적 미아 상태입니다.",
+    "접근 요청을 확인할 수 없습니다. 연결 상태를 점검해주세요.",
+)
+
+
+def _get_auth_error_copy(code: str) -> tuple:
+    """Return (icon_key, headline, body) for a given gateway error code."""
+    return _AUTH_ERROR_COPY.get(code, _AUTH_ERROR_FALLBACK)
+
+
 def _render_universe_auth_error(auth_result: universe_auth.AuthResult) -> None:
     payload = dict(auth_result.payload or {})
     payload.setdefault("status", auth_result.status)
     payload.setdefault("route", "universe_3d_embed")
-    
-    st.markdown("### Universe 3D Access")
-    
-    if auth_result.status == 401:
-        st.error(f"{icons.get_icon_text('shield-alert')} **Authentication Required**")
-        st.markdown("Your session has expired or is invalid. Please log in again to access the Universe.")
-    elif auth_result.status == 403:
-        st.error(f"{icons.get_icon_text('lock')} **Access Denied**")
-        st.markdown("You do not have permission to view this resource.")
-    else:
-        st.error(f"{icons.get_icon_text('shield-alert')} **Authorization Error**")
-        st.markdown("We could not verify your access request.")
-        
-    st.info(f"Reason: {payload.get('message', 'Unknown error')} (Code: {payload.get('code', 'unknown')})")
-    
+
+    code = payload.get("code", "")
+    icon_key, headline, body = _get_auth_error_copy(code)
+
+    st.markdown("### 🌌 The Universe Space")
+    st.error(f"{icons.get_icon_text(icon_key)} **{headline}**")
+    st.markdown(body)
+
     with st.expander("Technical Support (For Debugging)"):
         st.code(json.dumps(payload, ensure_ascii=False, indent=2), language="json")
 
@@ -235,101 +277,37 @@ def init_session_state():
             st.session_state[key] = val
 
 def apply_atmosphere(entropy_mode: bool):
-    current_mode = st.session_state.get('mode', 'stream')
+    """
+    Applies minimal essential CSS. Heavy styling is now handled by .streamlit/config.toml
+    to ensure native Streamlit components function correctly without breaking.
+    """
     
-    # 1. Determine Mode-Specific CSS Variables
-    if entropy_mode:
-        blur_val = "15px"
-        overlay_color = "rgba(15, 0, 0, 0.85)" # Deep, suffocating dark tint
-        text_color = "#cccccc"
-    elif current_mode == "universe":
-        blur_val = "1.5px"
-        overlay_color = "rgba(0, 0, 0, 0.25)"  # Vivid, immersive
-        text_color = "#e94560"
-    else:
-        # Stream, Desk, Control, Chronos
-        blur_val = "12px"
-        overlay_color = "rgba(0, 0, 0, 0.65)"  # Frosted glass, high readability
-        text_color = "#e94560"
-
-    # Using a placeholder starry sky image. 
-    BG_IMAGE_URL = "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2000&auto=format&fit=crop"
-    
-    # Seamlessly load local AI image if the user places it in the 'assets' directory
-    bg_ext = next((ext for ext in ["png", "jpg", "jpeg", "webp"] if os.path.exists(os.path.join("assets", f"bg.{ext}"))), "jpg")
-    local_bg_path = os.path.join("assets", f"bg.{bg_ext}")
-    mime_type = "image/png" if bg_ext == "png" else "image/webp" if bg_ext == "webp" else "image/jpeg"
-    bg_base64 = get_base64_of_bin_file(local_bg_path)
-    if bg_base64:
-        # Assuming jpeg format for the base64 MIME
-        BG_IMAGE_URL = f"data:{mime_type};base64,{bg_base64}"
-
-    # 2. Inject Dynamic CSS
-    st.markdown(f"""
+    # 1. Essential CSS (Hide default headers, tight padding)
+    st.markdown("""
         <style>
-        /* Base Variables injected by Python State */
-        :root {{
-            --bg-blur: {blur_val};
-            --bg-overlay: {overlay_color};
-            --primary-text: {text_color};
-        }}
-
-        /* Wipe Streamlit's default background completely */
-        .stApp, .block-container {{
-            background: transparent !important; 
-            background-color: transparent !important;
-        }}
-
-        /* The Unified Background Entity */
-        .stApp::before {{
-            content: "";
-            position: fixed;
-            top: 0; 
-            left: 0; 
-            width: 100vw; 
-            height: 100vh;
-            
-            /* Stacks the dark overlay ON TOP of the image */
-            background-image: 
-                linear-gradient(var(--bg-overlay), var(--bg-overlay)), 
-                url('{BG_IMAGE_URL}');
-                
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            
-            /* Apply blur and scale up slightly to hide blurry edges */
-            filter: blur(var(--bg-blur));
-            transform: scale(1.05);
-            
-            /* Push to bottom layer */
-            z-index: -1;
-            
-            /* Transition for smooth mode switching */
-            transition: filter 0.8s ease, background-image 0.8s ease;
-        }}
-
-        /* Force foreground elements to remain visible over the background */
-        * {{ color: var(--primary-text) !important; }}
+        /* Hide Streamlit default header and footer */
+        header {visibility: hidden;}
+        footer {visibility: hidden;}
         
-        /* Ensure Inputs and Kanban Cards have distinct, readable backgrounds */
-        input, textarea, select {{
-            color: #ffffff !important;
-            border: 1px solid rgba(255,255,255,0.2) !important;
-            background-color: rgba(20, 20, 25, 0.85) !important; 
-            backdrop-filter: blur(5px);
-        }}
+        /* Adjust main container padding to maximize chat space */
+        .block-container {
+            padding-top: 2rem !important;
+            padding-bottom: 2rem !important;
+        }
+
+        /* Essential Kanban Card styling without breaking native boxes */
+        .kanban-card {
+            background-color: var(--secondary-background-color) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 8px !important; 
+            padding: 16px; 
+            margin-bottom: 12px; 
+        }
         
-        .kanban-card {{
-            background: rgba(30, 30, 40, 0.85) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 10px; 
-            padding: 15px; 
-            margin-bottom: 10px; 
-            transition: all 0.3s ease;
-            backdrop-filter: blur(5px);
-        }}
-        .kanban-card:hover {{ transform: translateY(-2px); border-color: rgba(255,255,255,0.5) !important; }}
+        /* Ensure Inputs have a slight highlight */
+        input, textarea {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -380,8 +358,8 @@ def render_sidebar(entropy_mode: bool):
             st.warning(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT")
             st.info("시스템 엔트로피가 임계치를 초과했습니다. [Gap Analysis]가 필요합니다.")
         else:
-            mode = st.radio("Select Mode", ["Stream", "Chronos", "Universe", "Control", "Desk"],
-                            index=["stream", "chronos", "universe", "control", "desk"].index(st.session_state['mode']))
+            mode = st.radio("Select Mode", ["Stream", "Desk", "Chronos", "Control", "Universe"],
+                            index=["stream", "desk", "chronos", "control", "universe"].index(st.session_state['mode']))
             st.session_state['mode'] = mode.lower()
         
         st.divider()
