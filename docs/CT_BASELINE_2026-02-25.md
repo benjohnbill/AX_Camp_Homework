@@ -20,6 +20,7 @@ This document is the minimum context package for a contextless CT.
 
 ## Quick Links
 - [Master Plan (Cycle 04-06)](./MASTER_PLAN_CYCLE04_06.md)
+- [Session Bootstrap Protocol](./SESSION_BOOTSTRAP_PROTOCOL.md)
 - [Pre-Cycle4 Feature Lock And Audit](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
 - [Project Brief For Human](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)
 - [Docs Index](./README.md)
@@ -85,7 +86,11 @@ Cycle 4 must not begin until `PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md` exit criteri
 - MCP/skill governance checks passed with no unauthorized capability expansion.
 
 ## 6) CT Bootstrap Prompt (Copy/Paste)
-Use this as first instruction for a contextless CT:
+Use this as first instruction for a contextless CT.
+For session boundary handoff/resume (non-cycle close), use:
+- [SESSION_BOOTSTRAP_PROTOCOL.md](./SESSION_BOOTSTRAP_PROTOCOL.md)
+
+Base prompt:
 
 ```text
 You are control_tower for Narrative_Loop.
@@ -117,5 +122,6 @@ At the end of each cycle, update all five:
 
 ## 8) Related Documents
 - [MASTER_PLAN_CYCLE04_06.md](./MASTER_PLAN_CYCLE04_06.md)
+- [SESSION_BOOTSTRAP_PROTOCOL.md](./SESSION_BOOTSTRAP_PROTOCOL.md)
 - [PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
 - [PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)

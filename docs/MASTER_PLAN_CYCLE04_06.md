@@ -18,6 +18,7 @@ sunset_condition: Replace by a new master plan when Cycle 06 close handoff is fi
 
 ## Quick Links
 - [CT Baseline](./CT_BASELINE_2026-02-25.md)
+- [Session Bootstrap Protocol](./SESSION_BOOTSTRAP_PROTOCOL.md)
 - [Pre-Cycle4 Feature Lock And Audit](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
 - [Project Brief For Human](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)
 - [Docs Index](./README.md)
@@ -115,6 +116,11 @@ Baseline product vision source:
 3. CT aggregation: merge evidence and publish canonical handoff decision.
 4. Baseline sync: publish updated CT baseline and human brief.
 5. Retrospective: capture blocker classes, carryovers, and next-cycle priorities.
+
+## 7.1) Session Boundary Rule (Non-Cycle)
+- If a session ends due to context/token constraints, CT must use:
+  - `docs/SESSION_BOOTSTRAP_PROTOCOL.md`
+- Session-close output is mandatory for continuity, but it does not replace cycle-close deliverables.
 
 ## 8) Cycle Close Deliverables (Mandatory)
 1. `orchestration/task.json`

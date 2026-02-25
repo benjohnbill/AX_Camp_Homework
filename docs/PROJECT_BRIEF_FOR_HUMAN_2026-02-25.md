@@ -17,6 +17,7 @@ sunset_condition: Replace at next cycle closure with a newer human-readable brie
 
 ## Quick Links
 - [CT Baseline](./CT_BASELINE_2026-02-25.md)
+- [Session Bootstrap Protocol](./SESSION_BOOTSTRAP_PROTOCOL.md)
 - [Master Plan (Cycle 04-06)](./MASTER_PLAN_CYCLE04_06.md)
 - [Pre-Cycle4 Feature Lock And Audit](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
 - [Docs Index](./README.md)
