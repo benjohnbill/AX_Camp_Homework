@@ -567,10 +567,11 @@ def apply_atmosphere(entropy_mode: bool):
         }
         </style>
         """
-        + sidebar_closed_css
         ,
         unsafe_allow_html=True,
     )
+    if not bool(st.session_state.get("sidebar_open", True)):
+        st.markdown(f"<style>{sidebar_closed_css}</style>", unsafe_allow_html=True)
 
 # ============================================================
 # API Key
