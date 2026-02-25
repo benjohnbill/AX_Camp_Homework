@@ -625,9 +625,15 @@ def render_stream_chat_messages() -> None:
         content = str(msg.get("content", "")).strip()
         if not content:
             continue
-        avatar = "🧑" if role == "user" else "✦"
-        with st.chat_message(role, avatar=avatar):
-            st.markdown(content)
+        # Use Material icon tokens for Cloud-safe avatar parsing.
+        avatar = ":material/person:" if role == "user" else ":material/auto_awesome:"
+        try:
+            with st.chat_message(role, avatar=avatar):
+                st.markdown(content)
+        except Exception:
+            # Fallback to default avatar instead of crashing the full app.
+            with st.chat_message(role):
+                st.markdown(content)
 
 # ============================================================
 # MODES
