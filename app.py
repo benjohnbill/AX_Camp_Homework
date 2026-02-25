@@ -398,15 +398,13 @@ def apply_atmosphere(entropy_mode: bool):
 
         [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
 
-        /* Native sidebar collapse/expand buttons - styled, NOT hidden */
+        /* Native sidebar collapse/expand buttons - ensure visible and clickable */
         [data-testid="stSidebarCollapsedControl"] {
-            position: fixed !important;
-            top: 0.62rem !important;
-            left: 0.68rem !important;
-            z-index: 1200 !important;
-            display: flex !important;
+            z-index: 99999 !important;
             visibility: visible !important;
-            pointer-events: auto !important;
+            display: block !important;
+            pointer-events: all !important;
+            opacity: 1 !important;
         }
         [data-testid="stSidebarCollapsedControl"] button,
         [data-testid="stSidebarCollapseButton"] button {
@@ -443,7 +441,6 @@ def apply_atmosphere(entropy_mode: bool):
         .stream-empty-center {
             width: min(100%, 720px);
             margin: 0 auto;
-            padding-top: clamp(8vh, 15dvh, 22vh); /* dvh: address bar 제외 동적 뷰포트 */
             padding-bottom: 10vh;
             display: flex;
             flex-direction: column;
@@ -451,13 +448,23 @@ def apply_atmosphere(entropy_mode: bool):
         }
 
         .stream-hero-title {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(100%, 720px);
+            z-index: 1000;
+            background: var(--app-bg);
+            padding: 3.5rem 0 2rem 0;
+            margin: 0 !important;
             font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.1rem);
             line-height: 1.3;
             font-weight: 700;
             letter-spacing: -0.03em;
-            margin-bottom: 2.5rem; /* Increased spacing to separate from action block */
             text-align: center;
             color: var(--app-text);
+            /* Subtle fade effect */
+            box-shadow: 0 20px 20px -20px rgba(0,0,0,0.6);
         }
 
         /* Group container for OCR and Switcher */
@@ -467,63 +474,10 @@ def apply_atmosphere(entropy_mode: bool):
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
+            margin-top: 12rem; /* Initial space for the fixed header */
         }
 
-        /* Streamlit expander styling for empty state */
-        .empty-action-block .stExpander {
-            border: 1px solid var(--app-border) !important;
-            background: var(--app-surface-soft) !important;
-            border-radius: 12px !important;
-        }
-
-        .kanban-card {
-            background-color: var(--app-surface-soft) !important;
-            border: 1px solid var(--app-border) !important;
-            border-radius: 8px !important;
-            padding: 16px;
-            margin-bottom: 12px;
-        }
-
-        [data-testid="stChatMessage"] {
-            padding-top: 0.2rem;
-            padding-bottom: 0.2rem;
-            gap: 0.6rem;
-        }
-
-        [data-testid="stChatMessageContent"] {
-            background: var(--app-surface-soft);
-            border: 1px solid var(--app-border);
-            border-radius: 16px;
-            padding: 0.85rem 1rem;
-        }
-
-        [data-testid="stChatInput"] {
-            border-radius: 16px;
-            border: 1px solid var(--app-border);
-            background: var(--app-surface-soft);
-        }
-
-        .sidebar-section-title {
-            color: var(--app-muted);
-            font-size: 0.82rem;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-            margin-bottom: 0.4rem;
-        }
-
-        .sidebar-stream-scroll {
-            border: 1px solid var(--app-border);
-            border-radius: 12px;
-            padding: 0.25rem 0.45rem;
-            background: rgba(255,255,255,0.01);
-        }
-
-        .sidebar-account-dock {
-            border-top: 1px solid var(--app-border);
-            padding-top: 0.4rem;
-        }
-
-        /* Workspace Switch Dock refinements */
+        /* Fixed Toggle Button Container for Sandwich structure */
         .workspace-dock-container {
             background: var(--app-surface-soft);
             border: 1px solid var(--app-border);
@@ -532,6 +486,30 @@ def apply_atmosphere(entropy_mode: bool):
             margin-bottom: 0.5rem;
             animation: slideUp 0.2s ease-out;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: fixed;
+            bottom: 82px; /* Fixed above chat input */
+            width: min(100%, 720px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+        }
+
+        .fixed-toggle-area {
+            position: fixed;
+            bottom: 84px;
+            left: calc(50% - 340px); /* Positioned relative to the 720px center */
+            z-index: 1002;
+        }
+
+        @media (max-width: 1000px) {
+            .fixed-toggle-area { left: 1rem; transform: none; }
+        }
+
+        .block-container {
+            padding-top: 1.0rem !important;
+            padding-bottom: 7rem !important;
+            max-width: min(1180px, 92vw) !important;
+            transition: max-width 0.3s ease, padding 0.3s ease;
         }
 
         @keyframes slideUp {
