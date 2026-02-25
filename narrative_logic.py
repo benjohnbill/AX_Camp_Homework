@@ -587,9 +587,9 @@ def get_current_echo(reference_text: str = None) -> dict:
 # Entropy Alert (prev. Red Protocol): Debt Logic
 # ============================================================
 def is_entropy_mode() -> bool:
-    \"\"\"Check if Entropy Mode should be active (debt_count > 0).
+    """Check if Entropy Mode should be active (debt_count > 0).
     Cycle 03: Controlled by ENABLE_ENTROPY feature flag.
-    \"\"\"
+    """
     flag = os.getenv("ENABLE_ENTROPY", "false").lower() == "true"
     if not flag:
         return False
@@ -1069,6 +1069,39 @@ def _call_ai_api(system_prompt: str, user_input: str, context: str) -> str:
     except Exception as api_error:
         logger.error(f"AI Generation failed: {api_error}")
         return "우주와의 통신이 원활하지 않습니다. 잠시 후 다시 시도해주세요."
+
+
+def refine_narrative_with_ai(raw_input: str) -> str:
+    """
+    [Cycle 04 Lite] 사용자의 거친 메모를 '원칙 중심 서사'로 정제합니다.
+    """
+    if not is_api_key_configured():
+        return "API 키가 설정되지 않았습니다."
+
+    system_prompt = """너는 사용자의 거친 메모를 '자기 결정적 서사'로 다듬어주는 문학적 천문학자다.
+사용자의 입력에서 [감정], [발생한 사실], [관련된 원칙]을 추출하여 다음 형식으로 다듬어라.
+
+[정제된 서사]
+1. 관찰: (사실 위주로 담백하게)
+2. 성찰: (감정의 밑바닥에 있는 욕구나 불안을 통찰)
+3. 선언: (원칙(Core)에 기반하여 스스로 내린 결정문)
+
+가급적 짧고 단호하며 시적인 문체를 유지하라. 한국어로 응답하라."""
+
+    client = get_client()
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": raw_input}
+            ],
+            temperature=0.5
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Refine API failed: {e}")
+        return f"서사 정제 중 오류가 발생했습니다: {e}"
 
 
 import base64
