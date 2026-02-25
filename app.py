@@ -398,12 +398,18 @@ def apply_atmosphere(entropy_mode: bool):
 
         [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
 
-        /* Native sidebar collapse/expand buttons - ensure visible and clickable */
-        [data-testid="stSidebarCollapsedControl"] {
+        /* Sidebar: border + transition only. Width/collapse fully managed by Streamlit native. */
+        [data-testid="stSidebar"] {
+            border-right: 1px solid var(--app-border);
+            transition: width 0.26s ease, transform 0.26s ease, opacity 0.26s ease;
+        }
+
+        /* Ensure sidebar open/close buttons are always clickable */
+        [data-testid="stSidebarCollapsedControl"],
+        [data-testid="stSidebarCollapseButton"] {
             z-index: 99999 !important;
-            visibility: visible !important;
-            display: block !important;
             pointer-events: all !important;
+            visibility: visible !important;
             opacity: 1 !important;
         }
         [data-testid="stSidebarCollapsedControl"] button,
@@ -412,25 +418,11 @@ def apply_atmosphere(entropy_mode: bool):
             background: var(--app-surface-soft) !important;
             border: 1px solid var(--app-border) !important;
             color: var(--app-muted) !important;
-            width: 2rem !important;
-            height: 2rem !important;
-            padding: 0 !important;
         }
         [data-testid="stSidebarCollapsedControl"] button:hover,
         [data-testid="stSidebarCollapseButton"] button:hover {
             border-color: var(--app-accent) !important;
             color: var(--app-text) !important;
-        }
-        /* Width constraints only when open — do NOT block native collapse */
-        [data-testid="stSidebar"][aria-expanded="true"] {
-            width: var(--sidebar-width) !important;
-            min-width: var(--sidebar-width) !important;
-            max-width: var(--sidebar-width) !important;
-        }
-        [data-testid="stSidebar"] {
-            border-right: 1px solid var(--app-border);
-            transition: transform 0.26s ease, opacity 0.26s ease, width 0.26s ease, min-width 0.26s ease;
-            will-change: transform, width;
         }
 
         .stream-shell {
@@ -441,6 +433,7 @@ def apply_atmosphere(entropy_mode: bool):
         .stream-empty-center {
             width: min(100%, 720px);
             margin: 0 auto;
+            padding-top: 15vh; /* Restore comfortable central offset */
             padding-bottom: 10vh;
             display: flex;
             flex-direction: column;
@@ -448,23 +441,14 @@ def apply_atmosphere(entropy_mode: bool):
         }
 
         .stream-hero-title {
-            position: fixed;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(100%, 720px);
-            z-index: 1000;
-            background: var(--app-bg);
-            padding: 3.5rem 0 2rem 0;
-            margin: 0 !important;
+            /* Position: fixed removed to restore central grouping */
             font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2.1rem);
             line-height: 1.3;
             font-weight: 700;
             letter-spacing: -0.03em;
+            margin-bottom: 2.5rem;
             text-align: center;
             color: var(--app-text);
-            /* Subtle fade effect */
-            box-shadow: 0 20px 20px -20px rgba(0,0,0,0.6);
         }
 
         /* Group container for OCR and Switcher */
@@ -474,7 +458,7 @@ def apply_atmosphere(entropy_mode: bool):
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
-            margin-top: 12rem; /* Initial space for the fixed header */
+            /* margin-top removed to restore tight grouping with title */
         }
 
         /* Fixed Toggle Button Container for Sandwich structure */
@@ -812,7 +796,7 @@ def render_stream_mode():
     if not has_messages:
         # 1. EMPTY STATE: Large Title + OCR + Workspace Cards (Row of 4)
         st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='stream-hero-title'>{icons.get_icon('sparkles', size=32)}<br>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='stream-hero-title'>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
         
         # Action block starts
         st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
