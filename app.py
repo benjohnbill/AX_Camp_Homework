@@ -355,7 +355,6 @@ def init_session_state():
         'interventions_checked': False,
         'desk_page': 1,
         'violation_pending': None,
-        'sidebar_open': True,
         'workspace_dock_open': False,
     }
     for key, val in defaults.items():
@@ -372,25 +371,6 @@ def apply_atmosphere(entropy_mode: bool):
     to ensure native Streamlit components function correctly without breaking.
     """
     
-    sidebar_state_css = ""
-    if not bool(st.session_state.get("sidebar_open", True)):
-        sidebar_state_css = """
-        [data-testid="stSidebar"] {
-            transform: translateX(-108%);
-            opacity: 0;
-            margin-left: calc(-1 * var(--sidebar-width));
-            width: 0 !important;
-            min-width: 0 !important;
-            max-width: 0 !important;
-            pointer-events: none;
-        }
-        .block-container {
-            max-width: min(1380px, 96vw) !important;
-            padding-left: 1.2rem !important;
-            padding-right: 1.2rem !important;
-        }
-        """
-
     st.markdown(
         """
         <style>
@@ -597,11 +577,9 @@ def apply_atmosphere(entropy_mode: bool):
                 padding-right: 0.65rem !important;
             }
         }
-        """
-        + sidebar_state_css
-        + """
         </style>
-        """,
+        """
+        ,
         unsafe_allow_html=True,
     )
 
@@ -659,24 +637,85 @@ def render_api_key_section():
 
 
 def render_sidebar_toggle_control() -> None:
-    is_open = bool(st.session_state.get("sidebar_open", True))
-    if is_open:
-        return
-    with st.container():
-        st.markdown("<div class='layout-toolbar'>", unsafe_allow_html=True)
-        if st.button("⟩", key="main_sidebar_open", help="사이드바 열기"):
-            st.session_state["sidebar_open"] = True
-            st.rerun()
-        st.markdown("</div>", unsafe_allow_html=True)
+    """Rerun-free sidebar toggle via localStorage + CSS transitions."""
+    components.html("""
+    <script>
+    (function() {
+        var p = window.parent, d = p.document;
+
+        // Inject transition styles once
+        if (!d.getElementById('nl-sb-style')) {
+            var s = d.createElement('style');
+            s.id = 'nl-sb-style';
+            s.textContent =
+                '[data-testid="stSidebar"]{transition:transform 0.26s ease,opacity 0.26s ease,margin-left 0.26s ease,width 0.26s ease,min-width 0.26s ease,max-width 0.26s ease !important;}' +
+                '.block-container{transition:max-width 0.28s ease,padding 0.28s ease !important;}';
+            d.head.appendChild(s);
+        }
+
+        var SKEY = 'nl-sb-collapsed';
+        var SW   = '240px';
+
+        function applyState(collapsed, animate) {
+            var sb = d.querySelector('[data-testid="stSidebar"]');
+            var bc = d.querySelector('.block-container');
+            if (!sb) return;
+            if (!animate) {
+                sb.style.transition = 'none';
+                if (bc) bc.style.transition = 'none';
+                sb.getBoundingClientRect(); // force reflow
+            }
+            if (collapsed) {
+                sb.style.transform      = 'translateX(-108%)';
+                sb.style.opacity        = '0';
+                sb.style.marginLeft     = 'calc(-1 * ' + SW + ')';
+                sb.style.pointerEvents  = 'none';
+                if (bc) { bc.style.maxWidth = 'min(1380px, 96vw)'; bc.style.paddingLeft = '1.2rem'; bc.style.paddingRight = '1.2rem'; }
+            } else {
+                sb.style.transform      = '';
+                sb.style.opacity        = '';
+                sb.style.marginLeft     = '';
+                sb.style.pointerEvents  = '';
+                if (bc) { bc.style.maxWidth = ''; bc.style.paddingLeft = ''; bc.style.paddingRight = ''; }
+            }
+            if (!animate) {
+                setTimeout(function() {
+                    sb.style.transition = '';
+                    if (bc) bc.style.transition = '';
+                }, 50);
+            }
+        }
+
+        var collapsed = p.localStorage.getItem(SKEY) === '1';
+        applyState(collapsed, false);
+
+        var btn = d.getElementById('nl-sb-toggle');
+        if (!btn) {
+            btn = d.createElement('button');
+            btn.id = 'nl-sb-toggle';
+            btn.style.cssText =
+                'position:fixed;top:0.62rem;left:0.68rem;z-index:9999;' +
+                'background:#1f232b;border:1px solid #2b3039;color:#9aa3b2;' +
+                'border-radius:999px;width:2rem;height:2rem;cursor:pointer;' +
+                'font-size:1rem;line-height:1;padding:0;display:flex;' +
+                'align-items:center;justify-content:center;';
+            d.body.appendChild(btn);
+        }
+        btn.textContent = collapsed ? '\u27e9' : '\u27e8';
+        btn.onclick = function() {
+            var next = !(p.localStorage.getItem(SKEY) === '1');
+            p.localStorage.setItem(SKEY, next ? '1' : '0');
+            applyState(next, true);
+            btn.textContent = next ? '\u27e9' : '\u27e8';
+        };
+    })();
+    </script>
+    """, height=0)
 
 
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
-        head_left, head_right = st.columns([5, 1])
-        head_left.markdown("### Narrative Loop")
-        if head_right.button("⟨", key="sidebar_close_btn", help="사이드바 접기", use_container_width=True):
-            st.session_state["sidebar_open"] = False
-            st.rerun()
+        st.markdown("### Narrative Loop")
 
         if st.button("새 스트림", use_container_width=True, key="sidebar_new_stream"):
             st.session_state["mode"] = "stream"
@@ -769,7 +808,7 @@ def render_stream_mode_switch_cards(show_heading: bool = True, key_prefix: str =
     if show_heading:
         st.markdown("<div style='text-align:center; color:var(--app-muted); font-size:0.85rem; margin-bottom:0.8rem;'>워크스페이스 전환</div>", unsafe_allow_html=True)
     
-    mode_cols = 4 if not bool(st.session_state.get("sidebar_open", True)) else 2
+    mode_cols = 2
     
     cols = st.columns(mode_cols, gap="small")
     for idx, (mode, title, subtitle, emoji) in enumerate(_MODE_CARD_CONFIG):
@@ -880,16 +919,13 @@ def render_stream_mode():
     else:
         render_stream_chat_messages()
 
-    # Workspace Toggle & Dock (Above Chat Input)
-    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-    
     # Render Dock if open
     if st.session_state.get("workspace_dock_open", False):
         st.markdown("<div class='workspace-dock-container'>", unsafe_allow_html=True)
         render_stream_mode_switch_cards(show_heading=False, key_prefix="dock")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # [+] Toggle Button (chat input 위 단독 배치)
+    # [+] Toggle Button - Unified as a single interactive element
     btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
     if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환"):
         st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
