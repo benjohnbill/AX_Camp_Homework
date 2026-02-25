@@ -552,6 +552,32 @@ def apply_atmosphere(entropy_mode: bool):
             padding: 0.4rem 0.8rem !important;
         }
 
+        /* Hover-to-show Metadata Styling */
+        .sidebar-stream-item {
+            margin-bottom: 0.15rem;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+        }
+
+        .stream-meta-hover {
+            font-size: 0.72rem;
+            color: var(--app-muted);
+            margin-left: 0.8rem;
+            margin-top: -0.35rem;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.22s ease, max-height 0.22s ease, margin 0.22s ease;
+            pointer-events: none;
+        }
+
+        .sidebar-stream-item:hover .stream-meta-hover {
+            opacity: 1;
+            max-height: 20px;
+            margin-top: 0.1rem;
+            margin-bottom: 0.5rem;
+        }
+
         input, textarea { background-color: rgba(255, 255, 255, 0.03) !important; }
         @media (max-width: 1080px) {
             .block-container {
@@ -669,6 +695,10 @@ def render_sidebar(entropy_mode: bool):
                     stream_id = str(stream.get("stream_id") or "").strip()
                     if not stream_id:
                         continue
+                    
+                    # Wrap in a div to enable CSS hover targeting
+                    st.markdown(f"<div class='sidebar-stream-item'>", unsafe_allow_html=True)
+                    
                     title = _display_stream_title(stream.get("title"))
                     if len(title) > 28:
                         title = f"{title[:25]}..."
@@ -680,12 +710,16 @@ def render_sidebar(entropy_mode: bool):
                         st.session_state["messages"] = _load_messages_for_stream(stream_id)
                         st.session_state["first_input_of_session"] = len(st.session_state["messages"]) == 0
                         st.rerun()
+                    
                     count = int(stream.get("message_count") or 0)
                     updated = str(stream.get("updated_at") or "")
                     meta = f"{count}개 메시지"
                     if updated:
                         meta += f" · {updated[:16]}"
-                    st.caption(meta)
+                    
+                    # Use a custom class for hover-based visibility
+                    st.markdown(f"<div class='stream-meta-hover'>{meta}</div>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
         # Force account section to the bottom
