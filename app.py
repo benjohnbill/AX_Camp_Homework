@@ -400,8 +400,13 @@ def apply_atmosphere(entropy_mode: bool):
 
         /* Native sidebar collapse/expand buttons - styled, NOT hidden */
         [data-testid="stSidebarCollapsedControl"] {
+            position: fixed !important;
             top: 0.62rem !important;
             left: 0.68rem !important;
+            z-index: 1200 !important;
+            display: flex !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
         }
         [data-testid="stSidebarCollapsedControl"] button,
         [data-testid="stSidebarCollapseButton"] button {
