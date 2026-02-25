@@ -499,7 +499,7 @@ def render_chronos_timer():
     
     # JavaScript countdown for smooth ticking and auto-refresh on finish
     end_ts = int(st.session_state['chronos_end_time'].timestamp() * 1000)
-    components.html(f\"\"\"
+    components.html(f"""
     <div style="text-align:center; font-family:'Courier New',monospace; padding:40px 0;">
         <div id="timer" style="font-size:96px; font-weight:900; color:#00FFFF;
              letter-spacing:8px; text-shadow:0 0 40px rgba(0,255,255,0.6);">
@@ -528,7 +528,7 @@ def render_chronos_timer():
         tick();
         const interval = setInterval(tick, 1000);
     </script>
-    \"\"\", height=250)
+    """, height=250)
     
     c1, c2 = st.columns(2)
     if c1.button(f"{icons.get_icon_text('check-circle')} 완료", use_container_width=True):
