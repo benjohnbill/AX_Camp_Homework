@@ -356,6 +356,7 @@ def init_session_state():
         'desk_page': 1,
         'violation_pending': None,
         'workspace_dock_open': False,
+        'profile_settings_open': False,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -810,13 +811,12 @@ def render_stream_mode_switch_cards(show_heading: bool = True, key_prefix: str =
     if show_heading:
         st.markdown("<div style='text-align:center; color:var(--app-muted); font-size:0.85rem; margin-bottom:0.8rem;'>워크스페이스 전환</div>", unsafe_allow_html=True)
     
-    mode_cols = 2
-    
-    cols = st.columns(mode_cols, gap="small")
+    # Force 2 columns for a balanced dock look
+    cols = st.columns(2, gap="small")
     for idx, (mode, title, subtitle, emoji) in enumerate(_MODE_CARD_CONFIG):
-        col = cols[idx % mode_cols]
+        col = cols[idx % 2]
         with col:
-            # Consistent formatting: Emoji and Bold Title
+            # Strictly Emoji + Bold Title for all modes
             label = f"{emoji} **{title}**"
             if st.button(label, key=f"stream_hub_{key_prefix}_{mode}", use_container_width=True, help=subtitle):
                 st.session_state["mode"] = mode
