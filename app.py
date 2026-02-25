@@ -610,55 +610,52 @@ def apply_atmosphere(entropy_mode: bool):
 # ============================================================
 def render_api_key_section():
     session_key = st.session_state.get("openai_api_key", "")
-    has_any_key = logic.is_api_key_configured() or bool(session_key)
     display_name = str(st.session_state.get("profile_display_name", "")).strip()
-    profile_title = display_name if display_name else ("OpenAI API Key" if not has_any_key else "사용자")
+    profile_settings_open = bool(st.session_state.get("profile_settings_open", False))
 
-    st.markdown("<div class='sidebar-section-title'>계정</div>", unsafe_allow_html=True)
-    title_col, action_col = st.columns([4, 1])
-    title_col.markdown(f"**{profile_title}**")
-    if action_col.button("설정", key="profile_settings_toggle", use_container_width=True):
-        st.session_state["profile_settings_open"] = not bool(st.session_state.get("profile_settings_open", False))
-
-    if not st.session_state.get("profile_settings_open", False):
-        return
-
-    entered = st.text_input(
-        "OpenAI API Key",
-        type="password",
-        value=session_key,
-        placeholder="sk-...",
-        key="openai_api_key_input",
-    )
-
-    c1, c2 = st.columns(2)
-    if c1.button("저장", key="save_openai_api_key", use_container_width=True):
-        if entered and entered.strip():
-            logic.set_api_key(entered.strip())
-            st.success("API Key를 저장했습니다.")
-            st.rerun()
-        else:
-            st.error("유효한 API Key를 입력해 주세요.")
-
-    if c2.button("초기화", key="clear_openai_api_key", use_container_width=True):
-        st.session_state.pop("openai_api_key", None)
-        st.session_state["openai_api_key_input"] = ""
-        st.info("세션 API Key를 초기화했습니다.")
-        st.rerun()
-
-    if logic.is_api_key_configured() or bool(st.session_state.get("openai_api_key")):
-        name_input = st.text_input(
-            "표시 이름",
-            value=display_name,
-            placeholder="이름 입력 (선택)",
-            key="profile_display_name_input",
-        )
-        if st.button("이름 저장", key="save_profile_display_name", use_container_width=True):
-            st.session_state["profile_display_name"] = str(name_input or "").strip()
-            st.success("표시 이름을 저장했습니다.")
+    st.markdown("<div class='sidebar-section-title'>Account</div>", unsafe_allow_html=True)
+    
+    # Header: Name and Settings Toggle
+    col_name, col_btn = st.columns([3, 1])
+    with col_name:
+        st.markdown(f"**{display_name if display_name else '사용자'}**")
+    with col_btn:
+        if st.button("⚙️", key="profile_settings_toggle", help="설정 열기/닫기", use_container_width=True):
+            st.session_state["profile_settings_open"] = not profile_settings_open
             st.rerun()
 
-    st.caption("설정 기능은 MVP 단계에서 점진적으로 확장됩니다.")
+    # Settings Content (Hidden by default)
+    if profile_settings_open:
+        with st.container(border=True):
+            # 1. API Key
+            entered_key = st.text_input(
+                "OpenAI API Key",
+                type="password",
+                value=session_key,
+                placeholder="sk-...",
+                key="openai_api_key_input",
+            )
+            
+            # 2. Display Name
+            name_input = st.text_input(
+                "표시 이름",
+                value=display_name,
+                placeholder="이름 입력",
+                key="profile_display_name_input",
+            )
+
+            # 3. Actions
+            c1, c2 = st.columns(2)
+            if c1.button("저장", key="save_settings", use_container_width=True, type="primary"):
+                if entered_key: logic.set_api_key(entered_key.strip())
+                st.session_state["profile_display_name"] = str(name_input).strip()
+                st.success("설정 저장됨")
+                st.rerun()
+            
+            if c2.button("초기화", key="reset_settings", use_container_width=True):
+                st.session_state.pop("openai_api_key", None)
+                st.session_state["profile_display_name"] = ""
+                st.rerun()
 
 
 def render_sidebar_toggle_control() -> None:
@@ -728,6 +725,8 @@ def render_sidebar(entropy_mode: bool):
                     st.caption(meta)
             st.markdown("</div>", unsafe_allow_html=True)
 
+        # Force account section to the bottom
+        st.markdown("<div style='height: 12vh;'></div>", unsafe_allow_html=True)
         st.divider()
         st.markdown("<div class='sidebar-account-dock'>", unsafe_allow_html=True)
         render_api_key_section()
@@ -776,8 +775,8 @@ def render_stream_mode_switch_cards(show_heading: bool = True) -> None:
     for idx, (mode, title, subtitle, emoji) in enumerate(_MODE_CARD_CONFIG):
         col = cols[idx % mode_cols]
         with col:
-            # More compact label for dock
-            label = f"{emoji} {title}"
+            # Consistent formatting: Emoji and Bold Title
+            label = f"{emoji} **{title}**"
             if st.button(label, key=f"stream_hub_{mode}", use_container_width=True, help=subtitle):
                 st.session_state["mode"] = mode
                 st.rerun()
