@@ -776,16 +776,29 @@ def render_stream_ocr_entrypoint(expanded: bool = False) -> None:
             type=["png", "jpg", "jpeg"],
             key="stream_vision_uploader",
         )
-        if uploaded and st.button("📷 사진 분석 → 스트림에 저장", key="stream_vision_extract", use_container_width=True, type="primary"):
+        if uploaded and st.button("📷 분석하기", key="stream_vision_extract", use_container_width=True):
             with st.spinner("이미지에서 서사를 추출하는 중..."):
                 image_bytes = uploaded.read()
                 vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
             if vision_result and not vision_result.startswith("API 키가"):
-                _save_and_respond(vision_result)
-                st.toast("사진 서사가 스트림에 기록되었습니다.", icon="📷")
-                st.rerun()
+                st.session_state["refined_memo"] = vision_result
             else:
                 st.error(vision_result or "서사 추출에 실패했습니다.")
+
+        if "refined_memo" in st.session_state:
+            edited = st.text_area(
+                "추출된 서사 (수정 후 저장)",
+                value=st.session_state["refined_memo"],
+                key="refined_memo_edit",
+                height=100,
+            )
+            if st.button("스트림에 저장", key="stream_save_refined", use_container_width=True, type="primary"):
+                text = edited.strip()
+                del st.session_state["refined_memo"]
+                if text:
+                    _save_and_respond(text)
+                    st.toast("사진 서사가 스트림에 기록되었습니다.", icon="📷")
+                    st.rerun()
 
 
 def render_stream_chat_messages() -> None:
