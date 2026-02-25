@@ -356,6 +356,7 @@ def init_session_state():
         'desk_page': 1,
         'violation_pending': None,
         'sidebar_open': True,
+        'workspace_dock_open': False,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -384,9 +385,9 @@ def apply_atmosphere(entropy_mode: bool):
             pointer-events: none;
         }
         .block-container {
-            max-width: min(1420px, 96vw) !important;
-            padding-left: 0.9rem !important;
-            padding-right: 0.9rem !important;
+            max-width: min(1380px, 96vw) !important;
+            padding-left: 1.2rem !important;
+            padding-right: 1.2rem !important;
         }
         """
 
@@ -410,7 +411,8 @@ def apply_atmosphere(entropy_mode: bool):
         .block-container {
             padding-top: 1.0rem !important;
             padding-bottom: 1.0rem !important;
-            max-width: min(1240px, 94vw) !important;
+            max-width: min(1180px, 92vw) !important;
+            transition: max-width 0.3s ease, padding 0.3s ease;
         }
 
         [data-testid="stAppViewContainer"] { background: var(--app-bg); }
@@ -446,6 +448,7 @@ def apply_atmosphere(entropy_mode: bool):
             padding: 0 !important;
             border: 1px solid var(--app-border) !important;
             background: var(--app-surface-soft) !important;
+            color: var(--app-muted) !important;
         }
 
         .stream-shell {
@@ -454,17 +457,22 @@ def apply_atmosphere(entropy_mode: bool):
         }
 
         .stream-empty-center {
-            width: min(100%, 980px);
+            width: min(100%, 880px);
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 65vh;
         }
 
         .stream-hero-title {
-            font-size: clamp(1.35rem, 1.05rem + 1.3vw, 2rem);
+            font-size: clamp(1.35rem, 1.05rem + 1.3vw, 1.85rem);
             line-height: 1.2;
             font-weight: 700;
             letter-spacing: -0.02em;
-            margin-bottom: 0.65rem;
+            margin-bottom: 1.2rem;
             text-align: center;
+            color: var(--app-text);
         }
 
         .kanban-card {
@@ -512,6 +520,45 @@ def apply_atmosphere(entropy_mode: bool):
         .sidebar-account-dock {
             border-top: 1px solid var(--app-border);
             padding-top: 0.4rem;
+        }
+
+        /* Workspace Switch Dock refinements */
+        .workspace-dock-container {
+            background: var(--app-surface-soft);
+            border: 1px solid var(--app-border);
+            border-radius: 12px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            animation: slideUp 0.2s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Toggle button styling */
+        div[data-testid="stColumn"]:first-child .stButton button {
+            border-radius: 12px !important;
+            height: 48px !important; /* Match chat input height roughly */
+            font-size: 1.4rem !important;
+            font-weight: 300 !important;
+            background: var(--app-surface-soft) !important;
+            border: 1px solid var(--app-border) !important;
+            color: var(--app-muted) !important;
+            transition: all 0.2s ease;
+        }
+
+        div[data-testid="stColumn"]:first-child .stButton button:hover {
+            border-color: var(--app-accent) !important;
+            color: var(--app-text) !important;
+        }
+
+        .stButton > button[kind="secondary"] {
+            border-radius: 12px !important;
+            font-size: 0.88rem !important;
+            padding: 0.4rem 0.8rem !important;
         }
 
         input, textarea { background-color: rgba(255, 255, 255, 0.03) !important; }
@@ -606,11 +653,10 @@ def render_sidebar_toggle_control() -> None:
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
         head_left, head_right = st.columns([5, 1])
-        head_left.markdown("### Antigravity")
+        head_left.markdown("### Narrative Loop")
         if head_right.button("⟨", key="sidebar_close_btn", help="사이드바 접기", use_container_width=True):
             st.session_state["sidebar_open"] = False
             st.rerun()
-        st.caption("Narrative Loop 스트림")
 
         if st.button("새 스트림", use_container_width=True, key="sidebar_new_stream"):
             st.session_state["mode"] = "stream"
@@ -699,22 +745,17 @@ def render_ocr_fallback_entrypoint() -> None:
 
 def render_stream_mode_switch_cards(show_heading: bool = True) -> None:
     if show_heading:
-        st.markdown("#### 워크스페이스 전환")
-    mode_cols = 2
-    try:
-        if not bool(st.session_state.get("sidebar_open", True)):
-            mode_cols = 4
-        else:
-            mode_cols = 2
-    except Exception:
-        mode_cols = 3
-
+        st.markdown("<div style='text-align:center; color:var(--app-muted); font-size:0.85rem; margin-bottom:0.8rem;'>워크스페이스 전환</div>", unsafe_allow_html=True)
+    
+    mode_cols = 4 if not bool(st.session_state.get("sidebar_open", True)) else 2
+    
     cols = st.columns(mode_cols, gap="small")
     for idx, (mode, title, subtitle, emoji) in enumerate(_MODE_CARD_CONFIG):
         col = cols[idx % mode_cols]
         with col:
-            label = f"{emoji} {title} {subtitle}"
-            if st.button(label, key=f"stream_hub_{mode}", use_container_width=True):
+            # More compact label for dock
+            label = f"{emoji} {title}"
+            if st.button(label, key=f"stream_hub_{mode}", use_container_width=True, help=subtitle):
                 st.session_state["mode"] = mode
                 st.rerun()
 
@@ -801,23 +842,37 @@ def render_stream_mode():
         for m in st.session_state.get("messages", [])
     )
 
-    if has_messages:
-        with st.expander("워크스페이스 전환", expanded=False):
-            render_stream_mode_switch_cards(show_heading=False)
-        st.divider()
-    else:
+    if not has_messages:
         st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
         st.markdown("<div class='stream-hero-title'>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
         render_stream_ocr_entrypoint(expanded=True)
-        st.markdown("")
+        st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
         render_stream_mode_switch_cards(show_heading=True)
         st.markdown("</div>", unsafe_allow_html=True)
-        st.divider()
+    else:
+        render_stream_chat_messages()
 
-    render_stream_chat_messages()
+    # Workspace Toggle & Dock (Above Chat Input)
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
     
-    if user_input := st.chat_input("메시지를 입력하세요..."):
-        process_stream_input(user_input)
+    # Render Dock if open
+    if st.session_state.get("workspace_dock_open", False):
+        st.markdown("<div class='workspace-dock-container'>", unsafe_allow_html=True)
+        render_stream_mode_switch_cards(show_heading=False)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # [+] Toggle Button and Chat Input area
+    toggle_col, input_col = st.columns([1, 12], gap="small")
+    with toggle_col:
+        # Styled [+] button
+        btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
+        if st.button(btn_label, key="workspace_dock_toggle", use_container_width=True, help="워크스페이스 전환"):
+            st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
+            st.rerun()
+
+    with input_col:
+        if user_input := st.chat_input("메시지를 입력하세요..."):
+            process_stream_input(user_input)
 
 def process_stream_input(user_input: str):
     status, core = logic.evaluate_input_integrity(user_input)
