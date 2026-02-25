@@ -415,7 +415,7 @@ def apply_atmosphere(entropy_mode: bool):
             transition: max-width 0.3s ease, padding 0.3s ease;
         }
 
-        [data-testid="stAppViewContainer"] { background: var(--app-bg); }
+        [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
         [data-testid="stSidebarCollapsedControl"] { display: none !important; }
         [data-testid="stSidebar"] {
             border-right: 1px solid var(--app-border);
@@ -459,7 +459,7 @@ def apply_atmosphere(entropy_mode: bool):
         .stream-empty-center {
             width: min(100%, 720px);
             margin: 0 auto;
-            padding-top: 18vh; /* Fixed offset for visual stability like ChatGPT */
+            padding-top: clamp(8vh, 15dvh, 22vh); /* dvh: address bar 제외 동적 뷰포트 */
             padding-bottom: 10vh;
             display: flex;
             flex-direction: column;
@@ -554,6 +554,12 @@ def apply_atmosphere(entropy_mode: bool):
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        @keyframes sparkle-glow {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 3px #10a37f88); }
+            50%       { opacity: 0.78; filter: drop-shadow(0 0 7px #10a37fcc); }
+        }
+        .icon-sparkles { animation: sparkle-glow 2.8s ease-in-out infinite; }
 
         /* Toggle button styling */
         div[data-testid="stColumn"]:first-child .stButton button {
@@ -884,18 +890,14 @@ def render_stream_mode():
         render_stream_mode_switch_cards(show_heading=False)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # [+] Toggle Button and Chat Input area
-    toggle_col, input_col = st.columns([1, 12], gap="small")
-    with toggle_col:
-        # Styled [+] button
-        btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
-        if st.button(btn_label, key="workspace_dock_toggle", use_container_width=True, help="워크스페이스 전환"):
-            st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
-            st.rerun()
+    # [+] Toggle Button (chat input 위 단독 배치)
+    btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
+    if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환"):
+        st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
+        st.rerun()
 
-    with input_col:
-        if user_input := st.chat_input("메시지를 입력하세요..."):
-            process_stream_input(user_input)
+    if user_input := st.chat_input("메시지를 입력하세요..."):
+        process_stream_input(user_input)
 
 def process_stream_input(user_input: str):
     status, core = logic.evaluate_input_integrity(user_input)
