@@ -566,14 +566,11 @@ def apply_atmosphere(entropy_mode: bool):
     if not st.session_state.get("sidebar_open", True):
         st.markdown(
             """<style>
-            [data-testid="stSidebar"] {
-                width: 3.25rem !important;
-                min-width: 3.25rem !important;
-                max-width: 3.25rem !important;
-            }
-            [data-testid="stSidebarContent"] {
-                padding: 0.4rem 0.2rem !important;
-                overflow: hidden !important;
+            [data-testid="stSidebar"] { display: none !important; }
+            .block-container {
+                max-width: min(1380px, 96vw) !important;
+                padding-left: 1.2rem !important;
+                padding-right: 1.2rem !important;
             }
             </style>""",
             unsafe_allow_html=True,
@@ -638,9 +635,6 @@ def render_sidebar(entropy_mode: bool):
     sidebar_open = st.session_state.get("sidebar_open", True)
     with st.sidebar:
         if not sidebar_open:
-            if st.button("⟩", key="sb_open_btn", use_container_width=True, help="사이드바 열기"):
-                st.session_state["sidebar_open"] = True
-                st.rerun()
             return
 
         col_btn, _ = st.columns([1, 4])
@@ -1174,6 +1168,10 @@ def main():
         return
     is_entropy = logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
+    if not st.session_state.get("sidebar_open", True):
+        if st.button("⟩ 사이드바 열기", key="main_sb_open"):
+            st.session_state["sidebar_open"] = True
+            st.rerun()
     # render_runtime_diagnostics_badge(is_entropy)
     # render_ocr_fallback_entrypoint()
     
