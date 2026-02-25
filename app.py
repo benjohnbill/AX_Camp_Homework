@@ -21,6 +21,8 @@ db = logic.db
 import plotly.express as px
 import plotly.graph_objects as go
 
+_ALLOWED_MODES = ("stream", "desk", "chronos", "control", "universe")
+
 # ============================================================
 # Page Config & Initialization
 # ============================================================
@@ -56,6 +58,17 @@ def _query_param_value(name: str) -> str:
 
 def _is_universe_embed_request() -> bool:
     return _query_param_value("embed").strip().lower() == "universe_3d"
+
+def _sanitize_mode(mode_value: str) -> str:
+    mode = str(mode_value or "").strip().lower()
+    return mode if mode in _ALLOWED_MODES else "stream"
+
+
+def _ensure_valid_session_mode() -> str:
+    current = _sanitize_mode(st.session_state.get("mode", "stream"))
+    if st.session_state.get("mode") != current:
+        st.session_state["mode"] = current
+    return current
 
 
 def _parse_positive_int(raw: str, default: int) -> int:
@@ -158,6 +171,20 @@ def _render_universe_auth_error(auth_result: universe_auth.AuthResult) -> None:
 
     with st.expander("Technical Support (For Debugging)"):
         st.code(json.dumps(payload, ensure_ascii=False, indent=2), language="json")
+    _render_full_app_navigation_action()
+
+
+def _render_full_app_navigation_action() -> None:
+    st.markdown("---")
+    st.caption("현재 화면은 임베드 라우트(`?embed=universe_3d`)일 수 있습니다.")
+    if st.button("전체 앱으로 이동 (쿼리 제거)", key="return_full_app_from_embed", use_container_width=True):
+        try:
+            st.query_params.clear()
+        except Exception:
+            for key in list(st.query_params.keys()):
+                del st.query_params[key]
+        st.rerun()
+    st.markdown("[또는 전체 앱 열기](./)")
 
 
 def _run_universe_embed_route() -> bool:
@@ -220,6 +247,7 @@ def _run_universe_embed_route() -> bool:
             ),
             language="json",
         )
+        _render_full_app_navigation_action()
     return True
 
 def init_session_state():
@@ -241,6 +269,8 @@ def init_session_state():
 
     if 'mode' not in st.session_state:
         st.session_state['mode'] = "stream"
+    else:
+        st.session_state['mode'] = _sanitize_mode(st.session_state['mode'])
 
     if 'messages' not in st.session_state:
         welcome = logic.get_welcome_message()
@@ -357,8 +387,9 @@ def render_sidebar(entropy_mode: bool):
             st.warning(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT")
             st.info("시스템 엔트로피가 임계치를 초과했습니다. [Gap Analysis]가 필요합니다.")
         else:
+            current_mode = _ensure_valid_session_mode()
             mode = st.radio("Select Mode", ["Stream", "Desk", "Chronos", "Control", "Universe"],
-                            index=["stream", "desk", "chronos", "control", "universe"].index(st.session_state['mode']))
+                            index=list(_ALLOWED_MODES).index(current_mode))
             st.session_state['mode'] = mode.lower()
         
         st.divider()
@@ -403,6 +434,38 @@ def render_sidebar(entropy_mode: bool):
                 st.toast("서사가 스트림에 기록되었습니다.", icon="☄️")
                 del st.session_state['refined_memo']
                 st.rerun()
+
+
+def render_runtime_diagnostics_badge(entropy_mode: bool) -> None:
+    embed_raw = _query_param_value("embed")
+    is_embed_route = _is_universe_embed_request()
+    entropy_flag = os.getenv("ENABLE_ENTROPY", "")
+    session_mode = _ensure_valid_session_mode()
+    st.caption(
+        "Diagnostics | "
+        f"query.embed={embed_raw or '<empty>'} | "
+        f"is_embed_route={is_embed_route} | "
+        f"ENABLE_ENTROPY={entropy_flag or '<unset>'} | "
+        f"is_entropy_mode={entropy_mode} | "
+        f"session.mode={session_mode}"
+    )
+
+
+def render_ocr_fallback_entrypoint() -> None:
+    st.markdown("### 📷 OCR Quick Entry")
+    st.caption("사이드바가 보이지 않는 상황을 대비한 본문 OCR 진입점입니다.")
+    uploaded = st.file_uploader(
+        "이미지 업로드 (OCR/서사 추출)",
+        type=["png", "jpg", "jpeg"],
+        key="vision_uploader_main",
+    )
+    if uploaded and st.button("본문에서 OCR 추출 실행", key="vision_uploader_main_btn", use_container_width=True):
+        with st.spinner("이미지에서 서사를 추출하는 중..."):
+            image_bytes = uploaded.read()
+            vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
+            st.session_state["refined_memo"] = vision_result
+            st.success("OCR 기반 서사 초안을 생성했습니다. 사이드바 AI Assistant 또는 Stream에서 저장할 수 있습니다.")
+    st.divider()
 
 # ============================================================
 # MODES
@@ -736,6 +799,8 @@ def main():
         return
     is_entropy = logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
+    render_runtime_diagnostics_badge(is_entropy)
+    render_ocr_fallback_entrypoint()
     
     if is_entropy:
         st.error(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT: SYSTEM UNSTABLE")
@@ -771,7 +836,7 @@ def main():
         for m in logic.run_active_intervention(): st.toast(m, icon="🔔")
         st.session_state['interventions_checked'] = True
 
-    m = st.session_state['mode']
+    m = _ensure_valid_session_mode()
     if m == "stream": render_stream_mode()
     elif m == "chronos": render_chronos_mode()
     elif m == "universe": render_universe_mode()
