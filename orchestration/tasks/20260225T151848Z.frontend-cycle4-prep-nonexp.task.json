@@ -1,0 +1,73 @@
+{
+  "trace_id": "trace-narrative_loop-20260226-cycle4-prep-nonexp",
+  "task_id": "T-narrative_loop-20260226-frontend-cycle4-prep-nonexp",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Prepare cycle4 frontend execution readiness without feature expansion by restoring local runtime reliability and producing reproducible manual UI validation evidence paths.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "docs/CYCLE4_PREP_NON_EXPANSION_2026-02-26.md",
+      "description": "Non-expansion prep policy."
+    },
+    {
+      "kind": "file",
+      "value": "docs/FRONTEND_LOCALHOST_8501_BLOCKER_RUNBOOK_2026-02-26.md",
+      "description": "Frontend local runtime recovery runbook."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Current routing/diagnostics/OCR fallback behavior."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/handoff/latest.handoff.json",
+      "description": "Canonical gate status."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "orchestration/",
+      "docs/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No cycle4 feature expansion and no UI feature additions. Evidence and runtime recovery only."
+  },
+  "acceptance": [
+    "One L1 update is published with current runtime status.",
+    "Manual UI validation result is published as schema-valid result.json (pass or blocked).",
+    "Startup command/log evidence includes attempted port and fallback port when used.",
+    "No feature expansion commit is introduced by this task."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Local runtime instability can delay readiness confirmation and create false-negative UI blocker reports."
+  },
+  "next_actions": [
+    "Run localhost runtime recovery runbook and capture startup logs.",
+    "Execute one-shot manual root/embed diagnostics checks.",
+    "Publish schema-valid prep result with reproducible evidence paths."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-25T15:18:48Z",
+  "context_docs": [
+    "docs/README.md",
+    "docs/CYCLE4_PREP_NON_EXPANSION_2026-02-26.md",
+    "docs/FRONTEND_LOCALHOST_8501_BLOCKER_RUNBOOK_2026-02-26.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle": "cycle4_prep_nonexp",
+    "domain": "frontend_prep",
+    "priority": "P0"
+  }
+}

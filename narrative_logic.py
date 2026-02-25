@@ -1282,7 +1282,7 @@ def clear_chat_history() -> None:
 
 
 def get_welcome_message() -> str:
-    return "나는 문학적 천문학자다. 당신의 생각을 별자리로 만드는 것이 내 일이다. 무엇이 당신을 이 밤하늘로 데려왔는가?"
+    return "What's on your mind?"
 
 
 # ============================================================

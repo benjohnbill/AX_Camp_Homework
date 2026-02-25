@@ -799,8 +799,8 @@ def main():
         return
     is_entropy = logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
-    render_runtime_diagnostics_badge(is_entropy)
-    render_ocr_fallback_entrypoint()
+    # render_runtime_diagnostics_badge(is_entropy)
+    # render_ocr_fallback_entrypoint()
     
     if is_entropy:
         st.error(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT: SYSTEM UNSTABLE")
