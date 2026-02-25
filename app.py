@@ -25,7 +25,7 @@ import plotly.graph_objects as go
 _ALLOWED_MODES = ("stream", "desk", "chronos", "control", "universe")
 
 _MODE_CARD_CONFIG = (
-    ("desk", "THE DESK", "긴 글 작성과 정리", "📝"),
+    ("desk", "DESK", "긴 글 작성과 정리", "📝"),
     ("chronos", "CHRONOS", "집중 타이머와 회고", "⏱️"),
     ("universe", "SOUL ANALYTICS", "분석과 3D 탐색", "🌌"),
     ("control", "CONTROL", "칸반 기반 통제", "🧭"),
@@ -1124,7 +1124,7 @@ def render_kanban_docking(options):
         st.session_state['docking_modal_active'] = False; st.rerun()
 
 def render_desk_mode():
-    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('book-open', size=40)} THE DESK</h1></div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('book-open', size=40)} DESK</h1></div>", unsafe_allow_html=True)
     l, r = st.columns([1, 1.5])
     with l:
         st.markdown(f"#### {icons.get_icon_text('sparkles')} Fragments")
