@@ -786,9 +786,10 @@ def render_stream_ocr_entrypoint(expanded: bool = False) -> None:
     if "refined_memo" in st.session_state:
         st.info(st.session_state["refined_memo"])
         if st.button("스트림에 즉시 저장", key="stream_save_refined", use_container_width=True, type="primary"):
-            logic.save_log(st.session_state["refined_memo"])
-            st.toast("서사가 스트림에 기록되었습니다.", icon="☄️")
+            text = st.session_state["refined_memo"]
             del st.session_state["refined_memo"]
+            _save_and_respond(text)
+            st.toast("서사가 스트림에 기록되었습니다.", icon="☄️")
             st.rerun()
 
 
