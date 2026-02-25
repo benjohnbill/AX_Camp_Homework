@@ -402,8 +402,13 @@ def apply_atmosphere(entropy_mode: bool):
         [data-testid="stSidebarCollapsedControl"] { display: none !important; }
         [data-testid="stSidebarCollapseButton"]   { display: none !important; }
 
-        /* Sidebar open state: force visible, override any React state */
-        [data-testid="stSidebar"] {
+        /* Sidebar open: force visible, override Streamlit native hide */
+        [data-testid="stSidebar"]:not(.nl-collapsed) {
+            display: block !important;
+            transform: translateX(0) !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
             border-right: 1px solid var(--app-border);
             width: var(--sidebar-width) !important;
             min-width: var(--sidebar-width) !important;
