@@ -23,6 +23,13 @@ import plotly.graph_objects as go
 
 _ALLOWED_MODES = ("stream", "desk", "chronos", "control", "universe")
 
+_MODE_CARD_CONFIG = (
+    ("desk", "Desk", "긴 글 작성과 정리"),
+    ("chronos", "Chronos", "집중 타이머와 회고"),
+    ("universe", "Universe", "분석과 3D 탐색"),
+    ("control", "Control", "칸반 기반 통제"),
+)
+
 # ============================================================
 # Page Config & Initialization
 # ============================================================
@@ -273,8 +280,8 @@ def init_session_state():
         st.session_state['mode'] = _sanitize_mode(st.session_state['mode'])
 
     if 'messages' not in st.session_state:
-        welcome = logic.get_welcome_message()
-        st.session_state.messages = [{"role": "assistant", "content": welcome}]
+        # Keep Stream home clean like a neutral chat workspace.
+        st.session_state.messages = []
 
     if 'current_echo' not in st.session_state:
         st.session_state['current_echo'] = logic.get_current_echo()
@@ -311,29 +318,109 @@ def apply_atmosphere(entropy_mode: bool):
     to ensure native Streamlit components function correctly without breaking.
     """
     
-    # 1. Essential CSS (Hide default headers, tight padding)
+    # 1. Essential CSS
     st.markdown("""
         <style>
+        :root {
+            --app-bg: #111317;
+            --app-surface: #191c22;
+            --app-surface-soft: #1f232b;
+            --app-border: #2b3039;
+            --app-text: #f3f5f7;
+            --app-muted: #9aa3b2;
+            --app-accent: #10a37f;
+        }
+
         /* Hide Streamlit default header and footer */
         header {visibility: hidden;}
         footer {visibility: hidden;}
-        
-        /* Adjust main container padding to maximize chat space */
+
         .block-container {
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
+            padding-top: 1.4rem !important;
+            padding-bottom: 1.2rem !important;
+            max-width: 1200px !important;
+        }
+
+        [data-testid="stAppViewContainer"] {
+            background: var(--app-bg);
+        }
+
+        .stream-shell {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .stream-hero-title {
+            font-size: 2rem;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.35rem;
+        }
+
+        .stream-hero-sub {
+            color: var(--app-muted);
+            margin-bottom: 1rem;
+        }
+
+        .mode-card {
+            background: var(--app-surface);
+            border: 1px solid var(--app-border);
+            border-radius: 14px;
+            padding: 14px 14px 12px 14px;
+            min-height: 90px;
+        }
+
+        .mode-card-title {
+            font-weight: 650;
+            margin-bottom: 0.25rem;
+        }
+
+        .mode-card-sub {
+            font-size: 0.86rem;
+            color: var(--app-muted);
         }
 
         /* Essential Kanban Card styling without breaking native boxes */
         .kanban-card {
-            background-color: var(--secondary-background-color) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            background-color: var(--app-surface-soft) !important;
+            border: 1px solid var(--app-border) !important;
             border-radius: 8px !important; 
             padding: 16px; 
             margin-bottom: 12px; 
         }
-        
-        /* Ensure Inputs have a slight highlight */
+
+        [data-testid="stChatMessage"] {
+            padding-top: 0.2rem;
+            padding-bottom: 0.2rem;
+            gap: 0.6rem;
+        }
+
+        [data-testid="stChatMessageContent"] {
+            background: var(--app-surface-soft);
+            border: 1px solid var(--app-border);
+            border-radius: 16px;
+            padding: 0.85rem 1rem;
+        }
+
+        [data-testid="stChatInput"] {
+            border-radius: 16px;
+            border: 1px solid var(--app-border);
+            background: var(--app-surface-soft);
+        }
+
+        [data-testid="stSidebar"] {
+            border-right: 1px solid var(--app-border);
+        }
+
+        .sidebar-section-title {
+            color: var(--app-muted);
+            font-size: 0.82rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
         input, textarea {
             background-color: rgba(255, 255, 255, 0.03) !important;
         }
@@ -379,61 +466,81 @@ def render_api_key_section():
             st.rerun()
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
-        st.title(f"{icons.get_icon_text('orbit')} Antigravity")
-        st.caption("Existential Audit Protocol v6.0") # Version Bump
+        st.title("Antigravity")
+        st.caption("Narrative Loop Workspace")
+
+        if st.button("새 스트림", use_container_width=True, key="sidebar_new_stream"):
+            st.session_state["mode"] = "stream"
+            st.session_state["messages"] = []
+            st.session_state["first_input_of_session"] = True
+            st.session_state.pop("refined_memo", None)
+            st.rerun()
+
         st.divider()
-        
         if entropy_mode:
             st.warning(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT")
             st.info("시스템 엔트로피가 임계치를 초과했습니다. [Gap Analysis]가 필요합니다.")
         else:
             current_mode = _ensure_valid_session_mode()
-            mode = st.radio("Select Mode", ["Stream", "Desk", "Chronos", "Control", "Universe"],
-                            index=list(_ALLOWED_MODES).index(current_mode))
-            st.session_state['mode'] = mode.lower()
-        
-        st.divider()
-        streak = st.session_state.get('streak_info', {})
-        st.metric("Current Streak", f"{streak.get('streak', 0)} days")
-        st.metric("Longest Streak", f"{streak.get('longest', 0)} days")
-        
-        debt = logic.get_debt_count()
-        if debt > 0: st.error(f"E-Levels: {debt}")
-        else: st.success("System Stable")
+            st.markdown("<div class='sidebar-section-title'>Modes</div>", unsafe_allow_html=True)
+            for mode in ("stream", "desk", "chronos", "universe", "control"):
+                label = mode.title()
+                if mode == current_mode:
+                    label = f"● {label}"
+                if st.button(label, key=f"sidebar_mode_{mode}", use_container_width=True):
+                    st.session_state["mode"] = mode
+                    st.rerun()
 
         st.divider()
-        render_api_key_section()
-        
+        st.markdown("<div class='sidebar-section-title'>Recent Inputs</div>", unsafe_allow_html=True)
+        recent_user_inputs = [
+            str(msg.get("content", "")).strip()
+            for msg in st.session_state.get("messages", [])
+            if msg.get("role") == "user" and str(msg.get("content", "")).strip()
+        ]
+        if not recent_user_inputs:
+            st.caption("아직 입력 기록이 없습니다.")
+        else:
+            for snippet in reversed(recent_user_inputs[-8:]):
+                item = snippet if len(snippet) <= 46 else f"{snippet[:43]}..."
+                st.caption(f"• {item}")
+
         st.divider()
-        st.markdown(f"### {icons.get_icon_text('sparkles')} AI Assistant")
-        
-        # [NEW] Vision Upload Section
+        st.markdown("<div class='sidebar-section-title'>Image To Narrative</div>", unsafe_allow_html=True)
         with st.expander("📷 사진으로 서사 쓰기", expanded=False):
-            uploaded_file = st.file_uploader("이미지 업로드 (메모/풍경 등)", type=['png', 'jpg', 'jpeg'], key="vision_uploader")
+            uploaded_file = st.file_uploader(
+                "이미지 업로드 (메모/풍경 등)",
+                type=['png', 'jpg', 'jpeg'],
+                key="vision_uploader_sidebar",
+            )
             if uploaded_file:
-                if st.button("사진 분석 및 서사 추출", use_container_width=True):
+                if st.button("사진 분석 및 서사 추출", use_container_width=True, key="vision_extract_sidebar"):
                     with st.spinner("이미지에서 서사를 추출하는 중..."):
                         image_bytes = uploaded_file.read()
                         vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
                         st.session_state['refined_memo'] = vision_result
-        
-        raw_memo = st.text_area("거친 메모 입력", placeholder="오늘 있었던 일을 짧게 적어보세요...", height=100)
-        if st.button("서사 정제하기", use_container_width=True):
-            if raw_memo.strip():
-                with st.spinner("별자리를 그리는 중..."):
-                    refined = logic.refine_narrative_with_ai(raw_memo)
-                    st.session_state['refined_memo'] = refined
-            else:
-                st.error("내용을 입력해주세요.")
-        
+
         if 'refined_memo' in st.session_state:
-            st.markdown("---")
             st.info(st.session_state['refined_memo'])
-            if st.button("스트림에 즉시 저장", use_container_width=True, type="primary"):
+            if st.button("스트림에 즉시 저장", key="save_refined_sidebar", use_container_width=True, type="primary"):
                 logic.save_log(st.session_state['refined_memo'])
                 st.toast("서사가 스트림에 기록되었습니다.", icon="☄️")
                 del st.session_state['refined_memo']
                 st.rerun()
+
+        st.divider()
+        streak = st.session_state.get('streak_info', {})
+        c1, c2 = st.columns(2)
+        c1.metric("Streak", f"{streak.get('streak', 0)}d")
+        c2.metric("Best", f"{streak.get('longest', 0)}d")
+        debt = logic.get_debt_count()
+        if debt > 0:
+            st.error(f"E-Levels: {debt}")
+        else:
+            st.success("System Stable")
+
+        st.divider()
+        render_api_key_section()
 
 
 def render_runtime_diagnostics_badge(entropy_mode: bool) -> None:
@@ -467,12 +574,65 @@ def render_ocr_fallback_entrypoint() -> None:
             st.success("OCR 기반 서사 초안을 생성했습니다. 사이드바 AI Assistant 또는 Stream에서 저장할 수 있습니다.")
     st.divider()
 
+
+def render_stream_mode_switch_cards() -> None:
+    st.markdown("#### 워크스페이스 전환")
+    cols = st.columns(4, gap="small")
+    for idx, (mode, title, subtitle) in enumerate(_MODE_CARD_CONFIG):
+        with cols[idx]:
+            st.markdown(
+                (
+                    "<div class='mode-card'>"
+                    f"<div class='mode-card-title'>{title}</div>"
+                    f"<div class='mode-card-sub'>{subtitle}</div>"
+                    "</div>"
+                ),
+                unsafe_allow_html=True,
+            )
+            if st.button(f"{title} 열기", key=f"stream_hub_{mode}", use_container_width=True):
+                st.session_state["mode"] = mode
+                st.rerun()
+
+
+def render_stream_ocr_entrypoint() -> None:
+    with st.expander("📷 사진으로 서사 넣기", expanded=False):
+        uploaded = st.file_uploader(
+            "이미지 업로드 (메모/풍경 등)",
+            type=["png", "jpg", "jpeg"],
+            key="stream_vision_uploader",
+        )
+        if uploaded and st.button("사진 분석 및 서사 추출", key="stream_vision_extract", use_container_width=True):
+            with st.spinner("이미지에서 서사를 추출하는 중..."):
+                image_bytes = uploaded.read()
+                vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
+                st.session_state["refined_memo"] = vision_result
+                st.success("서사 초안을 생성했습니다. 아래에서 검토 후 저장하세요.")
+
+    if "refined_memo" in st.session_state:
+        st.info(st.session_state["refined_memo"])
+        if st.button("스트림에 즉시 저장", key="stream_save_refined", use_container_width=True, type="primary"):
+            logic.save_log(st.session_state["refined_memo"])
+            st.toast("서사가 스트림에 기록되었습니다.", icon="☄️")
+            del st.session_state["refined_memo"]
+            st.rerun()
+
+
+def render_stream_chat_messages() -> None:
+    for msg in st.session_state.get("messages", []):
+        role = str(msg.get("role", "")).strip().lower()
+        if role not in ("user", "assistant"):
+            continue
+        content = str(msg.get("content", "")).strip()
+        if not content:
+            continue
+        avatar = "🧑" if role == "user" else "✦"
+        with st.chat_message(role, avatar=avatar):
+            st.markdown(content)
+
 # ============================================================
 # MODES
 # ============================================================
 def render_stream_mode():
-    st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('waves', size=40)} THE STREAM</h1><p>Atomic thoughts. Think aloud.</p></div>", unsafe_allow_html=True)
-    
     if st.session_state.get('violation_pending'):
         v = st.session_state['violation_pending']
         st.warning(f"{icons.get_icon_text('shield-alert')} Alignment Error against Core: \"{v['core']['content'][:50]}...\"")
@@ -505,17 +665,35 @@ def render_stream_mode():
             st.rerun()
         return
 
+    st.markdown("<div class='stream-hero-title'>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='stream-hero-sub'>Stream은 입력 허브입니다. 아래 카드에서 Desk/Chronos/Universe/Control로 바로 전환할 수 있습니다.</div>",
+        unsafe_allow_html=True,
+    )
+
+    has_user_messages = any(
+        m.get("role") == "user" and str(m.get("content", "")).strip()
+        for m in st.session_state.get("messages", [])
+    )
+    if has_user_messages:
+        with st.expander("워크스페이스 전환", expanded=False):
+            render_stream_mode_switch_cards()
+    else:
+        render_stream_mode_switch_cards()
+    st.divider()
+    render_stream_ocr_entrypoint()
+    st.divider()
+
     echo = st.session_state.get('current_echo')
-    if echo:
+    if echo and not has_user_messages:
         echo_created_at = str(echo.get('created_at') or '')
         echo_content = str(echo.get('content') or '')
         st.markdown(f"""<div style="background: rgba(255, 255, 255, 0.05); border-left: 3px solid #666; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-style: italic; color: #aaa;">
             <small>{icons.get_icon('sparkles', size=14)} Echo from {echo_created_at[:10]}</small><br>"{echo_content}"</div>""", unsafe_allow_html=True)
     
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]): st.markdown(msg["content"])
+    render_stream_chat_messages()
     
-    if user_input := st.chat_input("What is the single sentence that defines you right now?"):
+    if user_input := st.chat_input("메시지를 입력하세요..."):
         process_stream_input(user_input)
 
 def process_stream_input(user_input: str):
@@ -528,14 +706,17 @@ def process_stream_input(user_input: str):
     st.session_state.messages.append({"role": "user", "content": user_input})
     logic.save_chat_message("user", user_input)
     logic.save_log(user_input)
-    
+
     if st.session_state['first_input_of_session']:
         st.toast("Log captured. Meteor Effect.", icon="☄️")
         st.session_state['first_input_of_session'] = False
-        # No automated AI response for first input to maintain mystery/speed
-    else:
+
+    try:
         related = logic.find_related_logs(user_input)
         resp = logic.generate_response(user_input, related)
+    except Exception:
+        resp = "입력을 기록했습니다. 응답 생성 중 문제가 발생해 기본 모드로 저장만 완료했습니다."
+    if str(resp).strip():
         st.session_state.messages.append({"role": "assistant", "content": resp})
         logic.save_chat_message("assistant", resp)
     
