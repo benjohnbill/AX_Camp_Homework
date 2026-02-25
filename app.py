@@ -830,15 +830,16 @@ def render_stream_mode():
                 
             if c2.button(f"{icons.get_icon_text('zap')} Force Merge (Entropy +1)"):
                 db.increment_debt(1)
-                logic.save_log(v['text'])
+                text = v['text']
                 del st.session_state['violation_pending']
+                _save_and_respond(text)
                 st.toast("Forced merge. Entropy increased.", icon="🚨")
                 st.rerun()
         else:
             if c1.button(f"{icons.get_icon_text('zap')} Merge Log (Standard)", use_container_width=True):
-                logic.save_log(v['text'])
+                text = v['text']
                 del st.session_state['violation_pending']
-                st.toast("Log merged into stream.", icon="☄️")
+                _save_and_respond(text)
                 st.rerun()
             
         if st.button(f"{icons.get_icon_text('trash')} Discard", use_container_width=True if not entropy_enabled else False):
@@ -899,13 +900,8 @@ def render_stream_mode():
         if user_input := st.chat_input("메시지를 입력하세요..."):
             process_stream_input(user_input)
 
-def process_stream_input(user_input: str):
-    status, core = logic.evaluate_input_integrity(user_input)
-    if status == "VIOLATION":
-        st.session_state['violation_pending'] = {"text": user_input, "core": core}
-        st.rerun()
-        return
-
+def _save_and_respond(user_input: str):
+    """Core stream processing: append to chat, generate response, persist."""
     active_stream_id = str(st.session_state.get("active_stream_id") or "").strip()
     if not active_stream_id:
         active_stream_id = _new_stream_id()
@@ -924,7 +920,7 @@ def process_stream_input(user_input: str):
     logic.save_chat_message("user", user_input, metadata=user_meta)
     logic.save_log(user_input)
 
-    if st.session_state['first_input_of_session']:
+    if st.session_state.get('first_input_of_session'):
         st.toast("Log captured. Meteor Effect.", icon="☄️")
         st.session_state['first_input_of_session'] = False
 
@@ -936,9 +932,17 @@ def process_stream_input(user_input: str):
     if str(resp).strip():
         st.session_state.messages.append({"role": "assistant", "content": resp})
         logic.save_chat_message("assistant", resp, metadata={"stream_id": active_stream_id})
-    
+
     st.session_state['current_echo'] = logic.get_current_echo(reference_text=user_input)
-    # Final rerun to sync state to UI
+
+
+def process_stream_input(user_input: str):
+    status, core = logic.evaluate_input_integrity(user_input)
+    if status == "VIOLATION":
+        st.session_state['violation_pending'] = {"text": user_input, "core": core}
+        st.rerun()
+        return
+    _save_and_respond(user_input)
     st.rerun()
 
 def render_chronos_mode():
