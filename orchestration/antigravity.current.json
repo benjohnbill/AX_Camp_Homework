@@ -3,11 +3,11 @@
     "owner":  "control_tower",
     "channel":  "antigravity",
     "mode":  "channel_only",
-    "updated_at":  "2026-02-25T23:45:00Z",
+    "updated_at":  "2026-02-25T14:54:42Z",
     "trace_id":  "trace-narrative_loop-20260225-precycle4",
     "assigned_worker":  "frontend_ide",
-    "active_dispatch_file":  "orchestration/dispatch/20260225-precycle4.worker-prompts.json",
-    "active_task_file":  "orchestration/tasks/20260225T230000Z.frontend-precycle4.task.json",
+    "active_dispatch_file":  "orchestration/dispatch/20260225T145437Z.frontend-ui-manual-check.worker-prompts.json",
+    "active_task_file":  "orchestration/tasks/20260225T145437Z.frontend-ui-manual-check.task.json",
     "truth_priority_files":  [
                                  "orchestration/handoff/latest.handoff.json",
                                  "orchestration/task.json",
@@ -29,7 +29,8 @@
                                ],
     "notes":  [
                   "This channel is the only CT-to-Antigravity pointer for chat operation.",
-                  "Ad-hoc scattered comments in unrelated markdown files are disallowed."
+                  "Ad-hoc scattered comments in unrelated markdown files are disallowed.",
+                  "Loop-stop directive: do not rerun completed precycle4 checklist task; execute the active frontend-ui-manual-check task once and exit with PASS/BLOCKED."
               ],
     "assumptions":  [
                         "Antigravity workspace is rooted at D:/dev/Narrative_Loop.",

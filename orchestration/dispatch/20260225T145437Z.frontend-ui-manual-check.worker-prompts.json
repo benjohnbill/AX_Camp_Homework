@@ -1,0 +1,32 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-frontend-ui-manual-check",
+  "version": "1.0",
+  "source_task": "orchestration/tasks/20260225T145437Z.frontend-ui-manual-check.task.json",
+  "deadline_utc": "2026-02-25T15:14:42Z",
+  "deadline_note": "20-minute hard stop to prevent checklist loop recirculation.",
+  "common_rules": [
+    "Trust source priority strictly: 1) orchestration/handoff/latest.handoff.json 2) orchestration/task.json 3) latest orchestration/results/*.result.json 4) integration_status.md.",
+    "Stop previous precycle4 checklist rerun immediately. Do not execute completed checklist loops.",
+    "This dispatch is one-shot manual browser validation only. No feature expansion.",
+    "Publish L1 fast-lane update first, then schema-valid result artifact."
+  ],
+  "workers": [
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260225T145437Z.frontend-ui-manual-check.task.json",
+      "scope_in": [
+        "Root URL manual validation for sidebar/mode/OCR visibility",
+        "Embed URL detection and query-clear return-to-full-app action",
+        "Diagnostics badge verification and screenshot evidence"
+      ],
+      "scope_out": [
+        "Feature expansion beyond UI validation",
+        "Backend contract modifications",
+        "Android native runtime changes"
+      ],
+      "prompt": "You are frontend_ide worker. Immediately stop any ongoing rerun of completed precycle4 checklist task. Execute only orchestration/tasks/20260225T145437Z.frontend-ui-manual-check.task.json. Validate root and embed browser paths with diagnostics visibility and OCR entrypoint checks. Timebox to 20 minutes and exit with pass or blocked only. First send L1 update acknowledging loop stop, then submit one schema-valid result JSON with reproducible evidence paths."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts this frontend run only when loop-stop acknowledgement is explicit and one-shot manual validation evidence is attached with schema-valid result."
+}

@@ -1,0 +1,62 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-backend-precycle4",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "L2 backend smoke rerun completed under pre-cycle4 gate constraints (no cycle4 expansion). Trust priority applied: latest.handoff.json > task.json > latest results > integration_status.md.\n\nMandatory backend regression smoke:\n- command: .\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py tests/test_korean_query_rewrite.py tests/test_interface_parity.py tests/test_universe_auth.py\n- outcome: PASS (17 passed in 7.54s)\n- evidence_path: data/evidence/20260225T234103Z_precycle4_backend_smoke_rerun.log\n\nCritical-path regression check (backend-owned):\n- auth (200/401/403/307 + session bridge): PASS\n- storage interface parity: PASS\n- universe auth path: PASS\n\nBlocker status:\n- auth/storage/universe critical-path blocker: none",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260225T234141Z.T-narrative_loop-20260225-backend-precycle4-rerun.result.json",
+      "description": "L2 backend pre-cycle4 smoke rerun result artifact."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260225T234103Z_precycle4_backend_smoke_rerun.log",
+      "description": "Mandatory backend regression smoke rerun test log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "mandatory_backend_smoke_rerun",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py tests/test_korean_query_rewrite.py tests/test_interface_parity.py tests/test_universe_auth.py",
+      "status": "pass",
+      "note": "17 passed in 7.54s; evidence_path=data/evidence/20260225T234103Z_precycle4_backend_smoke_rerun.log"
+    },
+    {
+      "name": "critical_path_auth_contract",
+      "status": "pass",
+      "note": "status_contract=200/401/403/307 stable via gateway/universe auth tests; evidence_path=data/evidence/20260225T234103Z_precycle4_backend_smoke_rerun.log"
+    },
+    {
+      "name": "critical_path_storage_interface_parity",
+      "status": "pass",
+      "note": "db_manager/db_manager_postgres required interface parity checks passed; evidence_path=data/evidence/20260225T234103Z_precycle4_backend_smoke_rerun.log"
+    },
+    {
+      "name": "critical_path_universe_auth",
+      "status": "pass",
+      "note": "universe_auth session/cookie bridge regression not observed; evidence_path=data/evidence/20260225T234103Z_precycle4_backend_smoke_rerun.log"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "low",
+      "description": "No backend critical-path regression observed in this rerun window.",
+      "mitigation": "Keep mandatory smoke set in pre-cycle4 gate reruns until CT gate close."
+    }
+  ],
+  "next_actions": [
+    "Keep cycle4 feature expansion paused until CT gate blocker (Android physical same-window evidence) is cleared.",
+    "Provide this artifact to CT as backend rerun confirmation input for gate aggregation.",
+    "Re-run same smoke set if auth/storage/universe related code changes again before kickoff."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-02-25T14:41:41Z",
+  "metrics": {
+    "duration_sec": 10.4,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-frontend-ui-manual-check",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Stop checklist-loop execution and run one-shot manual browser validation for root/embed routing visibility, diagnostics badge clarity, and OCR entrypoint availability without feature expansion.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/handoff/latest.handoff.json",
+      "description": "Highest-priority canonical state."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Current CT gate objective and blocker policy."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Routing, diagnostics badge, sidebar mode guard, and OCR fallback entrypoint."
+    },
+    {
+      "kind": "file",
+      "value": "narrative_logic.py",
+      "description": "Entropy feature-flag behavior (`ENABLE_ENTROPY`)."
+    },
+    {
+      "kind": "file",
+      "value": "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+      "description": "Gate policy and acceptance context."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md",
+      "app.py",
+      "narrative_logic.py",
+      "docs/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No feature expansion and no checklist recirculation. This is a single-run manual validation with explicit stop condition and evidence."
+  },
+  "acceptance": [
+    "Root URL shows sidebar, mode selector, and OCR entrypoints (sidebar OCR + main OCR fallback CTA).",
+    "Embed URL (`?embed=universe_3d`) path is identifiable and can return to full app via query-clear action.",
+    "Diagnostics badge exposes query.embed, is_embed_route, ENABLE_ENTROPY, is_entropy_mode, and session.mode values.",
+    "Worker publishes one L1 update and one schema-valid result artifact for this task_id.",
+    "Task exits within a 20-minute timebox with PASS or BLOCKED verdict and reproducible evidence paths."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "If this task loops again without stop criteria, frontend channel throughput degrades and delays CT aggregation."
+  },
+  "next_actions": [
+    "Stop current looping run and acknowledge task switch in L1 format.",
+    "Execute one-shot manual browser validation for root/embed/diagnostics/OCR flows.",
+    "Publish schema-valid result with evidence files and final verdict."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-25T14:54:42Z",
+  "context_docs": [
+    "docs/README.md",
+    "docs/CT_BASELINE_2026-02-25.md",
+    "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle": "pre_cycle4_gate",
+    "domain": "frontend_manual_validation",
+    "priority": "P0",
+    "timebox_minutes": 20,
+    "worker_channel": "orchestration/antigravity.current.json"
+  }
+}
