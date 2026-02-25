@@ -120,6 +120,28 @@ def _row_to_dict(row: Dict) -> Dict:
     return d
 
 
+def _parse_chat_metadata(raw) -> Dict:
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        text = raw.strip()
+        if not text:
+            return {}
+        try:
+            parsed = json.loads(text)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _get_chat_stream_id(metadata: Dict) -> str:
+    stream_id = str(metadata.get("stream_id") or metadata.get("chat_id") or "").strip()
+    return stream_id
+
+
 def init_database():
     # Schema is managed via SQL files. Keep this as a safe no-op plus seed.
     try:
@@ -712,6 +734,79 @@ def get_chat_history(limit: int = 50) -> List[Dict]:
             )
             rows = cur.fetchall()
     return [dict(r) for r in rows]
+
+
+def get_chat_streams(limit: int = 30) -> List[Dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                'SELECT id, "timestamp", role, content, metadata FROM chat_history ORDER BY "timestamp" ASC, id ASC'
+            )
+            rows = cur.fetchall()
+
+    stream_map: Dict[str, Dict] = {}
+    for row in rows:
+        metadata = _parse_chat_metadata(row.get("metadata"))
+        stream_id = _get_chat_stream_id(metadata) or "legacy"
+        role = str(row.get("role") or "").strip().lower()
+        content = str(row.get("content") or "").strip()
+        ts = row.get("timestamp")
+        updated_iso = ts.isoformat() if hasattr(ts, "isoformat") else str(ts or "")
+
+        item = stream_map.get(stream_id)
+        if not item:
+            item = {
+                "stream_id": stream_id,
+                "title": "Legacy Stream" if stream_id == "legacy" else "Untitled Stream",
+                "updated_at": updated_iso,
+                "message_count": 0,
+            }
+            stream_map[stream_id] = item
+
+        item["message_count"] += 1
+        if updated_iso >= str(item.get("updated_at", "")):
+            item["updated_at"] = updated_iso
+
+        if stream_id != "legacy" and role == "user" and content and item["title"] == "Untitled Stream":
+            clean = " ".join(content.split()).strip()
+            item["title"] = clean[:40] if len(clean) > 40 else clean
+
+    streams = list(stream_map.values())
+    streams.sort(key=lambda x: str(x.get("updated_at", "")), reverse=True)
+    if limit and limit > 0:
+        streams = streams[: int(limit)]
+    return streams
+
+
+def get_chat_stream_messages(stream_id: str, limit: int = 200) -> List[Dict]:
+    target = str(stream_id or "").strip() or "legacy"
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                'SELECT id, "timestamp", role, content, metadata FROM chat_history ORDER BY "timestamp" ASC, id ASC'
+            )
+            rows = cur.fetchall()
+
+    out: List[Dict] = []
+    for row in rows:
+        metadata = _parse_chat_metadata(row.get("metadata"))
+        row_stream_id = _get_chat_stream_id(metadata) or "legacy"
+        if row_stream_id != target:
+            continue
+        ts = row.get("timestamp")
+        out.append(
+            {
+                "id": row.get("id"),
+                "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts or ""),
+                "role": row.get("role"),
+                "content": row.get("content"),
+                "metadata": metadata,
+            }
+        )
+
+    if limit and limit > 0 and len(out) > int(limit):
+        out = out[-int(limit):]
+    return out
 
 
 def clear_chat_history() -> None:

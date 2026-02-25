@@ -11,6 +11,7 @@ import json
 import re
 import base64
 import os
+import uuid
 
 import narrative_logic as logic
 import icons
@@ -76,6 +77,35 @@ def _ensure_valid_session_mode() -> str:
     if st.session_state.get("mode") != current:
         st.session_state["mode"] = current
     return current
+
+
+def _new_stream_id() -> str:
+    return f"stream-{uuid.uuid4().hex[:12]}"
+
+
+def _normalize_message_rows(rows: list) -> list:
+    out = []
+    for row in rows or []:
+        role = str((row or {}).get("role") or "").strip().lower()
+        if role not in ("user", "assistant"):
+            continue
+        content = str((row or {}).get("content") or "").strip()
+        if not content:
+            continue
+        out.append({"role": role, "content": content})
+    return out
+
+
+def _load_messages_for_stream(stream_id: str, limit: int = 200) -> list:
+    rows = logic.load_chat_stream_messages(stream_id=stream_id, limit=limit)
+    return _normalize_message_rows(rows)
+
+
+def _to_stream_title(text: str, max_len: int = 40) -> str:
+    clean = re.sub(r"\s+", " ", str(text or "")).strip()
+    if not clean:
+        return "Untitled Stream"
+    return clean[:max_len] if len(clean) > max_len else clean
 
 
 def _parse_positive_int(raw: str, default: int) -> int:
@@ -279,9 +309,15 @@ def init_session_state():
     else:
         st.session_state['mode'] = _sanitize_mode(st.session_state['mode'])
 
-    if 'messages' not in st.session_state:
-        # Keep Stream home clean like a neutral chat workspace.
-        st.session_state.messages = []
+    if "active_stream_id" not in st.session_state:
+        streams = logic.load_chat_streams(limit=1)
+        if streams:
+            st.session_state["active_stream_id"] = str(streams[0].get("stream_id") or "").strip() or _new_stream_id()
+        else:
+            st.session_state["active_stream_id"] = _new_stream_id()
+
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = _load_messages_for_stream(st.session_state["active_stream_id"])
 
     if 'current_echo' not in st.session_state:
         st.session_state['current_echo'] = logic.get_current_echo()
@@ -307,10 +343,15 @@ def init_session_state():
         'interventions_checked': False,
         'desk_page': 1,
         'violation_pending': None,
+        'sidebar_open': True,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = val
+
+    # If we loaded an existing Stream from DB, we are no longer at first input.
+    if st.session_state.get("messages"):
+        st.session_state["first_input_of_session"] = False
 
 def apply_atmosphere(entropy_mode: bool):
     """
@@ -318,8 +359,16 @@ def apply_atmosphere(entropy_mode: bool):
     to ensure native Streamlit components function correctly without breaking.
     """
     
-    # 1. Essential CSS
-    st.markdown("""
+    sidebar_visibility_css = ""
+    if not bool(st.session_state.get("sidebar_open", True)):
+        sidebar_visibility_css = """
+        [data-testid="stSidebar"] { display: none !important; }
+        [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+        .block-container { max-width: 1320px !important; }
+        """
+
+    st.markdown(
+        """
         <style>
         :root {
             --app-bg: #111317;
@@ -331,22 +380,31 @@ def apply_atmosphere(entropy_mode: bool):
             --app-accent: #10a37f;
         }
 
-        /* Hide Streamlit default header and footer */
         header {visibility: hidden;}
         footer {visibility: hidden;}
 
         .block-container {
-            padding-top: 1.4rem !important;
+            padding-top: 1.2rem !important;
             padding-bottom: 1.2rem !important;
             max-width: 1200px !important;
         }
 
-        [data-testid="stAppViewContainer"] {
-            background: var(--app-bg);
+        [data-testid="stAppViewContainer"] { background: var(--app-bg); }
+        [data-testid="stSidebar"] { border-right: 1px solid var(--app-border); }
+
+        .layout-toolbar {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 0.5rem;
         }
 
         .stream-shell {
             max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .stream-empty-center {
+            max-width: 760px;
             margin: 0 auto;
         }
 
@@ -355,12 +413,8 @@ def apply_atmosphere(entropy_mode: bool):
             line-height: 1.2;
             font-weight: 700;
             letter-spacing: -0.02em;
-            margin-bottom: 0.35rem;
-        }
-
-        .stream-hero-sub {
-            color: var(--app-muted);
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            text-align: center;
         }
 
         .mode-card {
@@ -381,13 +435,12 @@ def apply_atmosphere(entropy_mode: bool):
             color: var(--app-muted);
         }
 
-        /* Essential Kanban Card styling without breaking native boxes */
         .kanban-card {
             background-color: var(--app-surface-soft) !important;
             border: 1px solid var(--app-border) !important;
-            border-radius: 8px !important; 
-            padding: 16px; 
-            margin-bottom: 12px; 
+            border-radius: 8px !important;
+            padding: 16px;
+            margin-bottom: 12px;
         }
 
         [data-testid="stChatMessage"] {
@@ -409,10 +462,6 @@ def apply_atmosphere(entropy_mode: bool):
             background: var(--app-surface-soft);
         }
 
-        [data-testid="stSidebar"] {
-            border-right: 1px solid var(--app-border);
-        }
-
         .sidebar-section-title {
             color: var(--app-muted);
             font-size: 0.82rem;
@@ -421,11 +470,14 @@ def apply_atmosphere(entropy_mode: bool):
             margin-bottom: 0.4rem;
         }
 
-        input, textarea {
-            background-color: rgba(255, 255, 255, 0.03) !important;
-        }
+        input, textarea { background-color: rgba(255, 255, 255, 0.03) !important; }
+        """
+        + sidebar_visibility_css
+        + """
         </style>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True,
+    )
 
 # ============================================================
 # API Key
@@ -464,46 +516,64 @@ def render_api_key_section():
             st.session_state["openai_api_key_input"] = ""
             st.info("Session key cleared.")
             st.rerun()
+
+
+def render_sidebar_toggle_control() -> None:
+    is_open = bool(st.session_state.get("sidebar_open", True))
+    label = "사이드바 접기" if is_open else "사이드바 열기"
+    with st.container():
+        st.markdown("<div class='layout-toolbar'>", unsafe_allow_html=True)
+        if st.button(label, key="main_sidebar_toggle"):
+            st.session_state["sidebar_open"] = not is_open
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
         st.title("Antigravity")
-        st.caption("Narrative Loop Workspace")
+        st.caption("Narrative Loop Streams")
 
-        if st.button("새 스트림", use_container_width=True, key="sidebar_new_stream"):
+        if st.button("새 Stream", use_container_width=True, key="sidebar_new_stream"):
             st.session_state["mode"] = "stream"
+            st.session_state["active_stream_id"] = _new_stream_id()
             st.session_state["messages"] = []
             st.session_state["first_input_of_session"] = True
             st.session_state.pop("refined_memo", None)
             st.rerun()
 
-        st.divider()
         if entropy_mode:
             st.warning(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT")
             st.info("시스템 엔트로피가 임계치를 초과했습니다. [Gap Analysis]가 필요합니다.")
-        else:
-            current_mode = _ensure_valid_session_mode()
-            st.markdown("<div class='sidebar-section-title'>Modes</div>", unsafe_allow_html=True)
-            for mode in ("stream", "desk", "chronos", "universe", "control"):
-                label = mode.title()
-                if mode == current_mode:
-                    label = f"● {label}"
-                if st.button(label, key=f"sidebar_mode_{mode}", use_container_width=True):
-                    st.session_state["mode"] = mode
-                    st.rerun()
 
         st.divider()
-        st.markdown("<div class='sidebar-section-title'>Recent Inputs</div>", unsafe_allow_html=True)
-        recent_user_inputs = [
-            str(msg.get("content", "")).strip()
-            for msg in st.session_state.get("messages", [])
-            if msg.get("role") == "user" and str(msg.get("content", "")).strip()
-        ]
-        if not recent_user_inputs:
-            st.caption("아직 입력 기록이 없습니다.")
+        st.markdown("<div class='sidebar-section-title'>Streams</div>", unsafe_allow_html=True)
+        streams = logic.load_chat_streams(limit=40)
+        active_stream_id = str(st.session_state.get("active_stream_id") or "").strip()
+        if not streams:
+            st.caption("저장된 Stream이 없습니다.")
         else:
-            for snippet in reversed(recent_user_inputs[-8:]):
-                item = snippet if len(snippet) <= 46 else f"{snippet[:43]}..."
-                st.caption(f"• {item}")
+            for stream in streams:
+                stream_id = str(stream.get("stream_id") or "").strip()
+                if not stream_id:
+                    continue
+                title = str(stream.get("title") or "Untitled Stream").strip() or "Untitled Stream"
+                if len(title) > 28:
+                    title = f"{title[:25]}..."
+                if stream_id == active_stream_id:
+                    title = f"● {title}"
+                if st.button(title, key=f"sidebar_stream_{stream_id}", use_container_width=True):
+                    st.session_state["mode"] = "stream"
+                    st.session_state["active_stream_id"] = stream_id
+                    st.session_state["messages"] = _load_messages_for_stream(stream_id)
+                    st.session_state["first_input_of_session"] = len(st.session_state["messages"]) == 0
+                    st.rerun()
+                count = int(stream.get("message_count") or 0)
+                updated = str(stream.get("updated_at") or "")
+                meta = f"{count} msgs"
+                if updated:
+                    meta += f" · {updated[:16]}"
+                st.caption(meta)
 
         st.divider()
         st.markdown("<div class='sidebar-section-title'>Image To Narrative</div>", unsafe_allow_html=True)
@@ -530,14 +600,7 @@ def render_sidebar(entropy_mode: bool):
 
         st.divider()
         streak = st.session_state.get('streak_info', {})
-        c1, c2 = st.columns(2)
-        c1.metric("Streak", f"{streak.get('streak', 0)}d")
-        c2.metric("Best", f"{streak.get('longest', 0)}d")
-        debt = logic.get_debt_count()
-        if debt > 0:
-            st.error(f"E-Levels: {debt}")
-        else:
-            st.success("System Stable")
+        st.metric("Streak", f"{streak.get('streak', 0)}d")
 
         st.divider()
         render_api_key_section()
@@ -575,8 +638,9 @@ def render_ocr_fallback_entrypoint() -> None:
     st.divider()
 
 
-def render_stream_mode_switch_cards() -> None:
-    st.markdown("#### 워크스페이스 전환")
+def render_stream_mode_switch_cards(show_heading: bool = True) -> None:
+    if show_heading:
+        st.markdown("#### 워크스페이스 전환")
     cols = st.columns(4, gap="small")
     for idx, (mode, title, subtitle) in enumerate(_MODE_CARD_CONFIG):
         with cols[idx]:
@@ -594,8 +658,8 @@ def render_stream_mode_switch_cards() -> None:
                 st.rerun()
 
 
-def render_stream_ocr_entrypoint() -> None:
-    with st.expander("📷 사진으로 서사 넣기", expanded=False):
+def render_stream_ocr_entrypoint(expanded: bool = False) -> None:
+    with st.expander("📷 사진으로 서사 넣기", expanded=expanded):
         uploaded = st.file_uploader(
             "이미지 업로드 (메모/풍경 등)",
             type=["png", "jpg", "jpeg"],
@@ -671,32 +735,24 @@ def render_stream_mode():
             st.rerun()
         return
 
-    st.markdown("<div class='stream-hero-title'>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
-    st.markdown(
-        "<div class='stream-hero-sub'>Stream은 입력 허브입니다. 아래 카드에서 Desk/Chronos/Universe/Control로 바로 전환할 수 있습니다.</div>",
-        unsafe_allow_html=True,
-    )
-
-    has_user_messages = any(
-        m.get("role") == "user" and str(m.get("content", "")).strip()
+    has_messages = any(
+        m.get("role") in ("user", "assistant") and str(m.get("content", "")).strip()
         for m in st.session_state.get("messages", [])
     )
-    if has_user_messages:
-        with st.expander("워크스페이스 전환", expanded=False):
-            render_stream_mode_switch_cards()
-    else:
-        render_stream_mode_switch_cards()
-    st.divider()
-    render_stream_ocr_entrypoint()
-    st.divider()
 
-    echo = st.session_state.get('current_echo')
-    if echo and not has_user_messages:
-        echo_created_at = str(echo.get('created_at') or '')
-        echo_content = str(echo.get('content') or '')
-        st.markdown(f"""<div style="background: rgba(255, 255, 255, 0.05); border-left: 3px solid #666; padding: 15px; margin-bottom: 20px; border-radius: 4px; font-style: italic; color: #aaa;">
-            <small>{icons.get_icon('sparkles', size=14)} Echo from {echo_created_at[:10]}</small><br>"{echo_content}"</div>""", unsafe_allow_html=True)
-    
+    if has_messages:
+        with st.expander("워크스페이스 전환", expanded=False):
+            render_stream_mode_switch_cards(show_heading=False)
+        st.divider()
+    else:
+        left, center, right = st.columns([1, 1.8, 1])
+        with center:
+            st.markdown("<div class='stream-hero-title'>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
+            render_stream_ocr_entrypoint(expanded=True)
+            st.markdown("")
+            render_stream_mode_switch_cards(show_heading=True)
+        st.divider()
+
     render_stream_chat_messages()
     
     if user_input := st.chat_input("메시지를 입력하세요..."):
@@ -709,8 +765,22 @@ def process_stream_input(user_input: str):
         st.rerun()
         return
 
+    active_stream_id = str(st.session_state.get("active_stream_id") or "").strip()
+    if not active_stream_id:
+        active_stream_id = _new_stream_id()
+        st.session_state["active_stream_id"] = active_stream_id
+
+    is_first_user_in_stream = not any(
+        str(msg.get("role") or "").strip().lower() == "user"
+        and str(msg.get("content") or "").strip()
+        for msg in st.session_state.get("messages", [])
+    )
+
     st.session_state.messages.append({"role": "user", "content": user_input})
-    logic.save_chat_message("user", user_input)
+    user_meta = {"stream_id": active_stream_id}
+    if is_first_user_in_stream:
+        user_meta["stream_title"] = _to_stream_title(user_input)
+    logic.save_chat_message("user", user_input, metadata=user_meta)
     logic.save_log(user_input)
 
     if st.session_state['first_input_of_session']:
@@ -724,7 +794,7 @@ def process_stream_input(user_input: str):
         resp = "입력을 기록했습니다. 응답 생성 중 문제가 발생해 기본 모드로 저장만 완료했습니다."
     if str(resp).strip():
         st.session_state.messages.append({"role": "assistant", "content": resp})
-        logic.save_chat_message("assistant", resp)
+        logic.save_chat_message("assistant", resp, metadata={"stream_id": active_stream_id})
     
     st.session_state['current_echo'] = logic.get_current_echo(reference_text=user_input)
     # Final rerun to sync state to UI
@@ -986,6 +1056,7 @@ def main():
         return
     is_entropy = logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
+    render_sidebar_toggle_control()
     # render_runtime_diagnostics_badge(is_entropy)
     # render_ocr_fallback_entrypoint()
     

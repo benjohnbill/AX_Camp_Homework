@@ -8,6 +8,7 @@ Antigravity v5: SQLite Database Layer
 import sqlite3
 import uuid
 import json
+import re
 import numpy as np
 from datetime import datetime, date, timedelta
 from typing import Optional, List
@@ -727,6 +728,97 @@ def get_chat_history(limit: int = 50) -> List[dict]:
     return [dict(row) for row in reversed(rows)]
 
 
+def _parse_chat_metadata(raw) -> dict:
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        text = raw.strip()
+        if not text:
+            return {}
+        try:
+            parsed = json.loads(text)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _get_chat_stream_id(metadata: dict) -> str:
+    stream_id = str(metadata.get("stream_id") or metadata.get("chat_id") or "").strip()
+    return stream_id
+
+
+def get_chat_streams(limit: int = 30) -> List[dict]:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, timestamp, role, content, metadata FROM chat_history ORDER BY timestamp ASC, id ASC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    stream_map = {}
+    for row in rows:
+        metadata = _parse_chat_metadata(row["metadata"])
+        stream_id = _get_chat_stream_id(metadata) or "legacy"
+        role = str(row["role"] or "").strip().lower()
+        content = str(row["content"] or "").strip()
+        timestamp = str(row["timestamp"] or "")
+
+        item = stream_map.get(stream_id)
+        if not item:
+            item = {
+                "stream_id": stream_id,
+                "title": "Legacy Stream" if stream_id == "legacy" else "Untitled Stream",
+                "updated_at": timestamp,
+                "message_count": 0,
+            }
+            stream_map[stream_id] = item
+
+        item["message_count"] += 1
+        if timestamp >= str(item.get("updated_at", "")):
+            item["updated_at"] = timestamp
+
+        if stream_id != "legacy" and role == "user" and content and item["title"] == "Untitled Stream":
+            clean = re.sub(r"\s+", " ", content).strip()
+            item["title"] = clean[:40] if len(clean) > 40 else clean
+
+    streams = list(stream_map.values())
+    streams.sort(key=lambda x: str(x.get("updated_at", "")), reverse=True)
+    if limit and limit > 0:
+        streams = streams[: int(limit)]
+    return streams
+
+
+def get_chat_stream_messages(stream_id: str, limit: int = 200) -> List[dict]:
+    target = str(stream_id or "").strip() or "legacy"
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, timestamp, role, content, metadata FROM chat_history ORDER BY timestamp ASC, id ASC")
+    rows = cursor.fetchall()
+    conn.close()
+
+    out: List[dict] = []
+    for row in rows:
+        metadata = _parse_chat_metadata(row["metadata"])
+        row_stream_id = _get_chat_stream_id(metadata) or "legacy"
+        if row_stream_id != target:
+            continue
+        out.append(
+            {
+                "id": row["id"],
+                "timestamp": row["timestamp"],
+                "role": row["role"],
+                "content": row["content"],
+                "metadata": metadata,
+            }
+        )
+
+    if limit and limit > 0 and len(out) > int(limit):
+        out = out[-int(limit):]
+    return out
+
+
 def clear_chat_history() -> None:
     conn = get_connection()
     cursor = conn.cursor()
@@ -1195,6 +1287,8 @@ if DATASTORE == "postgres":
         "update_log",
         "save_chat_message",
         "get_chat_history",
+        "get_chat_streams",
+        "get_chat_stream_messages",
         "clear_chat_history",
         "add_connection",
         "get_connections",

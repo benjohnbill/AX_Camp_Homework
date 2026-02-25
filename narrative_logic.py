@@ -1272,6 +1272,14 @@ def load_chat_history() -> list:
     return db.get_chat_history()
 
 
+def load_chat_streams(limit: int = 30) -> list:
+    return db.get_chat_streams(limit=limit)
+
+
+def load_chat_stream_messages(stream_id: str, limit: int = 200) -> list:
+    return db.get_chat_stream_messages(stream_id=stream_id, limit=limit)
+
+
 def save_chat_message(role: str, content: str, metadata: dict = None) -> dict:
     db.save_chat_message(role, content, metadata)
     return {"role": role, "content": content}
