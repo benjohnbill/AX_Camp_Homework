@@ -698,7 +698,8 @@ def render_ocr_fallback_entrypoint() -> None:
 
 def render_stream_mode_switch_cards(show_heading: bool = True, key_prefix: str = "main") -> None:
     if show_heading:
-        st.markdown("<div style='text-align:center; color:var(--app-muted); font-size:0.85rem; margin-bottom:0.8rem;'>워크스페이스 전환</div>", unsafe_allow_html=True)
+        # Heading removed for a minimalist, intuitive design as requested
+        pass
     
     # Strictly 4 columns for a single horizontal row (ChatGPT style)
     cols = st.columns(4, gap="small")
@@ -801,7 +802,7 @@ def render_stream_mode():
         # Action block starts
         st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
         render_stream_ocr_entrypoint(expanded=False)
-        st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)        
+        st.markdown("<div style='height: 0.8rem;'></div>", unsafe_allow_html=True)        
         render_stream_mode_switch_cards(show_heading=True, key_prefix="empty")
         st.markdown("</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
