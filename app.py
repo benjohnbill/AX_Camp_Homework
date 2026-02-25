@@ -837,16 +837,15 @@ def render_stream_mode():
             st.markdown("</div>", unsafe_allow_html=True)
 
         # [+] Toggle Button and Chat Input area
-        toggle_col, input_col = st.columns([1, 12], gap="small")
-        with toggle_col:
-            btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
-            if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환", use_container_width=True):
-                st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
-                st.rerun()
+        st.markdown("<div class='fixed-toggle-area'>", unsafe_allow_html=True)
+        btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
+        if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환", use_container_width=True):
+            st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        with input_col:
-            if user_input := st.chat_input("메시지를 입력하세요..."):
-                process_stream_input(user_input)
+        if user_input := st.chat_input("메시지를 입력하세요..."):
+            process_stream_input(user_input)
 
 def process_stream_input(user_input: str):
     status, core = logic.evaluate_input_integrity(user_input)
