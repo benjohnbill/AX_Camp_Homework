@@ -397,7 +397,27 @@ def apply_atmosphere(entropy_mode: bool):
         }
 
         [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
-        [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+
+        /* Native sidebar collapse/expand buttons - styled, NOT hidden */
+        [data-testid="stSidebarCollapsedControl"] {
+            top: 0.62rem !important;
+            left: 0.68rem !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] button,
+        [data-testid="stSidebarCollapseButton"] button {
+            border-radius: 999px !important;
+            background: var(--app-surface-soft) !important;
+            border: 1px solid var(--app-border) !important;
+            color: var(--app-muted) !important;
+            width: 2rem !important;
+            height: 2rem !important;
+            padding: 0 !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] button:hover,
+        [data-testid="stSidebarCollapseButton"] button:hover {
+            border-color: var(--app-accent) !important;
+            color: var(--app-text) !important;
+        }
         [data-testid="stSidebar"] {
             border-right: 1px solid var(--app-border);
             width: var(--sidebar-width) !important;
@@ -408,28 +428,6 @@ def apply_atmosphere(entropy_mode: bool):
             transform: translateX(0);
             opacity: 1;
             margin-left: 0;
-        }
-
-        .layout-toolbar {
-            display: flex;
-            justify-content: flex-start;
-            position: fixed;
-            top: 0.62rem;
-            left: 0.68rem;
-            z-index: 1200;
-            margin: 0;
-            gap: 0.2rem;
-        }
-
-        .layout-toolbar .stButton button {
-            border-radius: 999px !important;
-            min-height: 2rem !important;
-            height: 2rem !important;
-            width: 2rem !important;
-            padding: 0 !important;
-            border: 1px solid var(--app-border) !important;
-            background: var(--app-surface-soft) !important;
-            color: var(--app-muted) !important;
         }
 
         .stream-shell {
@@ -640,80 +638,7 @@ def render_api_key_section():
 
 
 def render_sidebar_toggle_control() -> None:
-    """Rerun-free sidebar toggle via localStorage + CSS transitions."""
-    components.html("""
-    <script>
-    (function() {
-        var p = window.parent, d = p.document;
-
-        // Inject transition styles once
-        if (!d.getElementById('nl-sb-style')) {
-            var s = d.createElement('style');
-            s.id = 'nl-sb-style';
-            s.textContent =
-                '[data-testid="stSidebar"]{transition:transform 0.26s ease,opacity 0.26s ease,margin-left 0.26s ease,width 0.26s ease,min-width 0.26s ease,max-width 0.26s ease !important;}' +
-                '.block-container{transition:max-width 0.28s ease,padding 0.28s ease !important;}';
-            d.head.appendChild(s);
-        }
-
-        var SKEY = 'nl-sb-collapsed';
-        var SW   = '240px';
-
-        function applyState(collapsed, animate) {
-            var sb = d.querySelector('[data-testid="stSidebar"]');
-            var bc = d.querySelector('.block-container');
-            if (!sb) return;
-            if (!animate) {
-                sb.style.transition = 'none';
-                if (bc) bc.style.transition = 'none';
-                sb.getBoundingClientRect(); // force reflow
-            }
-            if (collapsed) {
-                sb.style.transform      = 'translateX(-108%)';
-                sb.style.opacity        = '0';
-                sb.style.marginLeft     = 'calc(-1 * ' + SW + ')';
-                sb.style.pointerEvents  = 'none';
-                if (bc) { bc.style.maxWidth = 'min(1380px, 96vw)'; bc.style.paddingLeft = '1.2rem'; bc.style.paddingRight = '1.2rem'; }
-            } else {
-                sb.style.transform      = '';
-                sb.style.opacity        = '';
-                sb.style.marginLeft     = '';
-                sb.style.pointerEvents  = '';
-                if (bc) { bc.style.maxWidth = ''; bc.style.paddingLeft = ''; bc.style.paddingRight = ''; }
-            }
-            if (!animate) {
-                setTimeout(function() {
-                    sb.style.transition = '';
-                    if (bc) bc.style.transition = '';
-                }, 50);
-            }
-        }
-
-        var collapsed = p.localStorage.getItem(SKEY) === '1';
-        applyState(collapsed, false);
-
-        var btn = d.getElementById('nl-sb-toggle');
-        if (!btn) {
-            btn = d.createElement('button');
-            btn.id = 'nl-sb-toggle';
-            btn.style.cssText =
-                'position:fixed;top:0.62rem;left:0.68rem;z-index:9999;' +
-                'background:#1f232b;border:1px solid #2b3039;color:#9aa3b2;' +
-                'border-radius:999px;width:2rem;height:2rem;cursor:pointer;' +
-                'font-size:1rem;line-height:1;padding:0;display:flex;' +
-                'align-items:center;justify-content:center;';
-            d.body.appendChild(btn);
-        }
-        btn.textContent = collapsed ? '\u27e9' : '\u27e8';
-        btn.onclick = function() {
-            var next = !(p.localStorage.getItem(SKEY) === '1');
-            p.localStorage.setItem(SKEY, next ? '1' : '0');
-            applyState(next, true);
-            btn.textContent = next ? '\u27e9' : '\u27e8';
-        };
-    })();
-    </script>
-    """, height=0)
+    pass  # Native Streamlit sidebar collapse button handles this (no rerun, CSS transition only)
 
 
 def render_sidebar(entropy_mode: bool):
