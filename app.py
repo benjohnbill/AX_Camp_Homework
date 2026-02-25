@@ -46,7 +46,8 @@ def init_page_config():
     st.set_page_config(
         page_title="Antigravity",
         page_icon=":milky_way:",
-        layout="wide"
+        layout="wide",
+        initial_sidebar_state="expanded"
     )
 
 
@@ -376,10 +377,10 @@ def apply_atmosphere(entropy_mode: bool):
     if not bool(st.session_state.get("sidebar_open", True)):
         sidebar_closed_css = """
         [data-testid="stSidebar"] {
-            transform: translateX(-108%);
-            opacity: 0;
-            margin-left: calc(-1 * var(--sidebar-width));
-            pointer-events: none;
+            transform: translateX(-108%) !important;
+            opacity: 0 !important;
+            margin-left: calc(-1 * var(--sidebar-width)) !important;
+            pointer-events: none !important;
         }
         .block-container {
             max-width: min(1380px, 96vw) !important;
@@ -414,29 +415,35 @@ def apply_atmosphere(entropy_mode: bool):
 
         [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
 
-        /* Sidebar: border + transition. Native expand button hidden (we use Python button). */
+        /* Sidebar: hide native toggle buttons, manage via Python only */
         [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+        [data-testid="stSidebarCollapseButton"]   { display: none !important; }
+
+        /* Sidebar open state: force visible, override any React state */
         [data-testid="stSidebar"] {
             border-right: 1px solid var(--app-border);
             width: var(--sidebar-width) !important;
             min-width: var(--sidebar-width) !important;
             max-width: var(--sidebar-width) !important;
+            transform: none !important;
+            opacity: 1 !important;
+            margin-left: 0 !important;
+            pointer-events: auto !important;
             transition: transform 0.22s ease, opacity 0.22s ease, margin-left 0.22s ease;
         }
 
-        .layout-toolbar {
-            position: fixed;
-            top: 0.62rem;
-            left: 0.68rem;
-            z-index: 1200;
-        }
-        .layout-toolbar .stButton button {
+        /* Open button: target by title attr, fixed top-left */
+        button[title="사이드바 열기"] {
+            position: fixed !important;
+            top: 0.62rem !important;
+            left: 0.68rem !important;
+            z-index: 99999 !important;
             border-radius: 999px !important;
-            height: 2rem !important;
             width: 2rem !important;
+            height: 2rem !important;
             padding: 0 !important;
-            border: 1px solid var(--app-border) !important;
             background: var(--app-surface-soft) !important;
+            border: 1px solid var(--app-border) !important;
             color: var(--app-muted) !important;
         }
 
@@ -620,11 +627,9 @@ def render_api_key_section():
 def render_sidebar_toggle_control() -> None:
     if bool(st.session_state.get("sidebar_open", True)):
         return
-    st.markdown("<div class='layout-toolbar'>", unsafe_allow_html=True)
     if st.button("⟩", key="main_sidebar_open", help="사이드바 열기"):
         st.session_state["sidebar_open"] = True
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_sidebar(entropy_mode: bool):
