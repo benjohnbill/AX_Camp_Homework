@@ -357,7 +357,6 @@ def init_session_state():
         'desk_page': 1,
         'violation_pending': None,
         'workspace_dock_open': False,
-        'sidebar_open': True,
         'profile_settings_open': False,
     }
     for key, val in defaults.items():
@@ -373,22 +372,6 @@ def apply_atmosphere(entropy_mode: bool):
     Applies minimal essential CSS. Heavy styling is now handled by .streamlit/config.toml
     to ensure native Streamlit components function correctly without breaking.
     """
-    sidebar_closed_css = ""
-    if not bool(st.session_state.get("sidebar_open", True)):
-        sidebar_closed_css = """
-        [data-testid="stSidebar"] {
-            transform: translateX(-108%) !important;
-            opacity: 0 !important;
-            margin-left: calc(-1 * var(--sidebar-width)) !important;
-            pointer-events: none !important;
-        }
-        .block-container {
-            max-width: min(1380px, 96vw) !important;
-            padding-left: 1.2rem !important;
-            padding-right: 1.2rem !important;
-        }
-        """
-
     st.markdown(
         """
         <style>
@@ -425,26 +408,46 @@ def apply_atmosphere(entropy_mode: bool):
             width: var(--sidebar-width) !important;
             min-width: var(--sidebar-width) !important;
             max-width: var(--sidebar-width) !important;
-            transform: none !important;
-            opacity: 1 !important;
-            margin-left: 0 !important;
-            pointer-events: auto !important;
-            transition: transform 0.22s ease, opacity 0.22s ease, margin-left 0.22s ease;
+            transition: transform 0.26s ease, opacity 0.26s ease, margin-left 0.26s ease;
         }
 
-        /* Open button: target by title attr, fixed top-left */
-        button[title="사이드바 열기"] {
-            position: fixed !important;
-            top: 0.62rem !important;
-            left: 0.68rem !important;
-            z-index: 99999 !important;
-            border-radius: 999px !important;
-            width: 2rem !important;
-            height: 2rem !important;
-            padding: 0 !important;
-            background: var(--app-surface-soft) !important;
-            border: 1px solid var(--app-border) !important;
-            color: var(--app-muted) !important;
+        /* JS-controlled collapsed state */
+        [data-testid="stSidebar"].nl-collapsed {
+            transform: translateX(-108%) !important;
+            opacity: 0 !important;
+            margin-left: calc(-1 * var(--sidebar-width)) !important;
+            pointer-events: none !important;
+        }
+        .nl-collapsed ~ * .block-container,
+        body.nl-sb-collapsed .block-container {
+            max-width: min(1380px, 96vw) !important;
+            padding-left: 1.2rem !important;
+            padding-right: 1.2rem !important;
+        }
+
+        /* Toggle button injected by JS */
+        #nl-sb-btn {
+            position: fixed;
+            top: 0.62rem;
+            left: 0.68rem;
+            z-index: 99999;
+            border-radius: 999px;
+            width: 2rem;
+            height: 2rem;
+            padding: 0;
+            background: var(--app-surface-soft, #1f232b);
+            border: 1px solid var(--app-border, #2b3039);
+            color: var(--app-muted, #9aa3b2);
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #nl-sb-btn:hover {
+            border-color: #10a37f;
+            color: #f3f5f7;
         }
 
         .stream-shell {
@@ -596,8 +599,7 @@ def apply_atmosphere(entropy_mode: bool):
         ,
         unsafe_allow_html=True,
     )
-    if not bool(st.session_state.get("sidebar_open", True)):
-        st.markdown(f"<style>{sidebar_closed_css}</style>", unsafe_allow_html=True)
+
 
 # ============================================================
 # API Key
@@ -652,20 +654,65 @@ def render_api_key_section():
 
 
 def render_sidebar_toggle_control() -> None:
-    if bool(st.session_state.get("sidebar_open", True)):
-        return
-    if st.button("⟩", key="main_sidebar_open", help="사이드바 열기"):
-        st.session_state["sidebar_open"] = True
-        st.rerun()
+    """Pure JS sidebar toggle — no Python rerun. Uses MutationObserver to wait for DOM."""
+    components.html("""
+    <script>
+    (function() {
+        var SKEY = 'nl-sb-v2';
+        var p = window.parent, d = p.document;
+
+        function getSidebar() { return d.querySelector('[data-testid="stSidebar"]'); }
+        function getContainer() { return d.querySelector('.block-container'); }
+
+        function applyCollapsed(sb, collapsed) {
+            if (collapsed) {
+                sb.classList.add('nl-collapsed');
+                p.document.body.classList.add('nl-sb-collapsed');
+            } else {
+                sb.classList.remove('nl-collapsed');
+                p.document.body.classList.remove('nl-sb-collapsed');
+            }
+        }
+
+        function mountBtn(sb) {
+            var btn = d.getElementById('nl-sb-btn');
+            if (!btn) {
+                btn = d.createElement('button');
+                btn.id = 'nl-sb-btn';
+                d.body.appendChild(btn);
+            }
+            var collapsed = p.localStorage.getItem(SKEY) === '1';
+            applyCollapsed(sb, collapsed);
+            btn.textContent = collapsed ? '\u27e9' : '\u27e8';
+            btn.onclick = function() {
+                var sb2 = getSidebar();
+                if (!sb2) return;
+                var next = !(p.localStorage.getItem(SKEY) === '1');
+                p.localStorage.setItem(SKEY, next ? '1' : '0');
+                applyCollapsed(sb2, next);
+                btn.textContent = next ? '\u27e9' : '\u27e8';
+            };
+        }
+
+        var sb = getSidebar();
+        if (sb) {
+            mountBtn(sb);
+        } else {
+            var obs = new MutationObserver(function(_, o) {
+                var el = getSidebar();
+                if (el) { o.disconnect(); mountBtn(el); }
+            });
+            obs.observe(d.body, { childList: true, subtree: true });
+        }
+    })();
+    </script>
+    """, height=0)
+
 
 
 def render_sidebar(entropy_mode: bool):
     with st.sidebar:
-        head_left, head_right = st.columns([5, 1])
-        head_left.markdown("### Narrative Loop")
-        if head_right.button("⟨", key="sidebar_close_btn", help="사이드바 접기", use_container_width=True):
-            st.session_state["sidebar_open"] = False
-            st.rerun()
+        st.markdown("### Narrative Loop")
 
         if st.button("새 스트림", use_container_width=True, key="sidebar_new_stream"):
             st.session_state["mode"] = "stream"
