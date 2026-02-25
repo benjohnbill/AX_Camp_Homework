@@ -918,6 +918,10 @@ def render_stream_mode():
 
 def _save_and_respond(user_input: str):
     """Core stream processing: append to chat, generate response, persist."""
+    if "messages" not in st.session_state:
+        st.session_state["messages"] = []
+    if "first_input_of_session" not in st.session_state:
+        st.session_state["first_input_of_session"] = True
     active_stream_id = str(st.session_state.get("active_stream_id") or "").strip()
     if not active_stream_id:
         active_stream_id = _new_stream_id()
@@ -943,7 +947,8 @@ def _save_and_respond(user_input: str):
     try:
         related = logic.find_related_logs(user_input)
         resp = logic.generate_response(user_input, related)
-    except Exception:
+    except Exception as e:
+        import logging; logging.getLogger(__name__).error(f"_save_and_respond generate failed: {e}")
         resp = "입력을 기록했습니다. 응답 생성 중 문제가 발생해 기본 모드로 저장만 완료했습니다."
     if str(resp).strip():
         st.session_state.messages.append({"role": "assistant", "content": resp})
