@@ -804,7 +804,8 @@ def render_stream_ocr_entrypoint(expanded: bool = False) -> None:
                 del st.session_state["refined_memo"]
                 st.session_state.pop("refined_memo_edit", None)
                 if text:
-                    _save_and_respond(text)
+                    with st.spinner("서사를 분석하는 중..."):
+                        _save_and_respond(text)
                     st.toast("사진 서사가 스트림에 기록되었습니다.", icon="📷")
                     st.rerun()
 
