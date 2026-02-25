@@ -15,6 +15,12 @@ sunset_condition: Replace at next cycle closure with a newer human-readable brie
 ---
 # Narrative_Loop 프로젝트 브리프 (사람용, 2026-02-25 기준)
 
+## Quick Links
+- [CT Baseline](./CT_BASELINE_2026-02-25.md)
+- [Master Plan (Cycle 04-06)](./MASTER_PLAN_CYCLE04_06.md)
+- [Pre-Cycle4 Feature Lock And Audit](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
+- [Docs Index](./README.md)
+
 ## 한 줄 요약
 지금 프로젝트는 "서사 기록 루프(Write/Save/Re-open/Re-query/Universe)"의 기본 작동을 Cycle 03에서 잠그고, Cycle 04~06에서 안정화/품질/운영체계 고정을 진행하려는 단계입니다.
 
@@ -69,6 +75,6 @@ sunset_condition: Replace at next cycle closure with a newer human-readable brie
 3. 통과 후 Cycle 4 kickoff JSON 패키지를 발행하고, CT baseline을 갱신합니다.
 
 ## 관련 문서
-- `CT_BASELINE_2026-02-25.md`
-- `PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md`
-- `MASTER_PLAN_CYCLE04_06.md`
+- [CT_BASELINE_2026-02-25.md](./CT_BASELINE_2026-02-25.md)
+- [PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
+- [MASTER_PLAN_CYCLE04_06.md](./MASTER_PLAN_CYCLE04_06.md)

@@ -18,6 +18,12 @@ sunset_condition: Replace when next cycle baseline is published after CT final h
 
 This document is the minimum context package for a contextless CT.
 
+## Quick Links
+- [Master Plan (Cycle 04-06)](./MASTER_PLAN_CYCLE04_06.md)
+- [Pre-Cycle4 Feature Lock And Audit](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
+- [Project Brief For Human](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)
+- [Docs Index](./README.md)
+
 ## 1) Snapshot Anchor
 - Baseline timestamp: `2026-02-25T23:59:59Z`
 - Final cycle state: `Cycle 03 accepted/pass`
@@ -96,6 +102,6 @@ At the end of each cycle, update all five:
 5. `CT_BASELINE_<date>.md` (same cycle timestamp family)
 
 ## 8) Related Documents
-- `MASTER_PLAN_CYCLE04_06.md`
-- `PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md`
-- `PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md`
+- [MASTER_PLAN_CYCLE04_06.md](./MASTER_PLAN_CYCLE04_06.md)
+- [PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
+- [PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)

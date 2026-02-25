@@ -16,6 +16,12 @@ sunset_condition: Replace by a new master plan when Cycle 06 close handoff is fi
 ---
 # Master Plan: Cycle 04-06
 
+## Quick Links
+- [CT Baseline](./CT_BASELINE_2026-02-25.md)
+- [Pre-Cycle4 Feature Lock And Audit](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
+- [Project Brief For Human](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)
+- [Docs Index](./README.md)
+
 ## 1) Purpose
 Define a decision-complete execution plan from Cycle 04 through Cycle 06, with clear separation of:
 - `Committed (execution)`

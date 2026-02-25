@@ -16,6 +16,12 @@ sunset_condition: Archive after Cycle 04 kickoff handoff is accepted and gate ch
 ---
 # Pre-Cycle4 Feature Lock And Audit
 
+## Quick Links
+- [CT Baseline](./CT_BASELINE_2026-02-25.md)
+- [Master Plan (Cycle 04-06)](./MASTER_PLAN_CYCLE04_06.md)
+- [Project Brief For Human](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)
+- [Docs Index](./README.md)
+
 ## Goal
 Lock current functionality and operational safety before starting Cycle 4.
 
