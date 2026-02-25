@@ -572,6 +572,25 @@ def apply_atmosphere(entropy_mode: bool):
                 padding-left: 1.2rem !important;
                 padding-right: 1.2rem !important;
             }
+            *:has(#nl-open-anchor) + [data-testid="stButton"] button {
+                position: fixed !important;
+                top: 0.62rem !important;
+                left: 0.68rem !important;
+                z-index: 99999 !important;
+                border-radius: 999px !important;
+                width: 2rem !important;
+                height: 2rem !important;
+                min-height: 0 !important;
+                padding: 0 !important;
+                background: var(--app-surface-soft, #1f232b) !important;
+                border: 1px solid var(--app-border, #2b3039) !important;
+                color: var(--app-muted, #9aa3b2) !important;
+                font-size: 1.1rem !important;
+            }
+            *:has(#nl-open-anchor) + [data-testid="stButton"] button:hover {
+                border-color: var(--app-accent, #10a37f) !important;
+                color: var(--app-text, #f3f5f7) !important;
+            }
             </style>""",
             unsafe_allow_html=True,
         )
@@ -1169,7 +1188,8 @@ def main():
     is_entropy = logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
     if not st.session_state.get("sidebar_open", True):
-        if st.button("⟩ 사이드바 열기", key="main_sb_open"):
+        st.markdown('<span id="nl-open-anchor"></span>', unsafe_allow_html=True)
+        if st.button("⟩", key="main_sb_open"):
             st.session_state["sidebar_open"] = True
             st.rerun()
     # render_runtime_diagnostics_badge(is_entropy)
