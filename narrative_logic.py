@@ -524,8 +524,8 @@ def extract_metadata(text: str) -> dict:
         )
         r = json.loads(response.choices[0].message.content)
         return {"keywords": r.get("keywords", []), "emotion": r.get("emotion", "기타"), "dimension": r.get("dimension", "기타")}
-    except (json.JSONDecodeError, TypeError, AttributeError, KeyError, IndexError) as parse_error:
-        logger.warning(f"Metadata extraction fallback: {parse_error}")
+    except Exception as e:
+        logger.warning(f"Metadata extraction fallback: {e}")
         return {"keywords": [], "emotion": "기타", "dimension": "기타"}
 
 
