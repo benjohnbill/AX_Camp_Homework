@@ -879,9 +879,13 @@ def render_stream_mode():
             render_stream_mode_switch_cards(show_heading=False, key_prefix="dock")
             st.markdown("</div>", unsafe_allow_html=True)
 
+        # Render OCR panel if open
+        if st.session_state.get("stream_ocr_open", False):
+            render_stream_ocr_entrypoint(expanded=True)
+
         # [+] Toggle Button and Chat Input area
         st.markdown("<div class='fixed-toggle-area'>", unsafe_allow_html=True)
-        col_dock, col_new = st.columns([1, 2])
+        col_dock, col_new, col_ocr = st.columns([1, 2, 2])
         with col_dock:
             btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
             if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환", use_container_width=True):
@@ -894,6 +898,11 @@ def render_stream_mode():
                 st.session_state["messages"] = []
                 st.session_state["first_input_of_session"] = True
                 st.session_state.pop("refined_memo", None)
+                st.rerun()
+        with col_ocr:
+            ocr_label = "📷 ×" if st.session_state.get("stream_ocr_open", False) else "📷 이미지 서사"
+            if st.button(ocr_label, key="stream_ocr_toggle", help="이미지로 서사 생성", use_container_width=True):
+                st.session_state["stream_ocr_open"] = not st.session_state.get("stream_ocr_open", False)
                 st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
