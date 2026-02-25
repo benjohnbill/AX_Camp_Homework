@@ -880,10 +880,20 @@ def render_stream_mode():
 
         # [+] Toggle Button and Chat Input area
         st.markdown("<div class='fixed-toggle-area'>", unsafe_allow_html=True)
-        btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
-        if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환", use_container_width=True):
-            st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
-            st.rerun()
+        col_dock, col_new = st.columns([1, 2])
+        with col_dock:
+            btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
+            if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환", use_container_width=True):
+                st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
+                st.rerun()
+        with col_new:
+            if st.button("✚ 새 스트림", key="new_stream_quick", help="새 대화 시작", use_container_width=True):
+                st.session_state["mode"] = "stream"
+                st.session_state["active_stream_id"] = _new_stream_id()
+                st.session_state["messages"] = []
+                st.session_state["first_input_of_session"] = True
+                st.session_state.pop("refined_memo", None)
+                st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
         if user_input := st.chat_input("메시지를 입력하세요..."):
