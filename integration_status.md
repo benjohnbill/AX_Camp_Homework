@@ -1,6 +1,6 @@
 # Integration Status: Android <-> Backend
 
-Last updated: 2026-02-25 (Proposal Queue Reviewed / Adjutant Sync)
+Last updated: 2026-02-25 (Cycle 03 Closure / Final PASS)
 Maintainer: Codex (integration coordinator)
 Projects:
 - Backend/Web: Narrative_Loop (Streamlit + Antigravity)
@@ -8,53 +8,29 @@ Projects:
 Documentation governance baseline: `Harness_Policy.md`
 
 ## 0) Adjutant Control Tower (ACT) Briefing
-- **Status**: 🟢 CYCLE02 ACCEPTED / CYCLE03 READY
+- **Status**: 🟢 CYCLE03 COMPLETED (ACCEPTED)
 - **Oversight Log**: 
-  - All Cycle02 goals (Auth Contract, Android E2E, 401/403 Design) verified as COMPLETED.
-  - Manual emulator evidence confirms Bearer->Cookie transition.
-  - Minimalist UI Redesign (Blue/Gray) implemented.
-- **Current Objective**: Define Cycle 03 scope for Advanced Automation & Retrieval Metrics.
+  - All Cycle 03 goals (Auth Contract, Narrative Copy, Product MVP) verified as **COMPLETED**.
+  - Android: Verified Write/Save/Query/Universe journey on both emulator and physical device.
+  - Backend/Frontend: Contract stability and friendly UX implemented.
+- **Current Objective**: Prepare for Cycle 04 (Advanced Retrieval Scaling & OCR Integration).
 
 ## 1) Overall Progress
-- Current progress: 100% (for MVP Cycle02)
-- Status: MVP baseline is stable. Moving to Advanced Phase (Cycle 03).
-
-### MVP Governance Risks (Current)
-- External deploy sync transcript remains a minor audit gap (mitigated by verified remote state).
+- Current progress: 100% (Cycle 03)
+- Status: Stable. Product Journey MVP validated.
+- **Entropy System (Red Protocol)**: Soft-off (experimental/labs) to prioritize MVP stability.
 
 ## 2) Completed (Fact-Checked)
-- **401/403 Narrative Design & Copy**: (2026-02-25) Scenarios and copy defined in `handoff_scenarios_copy.md`.
-- **Minimalist UI Redesign**: (2026-02-25) Apple/Toss inspired palette implemented in `app.py`.
-- **Android E2E Closure**: (2026-02-24) Emulator manual verification (Bearer, Cookie, 401, 403, Lifecycle) pass.
-- **Backend HTTPS Recovery**: (2026-02-24) /debug/token admin path fixed and verified.
-- **Auth Gateway Implementation**: `gateway_fastapi.py` with strict Bearer->Cookie contract.
-- **Autonomous Loop Governance**: `agent.md` and `ralph_heartbeat.ps1` updated for Adjutant mode.
+- **Android Product Journey**: (2026-02-25) Write/Save/Query/Universe PASS on device.
+- **401/403 Narrative Copy**: (2026-02-25) Implemented and verified.
+- **Backend Auth Contract**: (2026-02-25) 200/401/403/307 stability verified.
+- **Environment Recovery**: (2026-02-25) CT resolved emulator/navigation blockers.
 
 ## 3) In Progress
-- **Cycle 03 Scope Definition**: Defining automation and retrieval metrics track.
-- **Advanced Retrieval Evidence**: RRF + split context metrics collection.
-- **Android Instrumented Tests**: Automating auth contract regression.
-
-## 4) Open Gaps / Risks
-- **Retrieval Metrics**: Staging/production metrics for Korean search are still synthetic only.
-- **Device Variance**: Real physical device E2E (non-emulator) is a final target for production release.
+- **Cycle 04 Roadmap**: Defining OCR and context-enrichment milestones.
 
 ## 5) Latest Validation Snapshot
-- **Android/Backend E2E (2026-02-24)**: PASS (Cycle02 Closure).
-- **UI/UX Design (2026-02-25)**: PASS (Minimalist Redesign + 401/403 Design).
-- **Gate Status**: 🟢 Strict Gate PASS.
-
-## 6) Proposal Review Board
-- **Scan Scope**: `orchestration/proposals/` (including `archive/`).
-- **Active Queue**: 0 pending proposal files at review time.
-- **Reviewed Proposal (Archived)**: `orchestration/proposals/archive/task_gemini_ui_401_403_scenario.json`
-  - Decision: `accepted_and_closed`
-  - Evidence: `orchestration/results/task_gemini_ui_401_403_scenario_result.json` (`status: success`)
-  - Output Artifacts: `orchestration/handoff_scenarios_copy.md`, `orchestration/app_py_rerun_review.md`
-  - Follow-up Task: Cycle03 implementation promoted to `orchestration/task.json` (`T-narrative_loop-20260225-cycle03-ui-auth-copy`)
-
-## 9) Changelog (Recent)
-- 2026-02-25: Reviewed `orchestration/proposals/` queue; confirmed 0 active proposals and 1 archived proposal closed with success evidence.
-- 2026-02-25: Moved 401/403 design and UI redesign to Completed.
-- 2026-02-25: Updated Overall Progress to 100% (MVP).
-- 2026-02-25: Formally transitioned to Cycle 03 Readiness.
+- **Android (2026-02-25)**: PASS (`android/NarrativeLoopMobile/ANDROID_REPORT.md`).
+- **Backend (2026-02-25)**: PASS (`orchestration/results/20260225T060000Z.T-narrative_loop-20260225-backend-cycle03.result.json`).
+- **Frontend (2026-02-25)**: PASS (`orchestration/results/20260225T055000Z.T-narrative_loop-20260225-frontend-cycle03.result.json`).
+- **Contract Validation**: PASS (`data/evidence/20260225_contract_validation.log`).

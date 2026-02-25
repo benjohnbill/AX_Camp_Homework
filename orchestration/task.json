@@ -1,90 +1,75 @@
 {
-  "trace_id": "trace-narrative_loop-20260225-cycle03-ui-auth-copy",
-  "task_id": "T-narrative_loop-20260225-cycle03-ui-auth-copy",
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-cycle03",
   "owner": "control_tower",
-  "assigned_worker": "Antigravity",
-  "goal": "Define and execute Cycle03 frontend scope by implementing 401/403 narrative auth copy in app.py, aligned with orchestration/handoff_scenarios_copy.md, while keeping current gateway auth status contract and debug visibility intact.",
+  "assigned_worker": "generic_worker",
+  "goal": "Operate cycle03 as a CT umbrella task: coordinate android_ide/backend_cli/frontend_ide execution, keep contract evidence synchronized, and publish final accept/blocked decision from schema-valid artifacts.",
   "inputs": [
     {
       "kind": "artifact_ref",
       "value": "orchestration/handoff/latest.handoff.json",
-      "description": "Accepted cycle02 canonical baseline and cycle03 kickoff direction."
+      "description": "Accepted cycle02 canonical baseline."
     },
     {
       "kind": "file",
       "value": "integration_status.md",
-      "description": "Current cycle03 board, priorities, and no-regression guidance."
+      "description": "Current board, risks, and CT decision context."
     },
     {
       "kind": "file",
-      "value": "orchestration/handoff_scenarios_copy.md",
-      "description": "Design source for 401/403 scenario copy and UX intent."
+      "value": "orchestration/dispatch/20260224-cycle03.worker-prompts.json",
+      "description": "Cycle03 worker dispatch package."
     },
     {
-      "kind": "file",
-      "value": "app.py",
-      "description": "Target implementation file for _render_universe_auth_error."
+      "kind": "folder",
+      "value": "orchestration/tasks/",
+      "description": "Worker-specific cycle03 tasks (android/backend/frontend)."
     }
   ],
   "constraints": {
     "allow_write": true,
     "allow_execute": true,
     "allowed_paths": [
-      "app.py",
-      "tests/",
-      "orchestration/proposals/",
-      "orchestration/results/",
-      "data/evidence/"
+      "orchestration/",
+      "integration_status.md",
+      "data/evidence/",
+      "android/NarrativeLoopMobile/evidence/"
     ],
     "forbidden_paths": [
       ".git/",
       ".env",
-      "secrets/",
-      "gateway_fastapi.py",
-      "debug_token_server.py",
-      "universe_auth.py"
+      "secrets/"
     ],
-    "notes": "Keep auth semantics unchanged (401/403 routing and payload contract). No secret exposure. Default UI must be narrative-first; raw payload remains debug-only."
+    "notes": "CT umbrella task must not replace worker task contracts. Route execution through orchestration/tasks/*.json and keep schema-first governance."
   },
   "acceptance": [
-    "app.py _render_universe_auth_error applies narrative-first Korean copy for 401 and 403 states aligned with orchestration/handoff_scenarios_copy.md.",
-    "401 state communicates reconnect/access path (mobile or authenticated gateway) without exposing raw token jargon in default UI.",
-    "403 state communicates permission boundary using design-aligned key/door or observer-area metaphor and provides clear next guidance.",
-    "Technical JSON payload is still available only inside a debug expander for diagnostics.",
-    "Strict-gate-first evidence is attached (or clearly marked blocked) and confirms no auth-flow behavior regression."
+    "Root task.json and cycle03 dispatch/worker tasks are trace/task aligned and schema-valid.",
+    "Cycle03 worker evidence is collected for android/backend/frontend with reproducible paths.",
+    "CT decision (accept or blocked) is based on strict gate status plus canonical handoff JSON."
   ],
   "risk": {
     "level": "medium",
-    "note": "Copy-only changes can still regress auth UX if status-code branching or fallback wording diverges from runtime contract expectations."
+    "note": "If umbrella routing and worker task contracts drift, CT can make incorrect acceptance decisions despite partial evidence."
   },
   "next_actions": [
-    "Implement and review 401/403 narrative copy changes in app.py.",
-    "Run targeted frontend/auth checks under strict-gate-first policy and collect evidence artifact paths.",
-    "Publish schema-valid result/handoff artifacts for CT cycle03 decision."
+    "Dispatch android_ide/backend_cli/frontend_ide using cycle03 worker task files.",
+    "Collect refreshed result evidence and validate contracts before CT decision.",
+    "Publish final cycle03 canonical handoff and update integration_status.md."
   ],
   "requires_human_approval": false,
-  "timestamp": "2026-02-25T06:05:00Z",
+  "timestamp": "2026-02-25T07:15:00Z",
   "context_docs": [
     "Agent.md",
     "Harness_Policy.md",
     "integration_status.md",
-    "orchestration/handoff_scenarios_copy.md"
+    "orchestration/dispatch/20260224-cycle03.worker-prompts.json"
   ],
   "metadata": {
     "project": "narrative_loop",
     "cycle": "cycle03",
-    "domain": "frontend_auth_copy",
-    "priority": "P1",
+    "domain": "ct_orchestration",
+    "priority": "P0",
     "baseline_trace": "trace-narrative_loop-20260224-cycle02",
-    "baseline_task_id": "T-narrative_loop-20260224-cycle02",
-    "design_focus": [
-      "401_missing_or_expired",
-      "403_forbidden_audience_or_scope"
-    ],
-    "out_of_scope": [
-      "gateway_fastapi.py behavior changes",
-      "debug_token_server.py behavior changes",
-      "android runtime automation updates"
-    ]
+    "baseline_task_id": "T-narrative_loop-20260224-cycle02"
   }
 }

@@ -1,0 +1,155 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>프로젝트 기획서 템플릿</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    body {
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", Arial, sans-serif;
+      line-height: 1.55;
+      color: #1f2937;
+      font-size: 11pt;
+      margin: 0;
+    }
+    h1, h2, h3 { margin: 0 0 8px 0; color: #111827; }
+    h1 { font-size: 21pt; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 14px; }
+    h2 { font-size: 14pt; margin-top: 16px; }
+    h3 { font-size: 12pt; margin-top: 12px; }
+    p { margin: 6px 0; }
+    ul { margin: 4px 0 8px 18px; }
+    li { margin: 3px 0; }
+    .meta {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 4px 10px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+    }
+    .section {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      break-inside: avoid;
+    }
+    .status {
+      display: inline-block;
+      font-size: 9pt;
+      padding: 2px 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      margin-left: 6px;
+      color: #374151;
+    }
+    .small { color: #4b5563; font-size: 10pt; }
+    .page-break { page-break-before: always; }
+  </style>
+</head>
+<body>
+  <h1>[프로젝트명] 기획서</h1>
+
+  <div class="meta">
+    <div><strong>작성일</strong></div><div>[YYYY-MM-DD]</div>
+    <div><strong>버전</strong></div><div>[v1.0]</div>
+    <div><strong>작성자</strong></div><div>[이름/역할]</div>
+    <div><strong>대상 범위</strong></div><div>[프로젝트 전체 / 특정 사이클]</div>
+  </div>
+
+  <section class="section">
+    <h2>1) 기획 의도</h2>
+    <h3>작성 가이드</h3>
+    <ul>
+      <li>문제 정의: [사용자가 어떤 단절/불편을 겪는가?]</li>
+      <li>서사 정의: [story와 무엇이 다른가? 삶의 연결성과 어떤 관련이 있는가?]</li>
+      <li>루프 정의: [Write -> Save -> Re-open/Re-query -> Universe를 어떻게 설계했는가?]</li>
+      <li>운영 원칙: [계약/증적 기반으로 무엇을 검증 가능한 상태로 만들 것인가?]</li>
+    </ul>
+    <p class="small">권장 서술 순서: 철학적 문제의식 1~2문장 -> 제품 루프 1문단 -> 운영/검증 원칙 1문단</p>
+  </section>
+
+  <section class="section">
+    <h2>2) 구현/분석 방법</h2>
+    <ul>
+      <li>[아키텍처 역할 분리]</li>
+      <li>[계약/상태코드/세션 전이 기준]</li>
+      <li>[UX 원칙: 사용자용 카피 vs 디버그 정보 분리]</li>
+      <li>[검증 방식: 시나리오 + 디바이스 + 증적]</li>
+      <li>[CT 판정 기준: result/handoff + gate + runtime evidence]</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>3) 기능 및 유저 시나리오 / 분석 결과 및 인사이트</h2>
+    <p class="small">상태 표기: PASS / PARTIAL / BLOCKED</p>
+
+    <h3>시나리오 1. [Write/Save] <span class="status">[PASS/PARTIAL/BLOCKED]</span></h3>
+    <ul>
+      <li>가치: [사용자 관점 가치]</li>
+      <li>인사이트: [핵심 학습]</li>
+      <li>증적: [스크린샷/로그 경로]</li>
+    </ul>
+
+    <h3>시나리오 2. [Re-open/Re-query] <span class="status">[PASS/PARTIAL/BLOCKED]</span></h3>
+    <ul>
+      <li>가치: [사용자 관점 가치]</li>
+      <li>인사이트: [핵심 학습]</li>
+      <li>증적: [스크린샷/로그 경로]</li>
+    </ul>
+
+    <h3>시나리오 3. [Universe] <span class="status">[PASS/PARTIAL/BLOCKED]</span></h3>
+    <ul>
+      <li>가치: [사용자 관점 가치]</li>
+      <li>인사이트: [핵심 학습]</li>
+      <li>증적: [스크린샷/로그 경로]</li>
+    </ul>
+
+    <h3>시나리오 4. [401/403 UX] <span class="status">[PASS/PARTIAL/BLOCKED]</span></h3>
+    <ul>
+      <li>가치: [사용자 관점 가치]</li>
+      <li>인사이트: [핵심 학습]</li>
+      <li>증적: [스크린샷/로그 경로]</li>
+    </ul>
+
+    <h3>시나리오 5. [Lifecycle] <span class="status">[PASS/PARTIAL/BLOCKED]</span></h3>
+    <ul>
+      <li>가치: [사용자 관점 가치]</li>
+      <li>인사이트: [핵심 학습]</li>
+      <li>증적: [스크린샷/로그 경로]</li>
+    </ul>
+  </section>
+
+  <section class="section page-break">
+    <h2>4) 한계 및 고도화 방안</h2>
+
+    <h3>한계</h3>
+    <ul>
+      <li>[한계 1]</li>
+      <li>[한계 2]</li>
+      <li>[한계 3]</li>
+    </ul>
+
+    <h3>고도화 방안</h3>
+    <ul>
+      <li>[고도화 1]</li>
+      <li>[고도화 2]</li>
+      <li>[고도화 3]</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>부록) 증적 목록</h2>
+    <ul>
+      <li>결과 아티팩트: [result/handoff 경로]</li>
+      <li>검증 로그: [gate/contract/log 경로]</li>
+      <li>스크린샷: [evidence/screenshots 경로]</li>
+    </ul>
+  </section>
+</body>
+</html>
+
+

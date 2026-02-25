@@ -24,7 +24,7 @@ Scope: `Narrative_Loop`
 
 4. Runtime UI and Experience
 - 책임: Streamlit 화면/상태/모드 흐름, UX 카피
-- 주요 코드: `app.py`, `Gemini-3.1-Pro_Agent.md`
+- 주요 코드: `app.py`, `Antigravity_agent.md`, `orchestration/tasks/*frontend*.json`
 
 5. Governance and Orchestration
 - 책임: 계약 schema, 상태 동기화, 문서 권한/충돌 해소

@@ -2,10 +2,9 @@
 doc_type: worker_prompt
 owner: control_tower
 authority_level: L2
-last_updated: 2026-02-24
+last_updated: 2026-02-25
 sync_with:
   - orchestration/task.json
-  - orchestration/results/20260224T155926Z.T-narrative_loop-20260224-backend-cycle02.result.json
   - data/staging_auth_probe_latest.json
 change_triggers:
   - cycle change
@@ -19,30 +18,26 @@ review_by: 2026-02-26
 Copy and paste this prompt to the backend execution environment that has deploy credentials.
 
 ```text
-You are backend_cli worker for Narrative_Loop cycle02.
-Date: 2026-02-24
+You are backend_cli worker for Narrative_Loop cycle03.
+Date: 2026-02-25
 
 Objective:
-Close backend blockers for final CT acceptance by attaching deploy/secrets-sync/restart evidence.
+Validate Advanced Retrieval Metrics and fixed HTTPS auth contract stability.
 
 Current baseline:
-- Fixed HTTPS auth probe report already exists:
+- Fixed HTTPS auth probe report exists:
   data/staging_auth_probe_latest.json
 - Gateway auth routes are responsive.
-- Blocking point: /debug/token with admin key is still unauthorized_admin in current evidence.
+- Strict gate is active.
 
 Required work:
-1) Execute staging secrets sync for:
-   - UNIVERSE_JWT_SECRET
-   - UNIVERSE_SESSION_SECRET
-   - DEBUG_TOKEN_ADMIN_KEY
-2) Restart staging services and capture sanitized logs.
-3) Re-run endpoint evidence:
-   - POST /debug/token (with admin key): expect 200 code=issued
-   - GET /healthz: expect 200
-   - GET /gateway/session (no auth): expect 401 missing_token
-   - GET /gateway/universe_3d (no auth): expect 401 missing_token
-4) Re-run bearer->cookie probe:
+1) Verify staging auth contract remains stable:
+   tools/probe_staging_auth_contract.py --json-report data/staging_auth_probe_latest.json
+2) Collect Advanced Retrieval Metrics (RRF + split context):
+   tools/eval_korean_retrieval.py
+3) Capture backend strict-gate health:
+   tools/run_agent_a_gate.py --policy-mode strict
+4) Re-verify bearer->cookie probe:
    - first bearer: 307 + set-cookie
    - cookie follow-up: 307 + auth-source cookie
    - wrong audience: 403 forbidden_audience

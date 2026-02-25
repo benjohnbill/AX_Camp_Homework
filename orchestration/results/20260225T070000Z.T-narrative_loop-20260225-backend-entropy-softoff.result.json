@@ -1,0 +1,33 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-cycle03",
+  "task_id": "T-narrative_loop-20260225-backend-entropy-softoff",
+  "worker": "backend_cli",
+  "status": "success",
+  "timestamp": "2026-02-25T07:00:00Z",
+  "summary": "Implemented Entropy System soft-off (experimental/labs) for Cycle 03 focus on MVP core loop.",
+  "changes": [
+    "narrative_logic.py: Modified is_entropy_mode() to check ENABLE_ENTROPY environment variable.",
+    "db_manager.py: Guarded streak penalty debt increment with ENABLE_ENTROPY flag.",
+    "db_manager_postgres.py: Guarded streak penalty debt increment with ENABLE_ENTROPY flag.",
+    "app.py: Adjusted stream mode UI to skip entropy-specific buttons and debt increment when disabled."
+  ],
+  "feature_control": {
+    "method": "Environment Variable / Streamlit Secret",
+    "key": "ENABLE_ENTROPY",
+    "default_value": "false",
+    "activation_steps": [
+      "1. Set environment variable ENABLE_ENTROPY=true in the runtime environment (Render/Local/Secrets).",
+      "2. Restart the application service.",
+      "3. Verify by checking if 'ENTROPY ALERT' appears in the sidebar when debt_count > 0."
+    ]
+  },
+  "validation": {
+    "auth_contract_integrity": "PASS (Checked via probe_staging_auth_contract.py - 200/401/403/307 unaffected)",
+    "core_loop_regression": "PASS (Write/Save/Query/Universe remain functional without entropy blockers)",
+    "schema_stability": "PASS (No tables or columns modified/deleted)"
+  },
+  "risk_and_rollback": {
+    "risk": "Minimal. Feature logic remains intact, only the triggers are gated.",
+    "rollback": "Remove ENABLE_ENTROPY variable or set to 'false' (it defaults to false if unset)."
+  }
+}

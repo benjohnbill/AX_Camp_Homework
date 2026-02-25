@@ -1,7 +1,7 @@
 # Agent.md — Narrative_Loop 통합 운영 문서 (SSOT)
 
 이 문서는 Narrative_Loop의 단일 진실 원천이다.  
-모든 AI 도구(Codex CLI, Antigravity, Android Studio, Gemini 3.1 Pro)는 이 문서를 우선 기준으로 작업한다.
+모든 AI 도구(Codex CLI, Antigravity, Android Studio, frontend_ide)는 이 문서를 우선 기준으로 작업한다.
 
 ---
 
@@ -130,7 +130,7 @@ Core-first loading (zero-context CT):
 - `Narrative Core`: Codex(통합 정책) + Antigravity(구현) 공동 책임
 - `Ingest/Auth Gateway`: Antigravity 1차 책임, Android는 클라이언트 계약 책임
 - `Retrieval/Context Enrichment`: Antigravity 1차 책임
-- `Runtime UI/UX`: Gemini(설계) + Antigravity(구현) 공동 책임
+- `Runtime UI/UX`: frontend_ide(설계+구현, 운영 주체 Antigravity) 책임
 - `Governance/Orchestration`: Codex 1차 책임
 
 파일 경로는 소유권 판정의 보조 기준(거점)이며, 최종 판정은 `DOMAIN_MAP.md`와
@@ -169,11 +169,11 @@ Control Tower 통합 게이트를 따른다.
 - CameraX, OCR 입력 UX, 네트워크 재시도, 응답 렌더링 책임.
 - 키를 클라이언트에 두지 않고 토큰 기반 인증만 사용.
 
-### Gemini 3.1 Pro (UI 전문)
+### Frontend IDE (UI/UX + 구현)
 
-- 내러티브 UX 개선.
-- 숙제화 없는 카피/인터랙션 설계.
-- Streamlit 화면 개선안 제안(구현은 Antigravity와 연동).
+- 내러티브 UX 설계와 `app.py` 구현을 단일 트랙으로 수행.
+- 숙제화 없는 카피/인터랙션 설계와 회귀 검증을 함께 책임.
+- 기존 Gemini UI 제안 역할은 frontend_ide에 통합한다.
 
 ---
 
@@ -295,11 +295,11 @@ Canonical artifact:
 ## 11) 문서 정책
 
 이전의 분산 문서를 통합해 본 파일을 기준으로 운영한다.  
-도구별 실행 문서는 아래 3개를 사용한다.
+도구별 실행 문서는 아래를 사용한다.
 
 - `Antigravity_Agent.md`
 - `Android_Studio_Agent.md`
-- `Gemini-3.1-Pro_Agent.md`
+- `Gemini-3.1-Pro_Agent.md` (legacy alias: frontend_ide 통합 가이드)
 
 보안/운영 참고 문서:
 

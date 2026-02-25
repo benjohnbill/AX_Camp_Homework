@@ -1,21 +1,23 @@
 ---
 doc_type: ct_inbox
-owner: Gemini-3.1-Pro
+owner: frontend_ide
 authority_level: L2
 last_updated: 2026-02-25
 ---
 
-# CT_INBOX_GEMINI_UI
+# CT_INBOX_GEMINI_UI (Legacy Alias)
 
 ## 1) Status Update
-- Current focus: Narrative UX improvement and Streamlit UI stability.
-- Latest result: Waiting for backend/mobile auth contract finalization.
+- Gemini UI 분리 트랙은 종료되었고 `frontend_ide`로 통합 운영한다.
+- 이 문서는 기존 참조 호환을 위한 alias inbox다.
 
 ## 2) Next Recommended Action
-- [ ] **Autonomous Task**: Propose 5 error scenarios for the Streamlit UI based on potential 401/403 responses from the gateway.
-- [ ] Review `app.py` for any potential rerun loops that could be optimized before heavy retrieval logic is integrated.
+- [ ] UI/UX 작업은 frontend worker task를 기준으로 수행한다.
+- [ ] 실행 기준 파일: `orchestration/tasks/20260224T202500Z.frontend.task.json`
+- [ ] 결과 제출: `orchestration/results/*.result.json` (worker=`frontend_ide`)
 
 ## 3) Reference Documents
-- `Agent.md` (Autonomous Loop principles)
+- `Agent.md`
+- `Antigravity_agent.md`
 - `integration_status.md`
-- `orchestration/results/latest.result.json`
+- `orchestration/dispatch/20260224-cycle03.worker-prompts.json`

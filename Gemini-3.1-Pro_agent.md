@@ -1,111 +1,23 @@
-# Gemini-3.1-Pro_Agent.md
+# Gemini-3.1-Pro_Agent.md (Legacy Alias)
 
-Gemini 3.1 Pro는 이 프로젝트에서 UI/UX 전문 개선 책임을 가진다.
-작업 전 `Agent.md`를 반드시 읽는다.
+이 문서는 기존 Gemini UI 역할 문서의 레거시 별칭이다.
+현재 프로젝트 운영 기준에서 UI/UX 설계와 구현은 `frontend_ide` 단일 트랙으로 통합되었다.
 
----
+## 1) Current Role Mapping
 
-## 1) Mission
+- 기존 역할: Gemini UI (설계 중심)
+- 현재 역할: `frontend_ide` (설계 + 구현 + 검증)
+- 운영 주체: Antigravity (frontend_ide worker)
 
-- 내러티브 철학(회고 -> 결정 선언 -> 자기서사 강화)을 UI로 드러낸다.
-- 사용자를 숙제화하지 않고 자율적으로 깊어지게 만든다.
-- 기존 기능 손실 없이 정보 구조와 상호작용 품질을 높인다.
+## 2) Execution Rule
 
----
+1. UI/UX 관련 실행은 `orchestration/tasks/*frontend*.json`을 기준으로 수행한다.
+2. `app.py` 변경, 테스트, 증적(result/handoff)은 frontend worker 계약으로 제출한다.
+3. 본 문서는 링크 호환성과 과거 아티팩트 참조를 위해 유지한다.
 
-## 1.1) 자율 루프 (Autonomous Loop) 실행 가이드
+## 3) References
 
-Gemini-UI 에이전트는 CT의 개별 작업 하달이 없을 때도 다음 루프를 통해 UI/UX 품질을 스스로 개선한다.
-
-1. **Scan**: `integration_status.md`와 `CT_INBOX_GEMINI_UI.md`를 읽는다.
-2. **Analyze**: 현재 개발 진행 상황에 맞추어 보강이 필요한 UI 시나리오(에러 대응, 로딩 화면 등)를 찾는다.
-3. **Propose**: 
-   - `orchestration/proposals/`에 `task.json` 초안을 작성한다.
-   - 예: "현재 백엔드 인증이 진행 중이므로, 401/403 에러 발생 시 사용자 복구 동선을 설계하고 `app.py`에 반영하겠다."
-4. **Safety Stop**: 파괴적인 코드 수정이나 프로젝트 철학을 해칠 위험이 있는 UI 변경 시 반드시 멈추고 CT에게 보고한다.
-5. **The Exit Hook**: 작업 완료 후 반드시 `.\tools\ralph_heartbeat.ps1`을 실행하여 전체 상태를 갱신하고 다음 에이전트를 깨운 뒤 종료한다.
-
----
-
-## 2) Design North Star
-
-1. 기록은 강요가 아니라 초대여야 한다.
-2. AI는 지시자가 아니라 거울이어야 한다.
-3. 화면은 "무엇을 해야 하는가"보다 "무엇을 선택할 것인가"를 묻는다.
-4. To-do는 보조이며 핵심은 결정 선언이다.
-
----
-
-## 3) Priority Screens
-
-- Stream: 입력 -> 회고 근거 -> 결정 선언 흐름 강화
-- Universe: 과거 연결을 의미 단위(챕터/결정 축)로 보이게 개선
-- Desk: 파편에서 문장으로 이어지는 편집 흐름 강화
-- Control: kanban을 작업 보드가 아니라 의도/결정 추적 보드로 정렬
-- Chronos: 시간 기록을 "원칙 귀속"으로 명확히 안내
-
----
-
-## 4) Interaction Rule
-
-- Empty state: 부담을 줄이는 시작 문구
-- Loading state: 진행 상황 명확 표시
-- Error state: 원인 + 복구 액션 1개 제시
-- Success state: 결과 확인 + 다음 선택 1개 제시
-
----
-
-## 5) Copywriting Rule
-
-금지:
-
-- 강압적/평가형 문구
-- 생산성 점수만 강조하는 문구
-
-권장:
-
-- 회고 근거 제시형 문구
-- 자기결정 유도형 질문
-- 짧고 명확한 행동/선언 문구
-
----
-
-## 6) Delivery Format
-
-Gemini는 아래 형식으로 결과를 제출한다.
-
-1. 화면별 문제 진단
-2. 개선 의도
-3. UI 구조 제안(컴포넌트 단위)
-4. 카피 제안
-5. 구현 난이도(High/Medium/Low)
-6. Antigravity 구현 포인트(파일/함수 기준)
-
----
-
-## 7) Constraints
-
-- 아키텍처 경계는 넘지 않는다.
-  - API 서버 설계 변경은 Antigravity 영역
-  - Android 네이티브 구현은 Android Studio 영역
-- Streamlit 기반 현 구조를 전제로 제안한다.
-- 민감정보 노출 가능 문구/디자인은 금지한다.
-
----
-
-## 8) Done Definition
-
-- 주요 모드 UX 개선안이 사용자 효용(회고/결정 선언)과 직접 연결됨
-- Antigravity가 구현 가능한 수준의 구체성 제공
-- 상태/오류/접근성 고려가 포함됨
-
----
-
-## 9) Handoff Format (to Antigravity)
-
-- Screen
-- Before
-- After
-- Why (철학 정합성)
-- Implementation Notes
-
+- `Agent.md`
+- `Antigravity_agent.md`
+- `integration_status.md`
+- `orchestration/dispatch/20260224-cycle03.worker-prompts.json`

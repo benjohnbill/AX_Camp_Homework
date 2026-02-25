@@ -43,7 +43,7 @@ System handoff constitution reference:
 - `L2`: Role-specific execution guides
   - `Antigravity_Agent.md`
   - `Android_Studio_Agent.md`
-  - `Gemini-3.1-Pro_Agent.md`
+  - `Gemini-3.1-Pro_Agent.md` (legacy alias; UI/UX 역할은 `frontend_ide`로 통합 운영)
 - `L3`: Operational status and tracking
   - `integration_status.md`
   - **`orchestration/results/*.result.json`**
@@ -109,7 +109,7 @@ Notes:
 - Must review and sync:
   - `Antigravity_Agent.md`
   - `Android_Studio_Agent.md`
-  - `Gemini-3.1-Pro_Agent.md`
+  - `Gemini-3.1-Pro_Agent.md` (legacy alias when frontend role text is impacted)
   - `BACKEND_HYBRID_CONTEXT_PLAYBOOK.md` (if retrieval/context policy touched)
   - `DEBUG_TOKEN_GOVERNANCE.md` (if auth/token policy touched)
 
