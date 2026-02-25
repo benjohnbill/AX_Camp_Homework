@@ -1,0 +1,62 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-android-precycle4",
+  "worker": "android_ide",
+  "status": "blocked",
+  "summary": "Pre-Cycle 4 Android audit was reconciled under the strict same-window rule. Navigation and emulator runtime checks passed, but physical-device full journey evidence is missing in the current cycle window, so Android remains blocked.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+      "description": "Android Pre-Cycle 4 Audit and Rerun Report."
+    },
+    {
+      "kind": "artifact",
+      "path": "data/evidence/20260225T141942Z_android_precycle4_full_journey_emulator.json",
+      "description": "Same-window emulator full journey evidence."
+    },
+    {
+      "kind": "artifact",
+      "path": "data/evidence/20260225T141942Z_android_precycle4_full_journey_physical.json",
+      "description": "Same-window physical-device full journey probe evidence (blocked)."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "navigation_wiring_audit",
+      "status": "pass",
+      "note": "Fragment wiring and navigation graph IDs match BottomNavigationView menu. evidence_path=android/NarrativeLoopMobile/app/src/main/res/navigation/mobile_navigation.xml"
+    },
+    {
+      "name": "emulator_full_journey_same_window",
+      "command": "Manual journey attestation + adb runtime probe",
+      "status": "pass",
+      "note": "Write/Save/Re-open/Re-query/Universe flow attested for emulator. evidence_path=data/evidence/20260225T141942Z_android_precycle4_full_journey_emulator.json"
+    },
+    {
+      "name": "physical_full_journey_same_window",
+      "command": "adb devices -l",
+      "status": "fail",
+      "note": "No physical device detected in current cycle window. evidence_path=data/evidence/20260225T141942Z_android_precycle4_full_journey_physical.json"
+    },
+    {
+      "name": "strict_gate_rule_enforced",
+      "status": "info",
+      "note": "Cycle03 physical evidence is retained as historical context only and is not used as pre-cycle4 PASS evidence."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Android pre-cycle4 PASS cannot be asserted without same-window physical-device full journey evidence.",
+      "mitigation": "Connect physical device, execute full journey in same window, and republish Android result."
+    }
+  ],
+  "next_actions": [
+    "Connect a physical Android device and verify adb reports emulator + physical as device.",
+    "Capture full journey evidence (Write/Save/Re-open/Re-query/Universe) on physical device in this same cycle window.",
+    "Republish Android pre-cycle4 result and trigger CT gate re-aggregation."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-25T14:22:00Z"
+}

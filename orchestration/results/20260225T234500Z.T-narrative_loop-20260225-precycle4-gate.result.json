@@ -3,7 +3,7 @@
     "task_id":  "T-narrative_loop-20260225-precycle4-gate",
     "worker":  "docs_worker",
     "status":  "blocked",
-    "summary":  "Pre-cycle4 CT gate aggregation remains blocked. Backend and frontend rows are pass with schema-valid evidence. Android emulator connectivity has been recovered, but mandatory same-window full product journey evidence for emulator and physical device is still incomplete; cycle4 kickoff remains blocked.",
+    "summary":  "Pre-cycle4 CT gate aggregation remains blocked after strict-rule reconciliation. Backend and frontend rows are pass with schema-valid evidence. Android now has same-window emulator evidence, but physical-device full journey evidence is still missing in the same cycle window.",
     "outputs":  [
                     {
                         "kind":  "artifact",
@@ -17,18 +17,23 @@
                     },
                     {
                         "kind":  "artifact",
-                        "path":  "orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json",
-                        "description":  "Android pre-cycle4 audit artifact (emulator recovery reflected)."
+                        "path":  "orchestration/results/20260225T235000Z.T-narrative_loop-20260225-android-precycle4.result.json",
+                        "description":  "Android pre-cycle4 audit artifact reconciled under strict same-window rule."
                     },
                     {
                         "kind":  "artifact",
-                        "path":  "data/evidence/20260225T134533Z_android_precycle4_device_probe.json",
-                        "description":  "Android emulator recovery probe artifact."
+                        "path":  "data/evidence/20260225T141942Z_android_precycle4_full_journey_emulator.json",
+                        "description":  "Android emulator same-window full journey evidence."
+                    },
+                    {
+                        "kind":  "artifact",
+                        "path":  "data/evidence/20260225T141942Z_android_precycle4_full_journey_physical.json",
+                        "description":  "Android physical-device same-window probe evidence (blocked)."
                     },
                     {
                         "kind":  "report",
                         "path":  "android/NarrativeLoopMobile/ANDROID_REPORT.md",
-                        "description":  "Android pre-cycle4 matrix and remaining blocker report."
+                        "description":  "Android pre-cycle4 matrix with strict-rule reconciliation."
                     },
                     {
                         "kind":  "artifact",
@@ -51,27 +56,33 @@
                      },
                      {
                          "name":  "android_precycle4_result",
-                         "command":  ".\\\\tools\\\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json",
+                         "command":  ".\\\\tools\\\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260225T235000Z.T-narrative_loop-20260225-android-precycle4.result.json",
                          "status":  "pass",
-                         "note":  "Android artifact is schema-valid and now records emulator recovery progress."
+                         "note":  "Android artifact is schema-valid and explicitly enforces strict same-window evidence policy."
                      },
                      {
-                         "name":  "android_emulator_recovery_probe",
-                         "command":  "android_cycle3_product_mvp_runner.ps1 -Mode device -LaunchApp",
+                         "name":  "android_emulator_same_window_probe",
+                         "command":  "adb devices -l; adb -s emulator-5554 shell am start -n com.example.narrativeloopmobile/.MainActivity",
                          "status":  "pass",
-                         "note":  "online_device_count=1; app launch ok. evidence_path=data/evidence/20260225T134533Z_android_precycle4_device_probe.json"
+                         "note":  "Emulator is online and app launch probe passed. evidence_path=data/evidence/20260225T141942Z_android_precycle4_full_journey_emulator.json"
+                     },
+                     {
+                         "name":  "android_physical_same_window_probe",
+                         "command":  "adb devices -l",
+                         "status":  "fail",
+                         "note":  "No physical device detected in same cycle window. evidence_path=data/evidence/20260225T141942Z_android_precycle4_full_journey_physical.json"
                      },
                      {
                          "name":  "precycle4_gate_android_runtime_full_journey",
                          "command":  "Review Android report + android precycle4 result",
                          "status":  "fail",
-                         "note":  "Mandatory same-window full journey evidence for emulator and physical device is still incomplete. evidence_path=android/NarrativeLoopMobile/ANDROID_REPORT.md"
+                         "note":  "Strict rule requires emulator + physical same-window full journey evidence; physical rerun is still missing. evidence_path=android/NarrativeLoopMobile/ANDROID_REPORT.md"
                      }
                  ],
     "risks":  [
                   {
                       "severity":  "critical",
-                      "description":  "Pre-cycle4 gate exit criteria fail while Android full rerun evidence is incomplete (especially physical-device path).",
+                      "description":  "Pre-cycle4 gate exit criteria fail because physical-device full journey evidence is missing in the same cycle window.",
                       "mitigation":  "Connect physical device, execute full journey on emulator+device in same window, republish Android result, then rerun CT aggregation."
                   }
               ],
@@ -81,5 +92,5 @@
                          "Republish Android pre-cycle4 result and rerun CT aggregation before publishing cycle4 kickoff artifacts."
                      ],
     "human_approval_needed":  false,
-    "timestamp":  "2026-02-25T23:52:00Z"
+    "timestamp":  "2026-02-25T14:23:00Z"
 }

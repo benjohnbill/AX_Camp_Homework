@@ -3,7 +3,7 @@
     "task_id":  "T-narrative_loop-20260225-precycle4-gate",
     "owner":  "control_tower",
     "assigned_worker":  "generic_worker",
-    "goal":  "Operate pre-cycle4 feature-lock gate aggregation for backend/frontend/android artifacts, publish blocked/pass decision, and prevent cycle4 kickoff until all exit criteria pass.",
+    "goal":  "Operate pre-cycle4 feature-lock gate aggregation for backend/frontend/android artifacts under strict same-window Android evidence policy, publish blocked/pass decision, and prevent cycle4 kickoff until all exit criteria pass.",
     "inputs":  [
                    {
                        "kind":  "file",
@@ -27,8 +27,8 @@
                    },
                    {
                        "kind":  "artifact_ref",
-                       "value":  "orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json",
-                       "description":  "Android gate artifact."
+                       "value":  "orchestration/results/20260225T235000Z.T-narrative_loop-20260225-android-precycle4.result.json",
+                       "description":  "Android gate artifact reconciled with strict same-window rule."
                    }
                ],
     "constraints":  {
@@ -51,11 +51,12 @@
     "acceptance":  [
                        "All pre-cycle4 worker artifacts are schema-valid and trace/task aligned.",
                        "Any unresolved blocker in Android/auth/storage/universe critical path is explicitly recorded as blocked in CT handoff.",
+                       "Android PASS requires emulator and physical-device full journey evidence captured in the same cycle window (prior-cycle evidence is not accepted for PASS).",
                        "Cycle4 kickoff artifacts are published only after all pre-cycle4 exit criteria are pass."
                    ],
     "risk":  {
                  "level":  "high",
-                 "note":  "Starting cycle4 before closing Android runtime blocker can produce false-pass governance state."
+                 "note":  "Starting cycle4 before closing same-window physical-device Android blocker can produce false-pass governance state."
              },
     "next_actions":  [
                          "Connect physical device and complete Android same-window full journey evidence.",
@@ -63,7 +64,7 @@
                          "Rerun CT gate aggregation; publish cycle4 kickoff only when all exit criteria are pass."
                      ],
     "requires_human_approval":  false,
-    "timestamp":  "2026-02-25T23:52:00Z",
+    "timestamp":  "2026-02-25T14:24:00Z",
     "context_docs":  [
                          "docs/CT_BASELINE_2026-02-25.md",
                          "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",

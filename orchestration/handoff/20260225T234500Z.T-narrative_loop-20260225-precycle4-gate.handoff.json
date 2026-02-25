@@ -3,10 +3,10 @@
     "task_id":  "T-narrative_loop-20260225-precycle4-gate",
     "worker":  "control_tower",
     "what_changed":  [
-                         "Re-aggregated pre-cycle4 artifacts with Android emulator recovery evidence attached.",
+                         "Reconciled Android pre-cycle4 result under strict same-window evidence rule.",
                          "Backend pre-cycle4 rows remain pass with schema-valid evidence.",
                          "Frontend pre-cycle4 rows remain pass with file-based evidence reinforcement.",
-                         "Android remains blocked because full same-window emulator+physical journey evidence is still incomplete.",
+                         "Android remains blocked because physical-device same-window full journey evidence is still missing.",
                          "Cycle4 kickoff remains blocked until Android blocker is closed."
                      ],
     "validation":  [
@@ -23,12 +23,17 @@
                        {
                            "name":  "android_precycle4",
                            "outcome":  "blocked",
-                           "evidence_path":  "orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json"
+                           "evidence_path":  "orchestration/results/20260225T235000Z.T-narrative_loop-20260225-android-precycle4.result.json"
                        },
                        {
-                           "name":  "android_emulator_recovery_probe",
+                           "name":  "android_emulator_same_window_probe",
                            "outcome":  "pass",
-                           "evidence_path":  "data/evidence/20260225T134533Z_android_precycle4_device_probe.json"
+                           "evidence_path":  "data/evidence/20260225T141942Z_android_precycle4_full_journey_emulator.json"
+                       },
+                       {
+                           "name":  "android_physical_same_window_probe",
+                           "outcome":  "blocked",
+                           "evidence_path":  "data/evidence/20260225T141942Z_android_precycle4_full_journey_physical.json"
                        },
                        {
                            "name":  "android_runtime_full_journey_gate",
@@ -39,7 +44,7 @@
     "risks":  [
                   {
                       "severity":  "critical",
-                      "description":  "Pre-cycle4 exit criteria still fail because Android same-window full journey evidence is incomplete; cycle4 kickoff cannot start."
+                      "description":  "Pre-cycle4 exit criteria still fail because physical-device same-window full journey evidence is missing; cycle4 kickoff cannot start."
                   }
               ],
     "next_3_actions":  [
@@ -47,5 +52,5 @@
                            "Republish Android pre-cycle4 result with full journey pass evidence for emulator and physical device.",
                            "Rerun CT gate aggregation and publish cycle4 kickoff artifacts only when gate becomes pass."
                        ],
-    "timestamp":  "2026-02-25T23:52:00Z"
+    "timestamp":  "2026-02-25T14:23:30Z"
 }
