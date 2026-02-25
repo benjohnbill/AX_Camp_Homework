@@ -25,10 +25,10 @@ import plotly.graph_objects as go
 _ALLOWED_MODES = ("stream", "desk", "chronos", "control", "universe")
 
 _MODE_CARD_CONFIG = (
-    ("desk", "Desk", "긴 글 작성과 정리", "📝"),
-    ("chronos", "Chronos", "집중 타이머와 회고", "⏱️"),
-    ("universe", "Universe", "분석과 3D 탐색", "🌌"),
-    ("control", "Control", "칸반 기반 통제", "🧭"),
+    ("desk", "THE DESK", "긴 글 작성과 정리", "📝"),
+    ("chronos", "CHRONOS", "집중 타이머와 회고", "⏱️"),
+    ("universe", "SOUL ANALYTICS", "분석과 3D 탐색", "🌌"),
+    ("control", "CONTROL", "칸반 기반 통제", "🧭"),
 )
 
 # ============================================================
@@ -418,16 +418,16 @@ def apply_atmosphere(entropy_mode: bool):
             border-color: var(--app-accent) !important;
             color: var(--app-text) !important;
         }
-        [data-testid="stSidebar"] {
-            border-right: 1px solid var(--app-border);
+        /* Width constraints only when open — do NOT block native collapse */
+        [data-testid="stSidebar"][aria-expanded="true"] {
             width: var(--sidebar-width) !important;
             min-width: var(--sidebar-width) !important;
             max-width: var(--sidebar-width) !important;
-            transition: transform 0.26s ease, opacity 0.26s ease, margin-left 0.26s ease, width 0.26s ease, min-width 0.26s ease, max-width 0.26s ease;
-            will-change: transform, opacity, margin-left, width;
-            transform: translateX(0);
-            opacity: 1;
-            margin-left: 0;
+        }
+        [data-testid="stSidebar"] {
+            border-right: 1px solid var(--app-border);
+            transition: transform 0.26s ease, opacity 0.26s ease, width 0.26s ease, min-width 0.26s ease;
+            will-change: transform, width;
         }
 
         .stream-shell {
@@ -736,12 +736,11 @@ def render_stream_mode_switch_cards(show_heading: bool = True, key_prefix: str =
     if show_heading:
         st.markdown("<div style='text-align:center; color:var(--app-muted); font-size:0.85rem; margin-bottom:0.8rem;'>워크스페이스 전환</div>", unsafe_allow_html=True)
     
-    # Force 2 columns for a balanced dock look
-    cols = st.columns(2, gap="small")
+    # Strictly 4 columns for a single horizontal row (ChatGPT style)
+    cols = st.columns(4, gap="small")
     for idx, (mode, title, subtitle, emoji) in enumerate(_MODE_CARD_CONFIG):
-        col = cols[idx % 2]
-        with col:
-            # Strictly Emoji + Bold Title for all modes
+        with cols[idx % 4]:
+            # Consistent formatting: Emoji + Bold Title (ALL CAPS from config)
             label = f"{emoji} **{title}**"
             if st.button(label, key=f"stream_hub_{key_prefix}_{mode}", use_container_width=True, help=subtitle):
                 st.session_state["mode"] = mode
