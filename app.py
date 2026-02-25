@@ -594,46 +594,48 @@ def render_api_key_section():
     st.markdown("<div class='sidebar-section-title'>Account</div>", unsafe_allow_html=True)
     
     # Header: Name and Settings Toggle
-    col_name, col_btn = st.columns([3, 1])
+    col_name, col_btn = st.columns([4, 1])
     with col_name:
         st.markdown(f"**{display_name if display_name else '사용자'}**")
     with col_btn:
-        if st.button("⚙️", key="profile_settings_toggle", help="설정 열기/닫기", use_container_width=True):
+        if st.button("⚙️", key="profile_settings_toggle", help="설정 열기/닫기"):
             st.session_state["profile_settings_open"] = not profile_settings_open
             st.rerun()
 
     # Settings Content (Hidden by default)
     if profile_settings_open:
-        with st.container(border=True):
-            # 1. API Key
-            entered_key = st.text_input(
-                "OpenAI API Key",
-                type="password",
-                value=session_key,
-                placeholder="sk-...",
-                key="openai_api_key_input",
-            )
-            
-            # 2. Display Name
-            name_input = st.text_input(
-                "표시 이름",
-                value=display_name,
-                placeholder="이름 입력",
-                key="profile_display_name_input",
-            )
+        # Use a simpler layout for settings to avoid sidebar crowding
+        st.caption("Settings")
+        
+        # 1. API Key
+        entered_key = st.text_input(
+            "OpenAI API Key",
+            type="password",
+            value=session_key,
+            placeholder="sk-...",
+            key="openai_api_key_input",
+        )
+        
+        # 2. Display Name
+        name_input = st.text_input(
+            "표시 이름",
+            value=display_name,
+            placeholder="이름 입력",
+            key="profile_display_name_input",
+        )
 
-            # 3. Actions
-            c1, c2 = st.columns(2)
-            if c1.button("저장", key="save_settings", use_container_width=True, type="primary"):
-                if entered_key: logic.set_api_key(entered_key.strip())
-                st.session_state["profile_display_name"] = str(name_input).strip()
-                st.success("설정 저장됨")
-                st.rerun()
-            
-            if c2.button("초기화", key="reset_settings", use_container_width=True):
-                st.session_state.pop("openai_api_key", None)
-                st.session_state["profile_display_name"] = ""
-                st.rerun()
+        # 3. Actions
+        c1, c2 = st.columns(2)
+        if c1.button("저장", key="save_settings", use_container_width=True):
+            if entered_key: logic.set_api_key(entered_key.strip())
+            st.session_state["profile_display_name"] = str(name_input).strip()
+            st.success("저장됨")
+            st.rerun()
+        
+        if c2.button("초기화", key="reset_settings", use_container_width=True):
+            st.session_state.pop("openai_api_key", None)
+            st.session_state["profile_display_name"] = ""
+            st.rerun()
 
 
 def render_sidebar_toggle_control() -> None:
@@ -925,7 +927,7 @@ def render_stream_mode():
         render_stream_mode_switch_cards(show_heading=False, key_prefix="dock")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # [+] Toggle Button - Unified as a single interactive element
+    # [+] Toggle Button - Unified
     btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
     if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환"):
         st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
