@@ -24,6 +24,19 @@ Android Studio는 이 프로젝트에서 모바일 클라이언트 구현 책임
 
 ---
 
+## 1.1) 자율 루프 (Autonomous Loop) 실행 가이드
+
+Android 에이전트는 IDE 내부의 피드백 문서와 프로젝트 공용 게시판을 활용해 자율적으로 움직인다.
+
+1. **Scan**: `integration_status.md`와 `android/NarrativeLoopMobile/CT_INBOX_ANDROID.md`를 읽는다.
+2. **Analyze**: `CT_ANDROID_FEEDBACK.md`와 최신 리포트 결과를 바탕으로 해결할 `Open Gaps`를 찾는다.
+3. **Propose**: 
+   - `orchestration/proposals/`에 `task.json` 초안을 작성한다.
+   - 예: "현재 스테이징 게이트웨이 주소가 나왔으므로, `BuildConfig`를 수정하고 E2E 인증 테스트를 수행하겠다."
+4. **Safety Stop**: 배포 설정 변경이나 사용자 승인 필수 항목 직전에는 반드시 멈추고 CT에게 보고한다.
+
+---
+
 ## 2) Scope In
 
 - CameraX 촬영/프리뷰

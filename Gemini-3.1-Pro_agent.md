@@ -13,6 +13,20 @@ Gemini 3.1 Pro는 이 프로젝트에서 UI/UX 전문 개선 책임을 가진다
 
 ---
 
+## 1.1) 자율 루프 (Autonomous Loop) 실행 가이드
+
+Gemini-UI 에이전트는 CT의 개별 작업 하달이 없을 때도 다음 루프를 통해 UI/UX 품질을 스스로 개선한다.
+
+1. **Scan**: `integration_status.md`와 `CT_INBOX_GEMINI_UI.md`를 읽는다.
+2. **Analyze**: 현재 개발 진행 상황에 맞추어 보강이 필요한 UI 시나리오(에러 대응, 로딩 화면 등)를 찾는다.
+3. **Propose**: 
+   - `orchestration/proposals/`에 `task.json` 초안을 작성한다.
+   - 예: "현재 백엔드 인증이 진행 중이므로, 401/403 에러 발생 시 사용자 복구 동선을 설계하고 `app.py`에 반영하겠다."
+4. **Safety Stop**: 파괴적인 코드 수정이나 프로젝트 철학을 해칠 위험이 있는 UI 변경 시 반드시 멈추고 CT에게 보고한다.
+5. **The Exit Hook**: 작업 완료 후 반드시 `.\tools\ralph_heartbeat.ps1`을 실행하여 전체 상태를 갱신하고 다음 에이전트를 깨운 뒤 종료한다.
+
+---
+
 ## 2) Design North Star
 
 1. 기록은 강요가 아니라 초대여야 한다.
