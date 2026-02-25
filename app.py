@@ -592,49 +592,46 @@ def render_api_key_section():
 
     st.markdown("<div class='sidebar-section-title'>Account</div>", unsafe_allow_html=True)
     
-    # Header: Name and Settings Toggle
+    # Header: Name and Settings Toggle (ChatGPT Style)
     col_name, col_btn = st.columns([4, 1])
     with col_name:
         st.markdown(f"**{display_name if display_name else '사용자'}**")
     with col_btn:
-        if st.button("⚙️", key="profile_settings_toggle", help="설정 열기/닫기"):
+        # Use simple label for toggle consistency
+        if st.button("⚙️", key="profile_settings_toggle", help="설정"):
             st.session_state["profile_settings_open"] = not profile_settings_open
             st.rerun()
 
-    # Settings Content (Hidden by default)
-    if profile_settings_open:
-        # Use a simpler layout for settings to avoid sidebar crowding
-        st.caption("Settings")
-        
-        # 1. API Key
-        entered_key = st.text_input(
-            "OpenAI API Key",
-            type="password",
-            value=session_key,
-            placeholder="sk-...",
-            key="openai_api_key_input",
-        )
-        
-        # 2. Display Name
-        name_input = st.text_input(
-            "표시 이름",
-            value=display_name,
-            placeholder="이름 입력",
-            key="profile_display_name_input",
-        )
-
-        # 3. Actions
-        c1, c2 = st.columns(2)
-        if c1.button("저장", key="save_settings", use_container_width=True):
-            if entered_key: logic.set_api_key(entered_key.strip())
-            st.session_state["profile_display_name"] = str(name_input).strip()
-            st.success("저장됨")
-            st.rerun()
-        
-        if c2.button("초기화", key="reset_settings", use_container_width=True):
-            st.session_state.pop("openai_api_key", None)
-            st.session_state["profile_display_name"] = ""
-            st.rerun()
+    # Settings Content (Visible only when toggle is active)
+    if st.session_state.get("profile_settings_open"):
+        with st.container(border=False):
+            st.caption("Profile Settings")
+            # 1. Display Name Change (Inside Settings only)
+            new_name = st.text_input(
+                "이름",
+                value=display_name,
+                placeholder="이름 입력",
+                key="name_input_field",
+            )
+            # 2. API Key (Inside Settings)
+            new_key = st.text_input(
+                "API Key",
+                type="password",
+                value=session_key,
+                placeholder="sk-...",
+                key="key_input_field",
+            )
+            
+            c1, c2 = st.columns(2)
+            if c1.button("Save", key="save_account_settings", use_container_width=True, type="primary"):
+                if new_key: logic.set_api_key(new_key.strip())
+                st.session_state["profile_display_name"] = str(new_name).strip()
+                st.session_state["profile_settings_open"] = False # Auto-close after save
+                st.rerun()
+            if c2.button("Reset", key="reset_account_settings", use_container_width=True):
+                st.session_state.pop("openai_api_key", None)
+                st.session_state["profile_display_name"] = ""
+                st.rerun()
 
 
 def render_sidebar_toggle_control() -> None:
@@ -830,35 +827,43 @@ def render_stream_mode():
     )
 
     if not has_messages:
+        # 1. EMPTY STATE: Large Title + OCR + Workspace Cards (Row of 4)
         st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
         st.markdown(f"<div class='stream-hero-title'>{icons.get_icon('sparkles', size=32)}<br>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
         
         # Action block starts
         st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
-        render_stream_ocr_entrypoint(expanded=False) # Changed to collapsed to avoid cluttering title
+        render_stream_ocr_entrypoint(expanded=False)
         st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)        
         render_stream_mode_switch_cards(show_heading=True, key_prefix="empty")
         st.markdown("</div>", unsafe_allow_html=True)
-        # Action block ends
-        
         st.markdown("</div>", unsafe_allow_html=True)
+        
+        # In Empty State, chat input is still visible at the bottom, but NO [+] toggle
+        if user_input := st.chat_input("메시지를 입력하세요..."):
+            process_stream_input(user_input)
+            
     else:
+        # 2. CHAT STATE: Messages + [+] Toggle + Optional Dock + Input
         render_stream_chat_messages()
 
-    # Render Dock if open
-    if st.session_state.get("workspace_dock_open", False):
-        st.markdown("<div class='workspace-dock-container'>", unsafe_allow_html=True)
-        render_stream_mode_switch_cards(show_heading=False, key_prefix="dock")
-        st.markdown("</div>", unsafe_allow_html=True)
+        # Render Dock ONLY if open via toggle
+        if st.session_state.get("workspace_dock_open", False):
+            st.markdown("<div class='workspace-dock-container'>", unsafe_allow_html=True)
+            render_stream_mode_switch_cards(show_heading=False, key_prefix="dock")
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    # [+] Toggle Button - Unified
-    btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
-    if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환"):
-        st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
-        st.rerun()
+        # [+] Toggle Button and Chat Input area
+        toggle_col, input_col = st.columns([1, 12], gap="small")
+        with toggle_col:
+            btn_label = "×" if st.session_state.get("workspace_dock_open", False) else "+"
+            if st.button(btn_label, key="workspace_dock_toggle", help="워크스페이스 전환", use_container_width=True):
+                st.session_state["workspace_dock_open"] = not st.session_state.get("workspace_dock_open", False)
+                st.rerun()
 
-    if user_input := st.chat_input("메시지를 입력하세요..."):
-        process_stream_input(user_input)
+        with input_col:
+            if user_input := st.chat_input("메시지를 입력하세요..."):
+                process_stream_input(user_input)
 
 def process_stream_input(user_input: str):
     status, core = logic.evaluate_input_integrity(user_input)
