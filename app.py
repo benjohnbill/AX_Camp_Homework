@@ -522,8 +522,8 @@ def apply_atmosphere(entropy_mode: bool):
         }
         .icon-sparkles { animation: sparkle-glow 2.8s ease-in-out infinite; }
 
-        /* Toggle button styling */
-        div[data-testid="stColumn"]:first-child .stButton button {
+        /* Toggle button styling - RESTRICTED to its container to avoid affecting DESK card */
+        .fixed-toggle-area .stButton button {
             border-radius: 12px !important;
             height: 48px !important; /* Match chat input height roughly */
             font-size: 1.4rem !important;
@@ -534,7 +534,7 @@ def apply_atmosphere(entropy_mode: bool):
             transition: all 0.2s ease;
         }
 
-        div[data-testid="stColumn"]:first-child .stButton button:hover {
+        .fixed-toggle-area .stButton button:hover {
             border-color: var(--app-accent) !important;
             color: var(--app-text) !important;
         }
