@@ -5,7 +5,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
@@ -26,13 +25,13 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
     }
 
     private fun configureWebView() {
-        val s = webView.settings
-        s.javaScriptEnabled = true
-        s.domStorageEnabled = true
-        s.loadsImagesAutomatically = true
-        s.mediaPlaybackRequiresUserGesture = false
-        s.cacheMode = WebSettings.LOAD_DEFAULT
-        s.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        val settings = webView.settings
+        settings.javaScriptEnabled = true
+        settings.domStorageEnabled = true
+        settings.loadsImagesAutomatically = true
+        settings.mediaPlaybackRequiresUserGesture = false
+        settings.cacheMode = WebSettings.LOAD_DEFAULT
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
@@ -43,7 +42,7 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
             override fun onReceivedHttpError(
                 view: WebView?,
                 request: WebResourceRequest?,
-                errorResponse: WebResourceResponse?
+                errorResponse: WebResourceResponse?,
             ) {
                 if (request?.isForMainFrame == true) {
                     when (errorResponse?.statusCode) {
@@ -51,7 +50,7 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
                             Toast.makeText(
                                 requireContext(),
                                 "Authentication failed. Please login again.",
-                                Toast.LENGTH_LONG
+                                Toast.LENGTH_LONG,
                             ).show()
                         }
                     }
@@ -71,12 +70,9 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
         }
 
         val token = TokenStore.getAccessToken(requireContext())
-
         if (token.isNullOrBlank()) {
-            // No token, try loading with existing cookie session
             webView.loadUrl(universeUrl)
         } else {
-            // Token exists, use it for initial authentication
             val headers = mapOf("Authorization" to "Bearer $token")
             webView.loadUrl(universeUrl, headers)
         }
@@ -84,22 +80,28 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
 
     override fun onPause() {
         super.onPause()
-        webView.onPause()
-        webView.pauseTimers()
+        if (::webView.isInitialized) {
+            webView.onPause()
+            webView.pauseTimers()
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        webView.onResume()
-        webView.resumeTimers()
-        // Reload to check auth state on return
-        webView.reload()
+        if (::webView.isInitialized) {
+            webView.onResume()
+            webView.resumeTimers()
+            // Re-validate auth/session state when returning to the fragment.
+            webView.reload()
+        }
     }
 
     override fun onDestroyView() {
+        if (::webView.isInitialized) {
+            webView.stopLoading()
+            (webView.parent as? ViewGroup)?.removeView(webView)
+            webView.destroy()
+        }
         super.onDestroyView()
-        webView.stopLoading()
-        (webView.parent as? ViewGroup)?.removeView(webView)
-        webView.destroy()
     }
 }

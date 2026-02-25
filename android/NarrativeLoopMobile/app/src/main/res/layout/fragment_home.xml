@@ -7,18 +7,23 @@
     android:padding="16dp"
     tools:context=".HomeFragment">
 
+    <Button
+        android:id="@+id/button_write_narrative"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Write a Narrative" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Home Fragment" />
 
-    <!-- Debug UI: Token Management -->
     <LinearLayout
         android:id="@+id/debug_tools_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:layout_marginTop="24dp"
+        android:orientation="vertical"
         android:visibility="gone"
         tools:visibility="visible">
 
@@ -48,13 +53,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="Paste Bearer Token here" />
+            android.hint="Paste Bearer Token here" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp">
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/save_token_button"
@@ -70,7 +75,6 @@
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
                 android:text="Clear Token" />
-
         </LinearLayout>
 
         <Button
@@ -80,7 +84,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Logout (Clear Token &amp; Cookies)" />
-
     </LinearLayout>
 
 </LinearLayout>

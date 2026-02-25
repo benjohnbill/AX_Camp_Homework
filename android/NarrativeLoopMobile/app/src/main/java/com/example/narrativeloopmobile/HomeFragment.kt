@@ -9,9 +9,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
+    private lateinit var writeNarrativeButton: Button
     private lateinit var debugToolsContainer: LinearLayout
     private lateinit var tokenStatusText: TextView
     private lateinit var tokenInput: EditText
@@ -22,12 +24,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        writeNarrativeButton = view.findViewById(R.id.button_write_narrative)
         debugToolsContainer = view.findViewById(R.id.debug_tools_container)
         tokenStatusText = view.findViewById(R.id.token_status_text)
         tokenInput = view.findViewById(R.id.token_input_edittext)
         saveTokenButton = view.findViewById(R.id.save_token_button)
         clearTokenButton = view.findViewById(R.id.clear_token_button)
         logoutButton = view.findViewById(R.id.logout_button)
+
+        writeNarrativeButton.setOnClickListener {
+            findNavController().navigate(R.id.action_homeFragment_to_createNarrativeFragment)
+        }
 
         if (BuildConfig.DEBUG) {
             setupDebugTools()
@@ -55,24 +62,24 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         logoutButton.setOnClickListener {
-            // Clear token from SharedPreferences
             TokenStore.clear(requireContext())
-
-            // Clear all WebView cookies
             CookieManager.getInstance().removeAllCookies(null)
             CookieManager.getInstance().flush()
-
             updateTokenStatus()
-            Toast.makeText(requireContext(), "Logged out: Token and cookies cleared", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                requireContext(),
+                "Logged out: Token and cookies cleared",
+                Toast.LENGTH_SHORT,
+            ).show()
         }
     }
 
     private fun updateTokenStatus() {
         val token = TokenStore.getAccessToken(requireContext())
-        if (token.isNullOrBlank()) {
-            tokenStatusText.text = "Status: No token"
+        tokenStatusText.text = if (token.isNullOrBlank()) {
+            "Status: No token"
         } else {
-            tokenStatusText.text = "Status: Token is set"
+            "Status: Token is set"
         }
     }
 }

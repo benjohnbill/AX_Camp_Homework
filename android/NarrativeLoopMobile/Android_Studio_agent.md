@@ -1,7 +1,17 @@
 # Android_Studio_agent.md
 
-Android Studio는 이 프로젝트에서 모바일 클라이언트 구현 책임을 가진다.
+Android Studio는 이 프로젝트에서 모바일 클라이언트 구현 책임을 가진다.  
 작업 전 `agent.md`를 반드시 확인한다.
+
+---
+
+## 0) Repository Boundary
+
+- Android canonical root: `android/NarrativeLoopMobile`
+- Android Studio local alias may exist:
+  - `C:\Users\LG\AndroidStudioProjects\NarrativeLoopMobile`
+- Canonical Git evidence and handoff paths must reference `android/NarrativeLoopMobile`.
+- Android worker reports must use `ANDROID_REPORT.md` (not this policy file).
 
 ---
 
@@ -13,6 +23,19 @@ Android Studio는 이 프로젝트에서 모바일 클라이언트 구현 책임
 
 ---
 
+## 1.1) Autonomous Loop Guide
+
+1. **Scan**: `integration_status.md`와 `CT_INBOX_ANDROID.md`를 읽는다.
+2. **Analyze**: `CT_ANDROID_FEEDBACK.md`와 최신 리포트 결과를 바탕으로 해결할 `Open Gaps`를 찾는다.
+3. **Propose**:
+   - `orchestration/proposals/`에 `task.json` 초안을 작성한다.
+   - 예: gateway URL 확정 후 Android runtime E2E 실행 제안.
+4. **Safety Stop**:
+   - 사용자 승인 필요 항목 직전에는 반드시 멈추고 CT에게 보고한다.
+   - 동일 차단 이슈가 3회 이상 반복되면 `HOLD: Human Intervention Required`로 에스컬레이션한다.
+
+---
+
 ## 2) Scope In
 
 - CameraX 촬영/프리뷰
@@ -21,6 +44,7 @@ Android Studio는 이 프로젝트에서 모바일 클라이언트 구현 책임
 - OCR 결과 확인/수정 UX
 - AI 응답 렌더링(WebView 또는 Native)
 - 재시도/오프라인 큐
+- Android runtime E2E evidence collection
 
 ## 3) Scope Out
 
@@ -46,7 +70,7 @@ Android Studio는 이 프로젝트에서 모바일 클라이언트 구현 책임
 
 ---
 
-## 5) API 계약 (고정)
+## 5) API Contract (Fixed)
 
 ### `POST /v1/ocr/ingest`
 
@@ -100,6 +124,7 @@ Error:
 - OCR 결과 수정 후 저장 테스트
 - 동일 이미지 중복 전송 테스트
 - API 401/422/429/500 에러 메시지 매핑 테스트
+- Auth runtime E2E: bearer/cookie/401/403/lifecycle
 
 ---
 
@@ -108,13 +133,15 @@ Error:
 - 촬영 -> OCR -> 확인/수정 -> 저장 -> 응답 흐름이 실기기에서 작동
 - 네트워크 실패 후 재전송 성공
 - 입력 손실 없이 최소 20건 연속 처리
+- Runtime E2E evidence for required auth scenarios is attached
 
 ---
 
-## 10) Handoff Format (to Antigravity)
+## 10) Handoff Format
 
-- request_id
-- endpoint + status code
-- payload 샘플(민감값 마스킹)
-- 재현 절차
-- expected vs actual
+- 보고는 `ANDROID_REPORT.md`에서만 제출한다.
+- 4-block format:
+  1. What changed
+  2. Validation
+  3. Risks
+  4. Next 3 actions
