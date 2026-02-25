@@ -398,61 +398,31 @@ def apply_atmosphere(entropy_mode: bool):
 
         [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
 
-        /* Sidebar: hide native toggle buttons, manage via Python only */
-        [data-testid="stSidebarCollapsedControl"] { display: none !important; }
-        [data-testid="stSidebarCollapseButton"]   { display: none !important; }
-
-        /* Sidebar open: force visible, override Streamlit native hide */
-        [data-testid="stSidebar"]:not(.nl-collapsed) {
-            display: block !important;
-            transform: translateX(0) !important;
-            opacity: 1 !important;
-            visibility: visible !important;
-            pointer-events: auto !important;
+        /* Sidebar: use Streamlit native collapse, just style the buttons */
+        [data-testid="stSidebar"] {
             border-right: 1px solid var(--app-border);
-            width: var(--sidebar-width) !important;
-            min-width: var(--sidebar-width) !important;
-            max-width: var(--sidebar-width) !important;
-            transition: transform 0.26s ease, opacity 0.26s ease, margin-left 0.26s ease;
         }
 
-        /* JS-controlled collapsed state */
-        [data-testid="stSidebar"].nl-collapsed {
-            transform: translateX(-108%) !important;
-            opacity: 0 !important;
-            margin-left: calc(-1 * var(--sidebar-width)) !important;
-            pointer-events: none !important;
+        /* Style the ⟨ collapse button inside sidebar */
+        [data-testid="stSidebarCollapseButton"] button {
+            color: var(--app-muted) !important;
+            background: transparent !important;
+            border: none !important;
         }
-        .nl-collapsed ~ * .block-container,
-        body.nl-sb-collapsed .block-container {
-            max-width: min(1380px, 96vw) !important;
-            padding-left: 1.2rem !important;
-            padding-right: 1.2rem !important;
+        [data-testid="stSidebarCollapseButton"] button:hover {
+            color: var(--app-text) !important;
         }
 
-        /* Toggle button injected by JS */
-        #nl-sb-btn {
-            position: fixed;
-            top: 0.62rem;
-            left: 0.68rem;
-            z-index: 99999;
-            border-radius: 999px;
-            width: 2rem;
-            height: 2rem;
-            padding: 0;
-            background: var(--app-surface-soft, #1f232b);
-            border: 1px solid var(--app-border, #2b3039);
-            color: var(--app-muted, #9aa3b2);
-            cursor: pointer;
-            font-size: 1.1rem;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        /* Style the ⟩ expand button that appears when sidebar is collapsed */
+        [data-testid="stSidebarCollapsedControl"] button {
+            background: var(--app-surface-soft, #1f232b) !important;
+            border: 1px solid var(--app-border, #2b3039) !important;
+            border-radius: 999px !important;
+            color: var(--app-muted, #9aa3b2) !important;
         }
-        #nl-sb-btn:hover {
-            border-color: #10a37f;
-            color: #f3f5f7;
+        [data-testid="stSidebarCollapsedControl"] button:hover {
+            border-color: var(--app-accent, #10a37f) !important;
+            color: var(--app-text, #f3f5f7) !important;
         }
 
         .stream-shell {
@@ -560,18 +530,32 @@ def apply_atmosphere(entropy_mode: bool):
             padding: 0.4rem 0.8rem !important;
         }
 
-        /* Slim Sidebar Stream Card styling */
+        /* Slim Sidebar Stream Card styling with Ellipsis and Fixed Height */
         [data-testid="stSidebar"] .stButton button {
             text-align: left !important;
             justify-content: flex-start !important;
-            padding: 0.2rem 0.6rem !important;
-            font-size: 0.8rem !important;
+            padding: 0.4rem 0.75rem !important;
+            font-size: 0.85rem !important;
             border-radius: 8px !important;
             margin-bottom: 0.15rem !important;
             border: 1px solid transparent !important;
             background: transparent !important;
             color: var(--app-text) !important;
             transition: all 0.2s ease;
+            
+            /* Enforce one-line with ellipsis */
+            height: 38px !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            display: block !important;
+            text-overflow: ellipsis !important;
+        }
+
+        /* Ensure the icon stays at the left */
+        [data-testid="stSidebar"] .stButton button div[data-testid="stMarkdownContainer"] p {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         [data-testid="stSidebar"] .stButton button:hover {
@@ -651,61 +635,6 @@ def render_api_key_section():
                 st.rerun()
 
 
-def render_sidebar_toggle_control() -> None:
-    """Pure JS sidebar toggle — no Python rerun. Uses MutationObserver to wait for DOM."""
-    components.html("""
-    <script>
-    (function() {
-        var SKEY = 'nl-sb-v2';
-        var p = window.parent, d = p.document;
-
-        function getSidebar() { return d.querySelector('[data-testid="stSidebar"]'); }
-        function getContainer() { return d.querySelector('.block-container'); }
-
-        function applyCollapsed(sb, collapsed) {
-            if (collapsed) {
-                sb.classList.add('nl-collapsed');
-                p.document.body.classList.add('nl-sb-collapsed');
-            } else {
-                sb.classList.remove('nl-collapsed');
-                p.document.body.classList.remove('nl-sb-collapsed');
-            }
-        }
-
-        function mountBtn(sb) {
-            var btn = d.getElementById('nl-sb-btn');
-            if (!btn) {
-                btn = d.createElement('button');
-                btn.id = 'nl-sb-btn';
-                d.body.appendChild(btn);
-            }
-            var collapsed = p.localStorage.getItem(SKEY) === '1';
-            applyCollapsed(sb, collapsed);
-            btn.textContent = collapsed ? '\u27e9' : '\u27e8';
-            btn.onclick = function() {
-                var sb2 = getSidebar();
-                if (!sb2) return;
-                var next = !(p.localStorage.getItem(SKEY) === '1');
-                p.localStorage.setItem(SKEY, next ? '1' : '0');
-                applyCollapsed(sb2, next);
-                btn.textContent = next ? '\u27e9' : '\u27e8';
-            };
-        }
-
-        var sb = getSidebar();
-        if (sb) {
-            mountBtn(sb);
-        } else {
-            var obs = new MutationObserver(function(_, o) {
-                var el = getSidebar();
-                if (el) { o.disconnect(); mountBtn(el); }
-            });
-            obs.observe(d.body, { childList: true, subtree: true });
-        }
-    })();
-    </script>
-    """, height=0)
-
 
 
 def render_sidebar(entropy_mode: bool):
@@ -742,10 +671,8 @@ def render_sidebar(entropy_mode: bool):
                         continue
                     
                     title = _display_stream_title(stream.get("title"))
-                    if len(title) > 28:
-                        title = f"{title[:25]}..."
                     
-                    # Prefix with message icon to match Workspace Card aesthetic
+                    # Prefix with message icon as a fixed indicator
                     label = f"💬 {title}"
                     if stream_id == active_stream_id:
                         label = f"● {label}"
@@ -754,7 +681,7 @@ def render_sidebar(entropy_mode: bool):
                     updated = str(stream.get("updated_at") or "")
                     meta = f"{count}개 메시지 · {updated[:16] if updated else ''}"
                     
-                    # Use native 'help' for hover tooltip instead of manual CSS hover (more reliable)
+                    # Full title is passed to the button; CSS handles the '...' truncation
                     if st.button(label, key=f"sidebar_stream_{stream_id}", use_container_width=True, help=meta):
                         st.session_state["mode"] = "stream"
                         st.session_state["active_stream_id"] = stream_id
@@ -1237,7 +1164,6 @@ def main():
         return
     is_entropy = logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
-    render_sidebar_toggle_control()
     # render_runtime_diagnostics_badge(is_entropy)
     # render_ocr_fallback_entrypoint()
     
