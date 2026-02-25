@@ -358,6 +358,7 @@ def init_session_state():
         'violation_pending': None,
         'workspace_dock_open': False,
         'profile_settings_open': False,
+        'sidebar_open': True,
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -398,31 +399,12 @@ def apply_atmosphere(entropy_mode: bool):
 
         [data-testid="stAppViewContainer"] { background: radial-gradient(ellipse at 50% 0%, #1a1e26 0%, #111317 60%); }
 
-        /* Sidebar: use Streamlit native collapse, just style the buttons */
+        /* Sidebar: Python-controlled toggle, hide native buttons */
+        [data-testid="stSidebarCollapsedControl"] { display: none !important; }
+        [data-testid="stSidebarCollapseButton"]   { display: none !important; }
+
         [data-testid="stSidebar"] {
             border-right: 1px solid var(--app-border);
-        }
-
-        /* Style the ⟨ collapse button inside sidebar */
-        [data-testid="stSidebarCollapseButton"] button {
-            color: var(--app-muted) !important;
-            background: transparent !important;
-            border: none !important;
-        }
-        [data-testid="stSidebarCollapseButton"] button:hover {
-            color: var(--app-text) !important;
-        }
-
-        /* Style the ⟩ expand button that appears when sidebar is collapsed */
-        [data-testid="stSidebarCollapsedControl"] button {
-            background: var(--app-surface-soft, #1f232b) !important;
-            border: 1px solid var(--app-border, #2b3039) !important;
-            border-radius: 999px !important;
-            color: var(--app-muted, #9aa3b2) !important;
-        }
-        [data-testid="stSidebarCollapsedControl"] button:hover {
-            border-color: var(--app-accent, #10a37f) !important;
-            color: var(--app-text, #f3f5f7) !important;
         }
 
         .stream-shell {
@@ -581,6 +563,21 @@ def apply_atmosphere(entropy_mode: bool):
         ,
         unsafe_allow_html=True,
     )
+    if not st.session_state.get("sidebar_open", True):
+        st.markdown(
+            """<style>
+            [data-testid="stSidebar"] {
+                width: 3.25rem !important;
+                min-width: 3.25rem !important;
+                max-width: 3.25rem !important;
+            }
+            [data-testid="stSidebarContent"] {
+                padding: 0.4rem 0.2rem !important;
+                overflow: hidden !important;
+            }
+            </style>""",
+            unsafe_allow_html=True,
+        )
 
 
 # ============================================================
@@ -638,7 +635,20 @@ def render_api_key_section():
 
 
 def render_sidebar(entropy_mode: bool):
+    sidebar_open = st.session_state.get("sidebar_open", True)
     with st.sidebar:
+        if not sidebar_open:
+            if st.button("⟩", key="sb_open_btn", use_container_width=True, help="사이드바 열기"):
+                st.session_state["sidebar_open"] = True
+                st.rerun()
+            return
+
+        col_btn, _ = st.columns([1, 4])
+        with col_btn:
+            if st.button("⟨", key="sb_close_btn", help="사이드바 닫기"):
+                st.session_state["sidebar_open"] = False
+                st.rerun()
+
         st.markdown("### Narrative Loop")
 
         if st.button("새 스트림", use_container_width=True, key="sidebar_new_stream"):
