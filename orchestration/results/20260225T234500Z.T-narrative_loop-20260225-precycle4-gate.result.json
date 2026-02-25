@@ -1,0 +1,85 @@
+{
+    "trace_id":  "trace-narrative_loop-20260225-precycle4",
+    "task_id":  "T-narrative_loop-20260225-precycle4-gate",
+    "worker":  "docs_worker",
+    "status":  "blocked",
+    "summary":  "Pre-cycle4 CT gate aggregation remains blocked. Backend and frontend rows are pass with schema-valid evidence. Android emulator connectivity has been recovered, but mandatory same-window full product journey evidence for emulator and physical device is still incomplete; cycle4 kickoff remains blocked.",
+    "outputs":  [
+                    {
+                        "kind":  "artifact",
+                        "path":  "orchestration/results/20260225T115812Z.T-narrative_loop-20260225-backend-precycle4.result.json",
+                        "description":  "Backend pre-cycle4 audit artifact."
+                    },
+                    {
+                        "kind":  "artifact",
+                        "path":  "orchestration/results/20260225T233000Z.T-narrative_loop-20260225-frontend-precycle4.result.json",
+                        "description":  "Frontend pre-cycle4 audit artifact (evidence strengthened)."
+                    },
+                    {
+                        "kind":  "artifact",
+                        "path":  "orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json",
+                        "description":  "Android pre-cycle4 audit artifact (emulator recovery reflected)."
+                    },
+                    {
+                        "kind":  "artifact",
+                        "path":  "data/evidence/20260225T134533Z_android_precycle4_device_probe.json",
+                        "description":  "Android emulator recovery probe artifact."
+                    },
+                    {
+                        "kind":  "report",
+                        "path":  "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+                        "description":  "Android pre-cycle4 matrix and remaining blocker report."
+                    },
+                    {
+                        "kind":  "artifact",
+                        "path":  "orchestration/handoff/20260225T234500Z.T-narrative_loop-20260225-precycle4-gate.handoff.json",
+                        "description":  "Canonical pre-cycle4 gate handoff decision."
+                    }
+                ],
+    "evidence":  [
+                     {
+                         "name":  "backend_precycle4_result",
+                         "command":  ".\\\\tools\\\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260225T115812Z.T-narrative_loop-20260225-backend-precycle4.result.json",
+                         "status":  "pass",
+                         "note":  "Backend audit artifact is schema-valid and all backend-owned rows are pass."
+                     },
+                     {
+                         "name":  "frontend_precycle4_result",
+                         "command":  ".\\\\tools\\\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260225T233000Z.T-narrative_loop-20260225-frontend-precycle4.result.json",
+                         "status":  "pass",
+                         "note":  "Frontend audit artifact is schema-valid with log/report evidence paths attached."
+                     },
+                     {
+                         "name":  "android_precycle4_result",
+                         "command":  ".\\\\tools\\\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json",
+                         "status":  "pass",
+                         "note":  "Android artifact is schema-valid and now records emulator recovery progress."
+                     },
+                     {
+                         "name":  "android_emulator_recovery_probe",
+                         "command":  "android_cycle3_product_mvp_runner.ps1 -Mode device -LaunchApp",
+                         "status":  "pass",
+                         "note":  "online_device_count=1; app launch ok. evidence_path=data/evidence/20260225T134533Z_android_precycle4_device_probe.json"
+                     },
+                     {
+                         "name":  "precycle4_gate_android_runtime_full_journey",
+                         "command":  "Review Android report + android precycle4 result",
+                         "status":  "fail",
+                         "note":  "Mandatory same-window full journey evidence for emulator and physical device is still incomplete. evidence_path=android/NarrativeLoopMobile/ANDROID_REPORT.md"
+                     }
+                 ],
+    "risks":  [
+                  {
+                      "severity":  "critical",
+                      "description":  "Pre-cycle4 gate exit criteria fail while Android full rerun evidence is incomplete (especially physical-device path).",
+                      "mitigation":  "Connect physical device, execute full journey on emulator+device in same window, republish Android result, then rerun CT aggregation."
+                  }
+              ],
+    "next_actions":  [
+                         "Connect physical device and verify ADB shows both emulator and physical device as device.",
+                         "Execute and capture full product journey evidence on emulator and physical device in the same cycle window.",
+                         "Republish Android pre-cycle4 result and rerun CT aggregation before publishing cycle4 kickoff artifacts."
+                     ],
+    "human_approval_needed":  false,
+    "timestamp":  "2026-02-25T23:52:00Z"
+}

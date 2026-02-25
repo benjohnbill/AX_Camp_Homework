@@ -1,0 +1,92 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-frontend-precycle4",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Complete pre-cycle4 feature lock audit for frontend-owned areas and produce reproducible evidence for web mode routing, write/save/re-query loop, chronos persistence, and universe render path.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+      "description": "Canonical pre-cycle4 gate and audit matrix."
+    },
+    {
+      "kind": "file",
+      "value": "docs/CT_BASELINE_2026-02-25.md",
+      "description": "Source-of-truth priority and cycle policy."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/handoff/latest.handoff.json",
+      "description": "Highest-priority current state."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Mode routing and chronos runtime."
+    },
+    {
+      "kind": "file",
+      "value": "narrative_logic.py",
+      "description": "Write/save/re-query behavior."
+    },
+    {
+      "kind": "file",
+      "value": "universe_3d.py",
+      "description": "Universe payload serialization and render path."
+    },
+    {
+      "kind": "folder",
+      "value": "tests/",
+      "description": "Frontend-adjacent regression tests."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "narrative_logic.py",
+      "universe_3d.py",
+      "tests/",
+      "orchestration/",
+      "docs/",
+      "integration_status.md",
+      "data/evidence/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Do not change backend gateway contracts or Android native code. If a blocker is found, mark explicit blocked evidence and stop scope expansion."
+  },
+  "acceptance": [
+    "Audit rows owned by frontend_ide have explicit verdicts (pass/partial/blocked) with evidence paths.",
+    "Mandatory test subset is executed and summarized: tests/test_interface_parity.py and tests/test_universe_3d_serialization.py.",
+    "Any change that affects user-facing behavior includes before/after evidence and regression impact note."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Mode-level smoke checks can hide persistence and serialization regressions unless tests and code-path evidence are both included."
+  },
+  "next_actions": [
+    "Audit frontend-owned matrix rows with evidence and explicit verdict.",
+    "Run required test subset and capture command output summary.",
+    "Publish frontend pre-cycle4 result artifact for CT aggregation."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-25T23:00:00Z",
+  "context_docs": [
+    "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle": "pre_cycle4_gate",
+    "domain": "frontend_audit",
+    "priority": "P0",
+    "deadline_utc": "2026-02-26T03:00:00Z"
+  }
+}

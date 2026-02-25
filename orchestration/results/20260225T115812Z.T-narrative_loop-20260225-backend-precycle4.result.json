@@ -1,0 +1,73 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-backend-precycle4",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "Pre-Cycle4 backend feature-lock audit completed for backend-owned rows.\n\nAudit rows (verdict | evidence_path):\n- auth_gateway_contract: pass | data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log\n- korean_query_rewrite: pass | data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log\n- storage_interface_parity: pass | data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log\n\nCritical-path blockers (auth/storage): none.\n\nExecution notes:\n- Mandatory command executed: .\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py tests/test_korean_query_rewrite.py tests/test_interface_parity.py tests/test_universe_auth.py\n- Result: 17 passed in 5.48s.\n- Environment prerequisite confirmed: python-multipart installed (data/evidence/20260225T210016Z_python_multipart_check.log).",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260225T115812Z.T-narrative_loop-20260225-backend-precycle4.result.json",
+      "description": "Backend pre-cycle4 audit result artifact (schema-valid)."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log",
+      "description": "Mandatory backend pytest execution log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260225T210016Z_python_multipart_check.log",
+      "description": "Gateway test prerequisite package verification log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "mandatory_backend_pytest_set",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py tests/test_korean_query_rewrite.py tests/test_interface_parity.py tests/test_universe_auth.py",
+      "status": "pass",
+      "note": "17 passed in 5.48s. evidence_path=data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log"
+    },
+    {
+      "name": "audit_row_auth_gateway_contract",
+      "status": "pass",
+      "note": "verdict=pass; evidence_path=data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log; tests=test_gateway_fastapi.py,test_universe_auth.py"
+    },
+    {
+      "name": "audit_row_korean_query_rewrite",
+      "status": "pass",
+      "note": "verdict=pass; evidence_path=data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log; tests=test_korean_query_rewrite.py"
+    },
+    {
+      "name": "audit_row_storage_interface_parity",
+      "status": "pass",
+      "note": "verdict=pass; evidence_path=data/evidence/20260225T210217Z_precycle4_backend_pytest_required_exact.log; tests=test_interface_parity.py"
+    },
+    {
+      "name": "python_multipart_prerequisite",
+      "command": "C:\\Users\\조진근\\.venvs_hub\\narrative_loop\\Scripts\\python.exe -m pip show python-multipart",
+      "status": "pass",
+      "note": "python-multipart 0.0.22 installed. evidence_path=data/evidence/20260225T210016Z_python_multipart_check.log"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Gateway module route registration depends on python-multipart. If missing, auth gateway tests cannot be collected.",
+      "mitigation": "Pin python-multipart in environment bootstrap and CI dependency lock."
+    }
+  ],
+  "next_actions": [
+    "Add python-multipart to pinned backend dependency set used by bootstrap/CI.",
+    "Reuse this result as backend evidence row input for CT hardening gate aggregation.",
+    "Proceed with non-backend matrix rows before Cycle4 kickoff decision."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-02-25T12:02:17Z",
+  "metrics": {
+    "duration_sec": 7.2,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

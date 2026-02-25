@@ -7,6 +7,7 @@ sync_with:
   - CT_BASELINE_2026-02-25.md
   - MASTER_PLAN_CYCLE04_06.md
   - PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md
+  - CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md
 change_triggers:
   - bootstrap_flow_change
   - session_boundary_policy_change
@@ -21,6 +22,7 @@ Standardize handoff when a chat/session ends due to context limits, independent 
 ## Scope
 - This protocol is for session boundary transitions.
 - It does not replace cycle-level pass/fail handoff logic.
+- In chat-triggered mode, use L3 summary format from `docs/CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md` for concise carry-over.
 
 ## Source Priority
 When resuming in a new session, trust this order:

@@ -1,0 +1,66 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-precycle4-audit",
+  "version": "1.0",
+  "source_task": "orchestration/task.json",
+  "deadline_utc": "2026-02-26T03:00:00Z",
+  "deadline_note": "Pre-cycle4 feature lock gate must finish before any cycle4 feature expansion kickoff.",
+  "common_rules": [
+    "Trust source priority strictly: 1) orchestration/handoff/latest.handoff.json 2) orchestration/task.json 3) latest orchestration/results/*.result.json 4) integration_status.md.",
+    "Do not start cycle4 feature expansion; this run is feature lock and audit only.",
+    "If evidence conflicts with markdown claims, trust canonical JSON artifacts first and record the mismatch explicitly.",
+    "No secret exposure, no destructive command, no deploy/schema migration in this gate run.",
+    "Every owned matrix row in docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md must be marked pass/partial/blocked with evidence path.",
+    "Use two-lane reporting: submit L1 fast-lane summary (orchestration/templates/chat_l1_worker_update.md) before final result.json."
+  ],
+  "workers": [
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260225T230000Z.frontend-precycle4.task.json",
+      "scope_in": [
+        "Web mode routing audit",
+        "Write/save/re-query loop audit",
+        "Chronos persistence and universe render path audit",
+        "Frontend evidence and reproducible regression output"
+      ],
+      "scope_out": [
+        "Backend auth contract redesign",
+        "Android native implementation changes",
+        "Cycle4 feature additions beyond lock/fix scope"
+      ],
+      "prompt": "You are frontend_ide worker in pre-cycle4 hardening gate for Narrative_Loop. Start by reading, in order: docs/README.md -> docs/CT_BASELINE_2026-02-25.md -> docs/MASTER_PLAN_CYCLE04_06.md -> docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md -> docs/PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md. Then apply trust priority: latest.handoff.json > task.json > latest result > integration_status.md. Execute only task file orchestration/tasks/20260225T230000Z.frontend-precycle4.task.json. Use channel pointer orchestration/antigravity.current.json when available. Before final artifact, publish L1 fast-lane summary using orchestration/templates/chat_l1_worker_update.md. Then produce schema-valid result JSON with explicit pass/partial/blocked verdict for each owned audit row and reproducible evidence paths. If blocked, include exact blocker and minimal mitigation. Do not expand feature scope."
+    },
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260225T230000Z.backend-precycle4.task.json",
+      "scope_in": [
+        "Auth gateway contract audit (200/401/403/307)",
+        "Korean query rewrite audit",
+        "Storage interface parity audit",
+        "Backend test evidence and blocker classification"
+      ],
+      "scope_out": [
+        "Android UI flow updates",
+        "Frontend copy redesign not tied to regressions",
+        "Unapproved infrastructure expansion"
+      ],
+      "prompt": "You are backend_cli worker in pre-cycle4 hardening gate for Narrative_Loop. Read docs in this fixed order: docs/README.md -> docs/CT_BASELINE_2026-02-25.md -> docs/MASTER_PLAN_CYCLE04_06.md -> docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md -> docs/PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md. Then enforce source priority: latest.handoff.json > task.json > latest result > integration_status.md. Execute orchestration/tasks/20260225T230000Z.backend-precycle4.task.json only. Use channel pointer orchestration/backend.current.json when available. Publish L1 fast-lane summary first using orchestration/templates/chat_l1_worker_update.md. Run mandatory backend tests from the gate spec and publish a schema-valid result JSON. For each owned matrix row, write pass/partial/blocked plus evidence path. Any auth/storage critical-path blocker must be marked as blocker with root cause and mitigation."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260225T230000Z.android-precycle4.task.json",
+      "scope_in": [
+        "Android product journey rerun (emulator + physical device)",
+        "Android navigation/mode wiring audit",
+        "Sanitized Android evidence and report refresh"
+      ],
+      "scope_out": [
+        "Backend API contract changes",
+        "Non-essential visual redesign",
+        "Cycle4 new feature development"
+      ],
+      "prompt": "You are android_ide worker in pre-cycle4 hardening gate for Narrative_Loop. Read docs in this order: docs/README.md -> docs/CT_BASELINE_2026-02-25.md -> docs/MASTER_PLAN_CYCLE04_06.md -> docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md -> docs/PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md. Apply truth priority: latest.handoff.json > task.json > latest result > integration_status.md. Execute only orchestration/tasks/20260225T230000Z.android-precycle4.task.json. Use channel pointer orchestration/android.current.json when available. Publish L1 fast-lane summary first using orchestration/templates/chat_l1_worker_update.md. Validate product journey and navigation wiring, and include both emulator and physical-device evidence from same cycle window. Publish schema-valid result JSON with pass/partial/blocked verdict per owned matrix row and reproducible evidence paths."
+    }
+  ],
+  "ct_acceptance_rule": "CT may open cycle4 kickoff only when all pre-cycle4 exit criteria are satisfied, no unresolved blocked item exists in auth/storage/universe critical path, contracts validate, and governance lock checks are pass."
+}

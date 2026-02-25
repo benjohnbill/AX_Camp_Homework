@@ -34,6 +34,9 @@ Android 에이전트는 IDE 내부의 피드백 문서와 프로젝트 공용 �
    - `orchestration/proposals/`에 `task.json` 초안을 작성한다.
    - 예: "현재 스테이징 게이트웨이 주소가 나왔으므로, `BuildConfig`를 수정하고 E2E 인증 테스트를 수행하겠다."
 4. **Safety Stop**: 배포 설정 변경이나 사용자 승인 필수 항목 직전에는 반드시 멈추고 CT에게 보고한다.
+5. **Chat-CLI Reporting**:
+   - Fast lane: `orchestration/templates/chat_l1_worker_update.md` 형식의 짧은 상태 보고를 먼저 제출한다.
+   - Slow lane: 최종 증적은 schema-valid `result.json`으로 제출한다.
 
 ---
 

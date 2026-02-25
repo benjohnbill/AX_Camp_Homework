@@ -1,0 +1,96 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-backend-precycle4",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Complete pre-cycle4 feature lock audit for backend-owned areas and publish evidence for auth gateway contract, korean query rewrite quality, and storage interface parity.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+      "description": "Canonical pre-cycle4 gate checklist and ownership."
+    },
+    {
+      "kind": "file",
+      "value": "docs/CT_BASELINE_2026-02-25.md",
+      "description": "Source-of-truth order and cycle constraints."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/handoff/latest.handoff.json",
+      "description": "Highest-priority accepted state."
+    },
+    {
+      "kind": "file",
+      "value": "gateway_fastapi.py",
+      "description": "Auth contract behavior."
+    },
+    {
+      "kind": "file",
+      "value": "universe_auth.py",
+      "description": "Session and auth bridge behavior."
+    },
+    {
+      "kind": "file",
+      "value": "korean_query_rewrite.py",
+      "description": "Korean query normalization and rewrite logic."
+    },
+    {
+      "kind": "folder",
+      "value": "tests/",
+      "description": "Backend regression suite."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "gateway_fastapi.py",
+      "universe_auth.py",
+      "korean_query_rewrite.py",
+      "db_manager.py",
+      "db_manager_postgres.py",
+      "db_manager_sqlite.py",
+      "tests/",
+      "tools/",
+      "orchestration/",
+      "docs/",
+      "integration_status.md",
+      "data/evidence/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No deploy or secret rotation in this audit task. Keep contract-level behavior compatible with cycle03 pass baseline unless explicitly approved."
+  },
+  "acceptance": [
+    "Backend-owned audit matrix rows have explicit verdicts (pass/partial/blocked) with evidence.",
+    "Mandatory tests are executed and summarized: tests/test_gateway_fastapi.py, tests/test_korean_query_rewrite.py, tests/test_interface_parity.py, tests/test_universe_auth.py.",
+    "Any drift from 200/401/403/307 contract is documented with root cause and mitigation."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Auth and storage drifts are critical-path blockers for cycle4 kickoff and must be surfaced immediately."
+  },
+  "next_actions": [
+    "Run backend mandatory tests and attach evidence summaries.",
+    "Confirm auth contract stability and storage parity against cycle03 baseline.",
+    "Publish backend pre-cycle4 result artifact with blocker classification."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-25T23:00:00Z",
+  "context_docs": [
+    "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle": "pre_cycle4_gate",
+    "domain": "backend_audit",
+    "priority": "P0",
+    "deadline_utc": "2026-02-26T03:00:00Z"
+  }
+}

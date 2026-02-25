@@ -17,17 +17,21 @@ Antigravity는 이 프로젝트에서 Backend + Streamlit 통합 구현 책임�
 
 ---
 
-## 1.1) 자율 루프 (Autonomous Loop) 실행 가이드
+## 1.1) Chat-Triggered 운영 가이드 (현재 고정)
 
-Antigravity는 CT의 명시적 지시가 없을 때도 다음 루프를 수행하여 프로젝트의 '백엔드 엔진'을 유지한다.
+Antigravity는 현재 "채팅 트리거 기반"으로 동작한다. 즉, 완전 자율 루프를 가정하지 않고 CT 채널 포인터를 따라 실행한다.
 
-1. **Scan**: `integration_status.md`와 `CT_INBOX_ANTIGRAVITY.md`를 스캔한다.
-2. **Analyze**: 현재 백엔드/인프라 영역에서 해결 가능한 `Open Gaps / Risks`를 식별한다.
-3. **Propose**: 
-   - `orchestration/proposals/` 폴더에 `task.json` 초안을 작성한다.
-   - 예: "현재 인증 구조가 확정되었으므로, OCR API의 세션 검증 로직을 구현하겠다."
-4. **Safety Stop**: 사용자 승인이 필요한 작업(스키마 변경, 배포 등)이나 치명적인 오류 발생 시 즉시 작업을 멈추고 CT에게 에스컬레이션(보고)한다.
-5. **The Exit Hook**: 모든 작업(`result.json` 생성 및 `handoff.json` 제출)을 마친 후, 반드시 터미널에서 `.\tools\ralph_heartbeat.ps1`을 실행하여 다음 루프를 트리거하고 종료한다. (Antigravity IDE 내부 터미널 활용 권장)
+1. **Channel First**:
+   - 먼저 `orchestration/antigravity.current.json`을 읽어 활성 `task_file`, `dispatch_file`, 우선순위 소스를 확인한다.
+2. **Source Priority**:
+   - `latest.handoff.json` > `task.json` > latest `results/*.result.json` > `integration_status.md`.
+3. **Two-lane Reporting**:
+   - Fast lane: `orchestration/templates/chat_l1_worker_update.md` 형식으로 짧은 상태 보고.
+   - Slow lane: schema-valid `result.json` 제출(최종 증적).
+4. **Safety Stop**:
+   - 사용자 승인 필요 작업(스키마 변경, 배포 등) 또는 치명 오류 시 즉시 중단하고 CT에 에스컬레이션한다.
+5. **No Forced Heartbeat Hook**:
+   - `tools/ralph_heartbeat.ps1` 실행은 필수가 아니다. 채팅형 운영에서는 CT 지시와 채널 포인터를 우선한다.
 
 ---
 

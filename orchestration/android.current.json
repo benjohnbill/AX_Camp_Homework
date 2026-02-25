@@ -1,0 +1,38 @@
+{
+    "channel_version":  "1.0",
+    "owner":  "control_tower",
+    "channel":  "android",
+    "mode":  "channel_only",
+    "updated_at":  "2026-02-25T23:45:00Z",
+    "trace_id":  "trace-narrative_loop-20260225-precycle4",
+    "assigned_worker":  "android_ide",
+    "active_dispatch_file":  "orchestration/dispatch/20260225-precycle4.worker-prompts.json",
+    "active_task_file":  "orchestration/tasks/20260225T230000Z.android-precycle4.task.json",
+    "truth_priority_files":  [
+                                 "orchestration/handoff/latest.handoff.json",
+                                 "orchestration/task.json",
+                                 "orchestration/results/20260225T234500Z.T-narrative_loop-20260225-precycle4-gate.result.json",
+                                 "integration_status.md"
+                             ],
+    "must_read_docs_order":  [
+                                 "docs/README.md",
+                                 "docs/CT_BASELINE_2026-02-25.md",
+                                 "docs/MASTER_PLAN_CYCLE04_06.md",
+                                 "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+                                 "docs/PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md"
+                             ],
+    "fast_lane_template":  "orchestration/templates/chat_l1_worker_update.md",
+    "slow_lane_requirements":  [
+                                   "schema-valid orchestration/results/*.result.json",
+                                   "emulator plus physical-device evidence in same cycle window",
+                                   "blocked root-cause plus mitigation"
+                               ],
+    "notes":  [
+                  "This channel is the only CT-to-android pointer for chat operation.",
+                  "Physical-device evidence is mandatory for pre-cycle4 gate pass."
+              ],
+    "assumptions":  [
+                        "Android Studio workspace may use local alias path but evidence must include canonical repo path mapping.",
+                        "Missing physical-device evidence must be reported as blocked."
+                    ]
+}

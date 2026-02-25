@@ -1,75 +1,81 @@
 {
-  "trace_id": "trace-narrative_loop-20260225-cycle03",
-  "task_id": "T-narrative_loop-20260225-cycle03",
-  "owner": "control_tower",
-  "assigned_worker": "generic_worker",
-  "goal": "Operate cycle03 as a CT umbrella task: coordinate android_ide/backend_cli/frontend_ide execution, keep contract evidence synchronized, and publish final accept/blocked decision from schema-valid artifacts.",
-  "inputs": [
-    {
-      "kind": "artifact_ref",
-      "value": "orchestration/handoff/latest.handoff.json",
-      "description": "Accepted cycle02 canonical baseline."
-    },
-    {
-      "kind": "file",
-      "value": "integration_status.md",
-      "description": "Current board, risks, and CT decision context."
-    },
-    {
-      "kind": "file",
-      "value": "orchestration/dispatch/20260224-cycle03.worker-prompts.json",
-      "description": "Cycle03 worker dispatch package."
-    },
-    {
-      "kind": "folder",
-      "value": "orchestration/tasks/",
-      "description": "Worker-specific cycle03 tasks (android/backend/frontend)."
-    }
-  ],
-  "constraints": {
-    "allow_write": true,
-    "allow_execute": true,
-    "allowed_paths": [
-      "orchestration/",
-      "integration_status.md",
-      "data/evidence/",
-      "android/NarrativeLoopMobile/evidence/"
-    ],
-    "forbidden_paths": [
-      ".git/",
-      ".env",
-      "secrets/"
-    ],
-    "notes": "CT umbrella task must not replace worker task contracts. Route execution through orchestration/tasks/*.json and keep schema-first governance."
-  },
-  "acceptance": [
-    "Root task.json and cycle03 dispatch/worker tasks are trace/task aligned and schema-valid.",
-    "Cycle03 worker evidence is collected for android/backend/frontend with reproducible paths.",
-    "CT decision (accept or blocked) is based on strict gate status plus canonical handoff JSON."
-  ],
-  "risk": {
-    "level": "medium",
-    "note": "If umbrella routing and worker task contracts drift, CT can make incorrect acceptance decisions despite partial evidence."
-  },
-  "next_actions": [
-    "Dispatch android_ide/backend_cli/frontend_ide using cycle03 worker task files.",
-    "Collect refreshed result evidence and validate contracts before CT decision.",
-    "Publish final cycle03 canonical handoff and update integration_status.md."
-  ],
-  "requires_human_approval": false,
-  "timestamp": "2026-02-25T07:15:00Z",
-  "context_docs": [
-    "Agent.md",
-    "Harness_Policy.md",
-    "integration_status.md",
-    "orchestration/dispatch/20260224-cycle03.worker-prompts.json"
-  ],
-  "metadata": {
-    "project": "narrative_loop",
-    "cycle": "cycle03",
-    "domain": "ct_orchestration",
-    "priority": "P0",
-    "baseline_trace": "trace-narrative_loop-20260224-cycle02",
-    "baseline_task_id": "T-narrative_loop-20260224-cycle02"
-  }
+    "trace_id":  "trace-narrative_loop-20260225-precycle4",
+    "task_id":  "T-narrative_loop-20260225-precycle4-gate",
+    "owner":  "control_tower",
+    "assigned_worker":  "generic_worker",
+    "goal":  "Operate pre-cycle4 feature-lock gate aggregation for backend/frontend/android artifacts, publish blocked/pass decision, and prevent cycle4 kickoff until all exit criteria pass.",
+    "inputs":  [
+                   {
+                       "kind":  "file",
+                       "value":  "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+                       "description":  "Canonical pre-cycle4 gate checklist and exit criteria."
+                   },
+                   {
+                       "kind":  "file",
+                       "value":  "orchestration/dispatch/20260225-precycle4.worker-prompts.json",
+                       "description":  "Pre-cycle4 worker dispatch package."
+                   },
+                   {
+                       "kind":  "artifact_ref",
+                       "value":  "orchestration/results/20260225T115812Z.T-narrative_loop-20260225-backend-precycle4.result.json",
+                       "description":  "Backend gate artifact."
+                   },
+                   {
+                       "kind":  "artifact_ref",
+                       "value":  "orchestration/results/20260225T233000Z.T-narrative_loop-20260225-frontend-precycle4.result.json",
+                       "description":  "Frontend gate artifact."
+                   },
+                   {
+                       "kind":  "artifact_ref",
+                       "value":  "orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json",
+                       "description":  "Android gate artifact."
+                   }
+               ],
+    "constraints":  {
+                        "allow_write":  true,
+                        "allow_execute":  true,
+                        "allowed_paths":  [
+                                              "orchestration/",
+                                              "docs/",
+                                              "integration_status.md",
+                                              "android/NarrativeLoopMobile/",
+                                              "data/evidence/"
+                                          ],
+                        "forbidden_paths":  [
+                                                ".git/",
+                                                ".env",
+                                                "secrets/"
+                                            ],
+                        "notes":  "Do not start cycle4 feature expansion while any pre-cycle4 critical blocker remains unresolved."
+                    },
+    "acceptance":  [
+                       "All pre-cycle4 worker artifacts are schema-valid and trace/task aligned.",
+                       "Any unresolved blocker in Android/auth/storage/universe critical path is explicitly recorded as blocked in CT handoff.",
+                       "Cycle4 kickoff artifacts are published only after all pre-cycle4 exit criteria are pass."
+                   ],
+    "risk":  {
+                 "level":  "high",
+                 "note":  "Starting cycle4 before closing Android runtime blocker can produce false-pass governance state."
+             },
+    "next_actions":  [
+                         "Connect physical device and complete Android same-window full journey evidence.",
+                         "Republish Android pre-cycle4 result with full journey evidence and no critical blocker.",
+                         "Rerun CT gate aggregation; publish cycle4 kickoff only when all exit criteria are pass."
+                     ],
+    "requires_human_approval":  false,
+    "timestamp":  "2026-02-25T23:52:00Z",
+    "context_docs":  [
+                         "docs/CT_BASELINE_2026-02-25.md",
+                         "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+                         "docs/CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md",
+                         "integration_status.md"
+                     ],
+    "metadata":  {
+                     "project":  "narrative_loop",
+                     "cycle":  "pre_cycle4_gate",
+                     "domain":  "ct_orchestration",
+                     "priority":  "P0",
+                     "baseline_trace":  "trace-narrative_loop-20260225-cycle03",
+                     "baseline_task_id":  "T-narrative_loop-20260225-cycle03"
+                 }
 }

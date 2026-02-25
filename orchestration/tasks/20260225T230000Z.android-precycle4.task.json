@@ -1,0 +1,85 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-android-precycle4",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Complete pre-cycle4 feature lock audit for Android-owned areas and publish reproducible emulator plus physical-device evidence for product journey and navigation wiring stability.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+      "description": "Canonical matrix for Android ownership rows."
+    },
+    {
+      "kind": "file",
+      "value": "docs/CT_BASELINE_2026-02-25.md",
+      "description": "Current accepted baseline and governance lock."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/handoff/latest.handoff.json",
+      "description": "Highest-priority cycle03 closure state."
+    },
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+      "description": "Prior cycle Android evidence anchor."
+    },
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/app/src/main/res/navigation/mobile_navigation.xml",
+      "description": "Navigation graph for mode wiring validation."
+    },
+    {
+      "kind": "folder",
+      "value": "android/NarrativeLoopMobile/app/src/main/java/",
+      "description": "Fragment and navigation-related implementation."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "docs/",
+      "integration_status.md",
+      "data/evidence/",
+      "tools/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Evidence must include both emulator and physical-device reruns in the same cycle window, with sanitized logs and reproducible steps."
+  },
+  "acceptance": [
+    "Android-owned audit matrix rows have explicit verdicts (pass/partial/blocked) with evidence paths.",
+    "Write/save/re-open/re-query/universe journey is rerun on emulator and physical device and documented in the same run window.",
+    "Navigation wiring health across Home/Stream/Desk/Chronos/Universe is validated with concrete references."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Missing physical-device rerun evidence is an explicit pre-cycle4 gate failure even if emulator checks pass."
+  },
+  "next_actions": [
+    "Run product journey validation on emulator and physical device and capture evidence.",
+    "Audit navigation graph and fragment wiring and mark pass/partial/blocked with references.",
+    "Publish android pre-cycle4 result artifact and update Android report sections for this cycle window."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-02-25T23:00:00Z",
+  "context_docs": [
+    "docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md",
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle": "pre_cycle4_gate",
+    "domain": "android_audit",
+    "priority": "P0",
+    "deadline_utc": "2026-02-26T03:00:00Z"
+  }
+}

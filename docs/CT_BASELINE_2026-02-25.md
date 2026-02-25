@@ -21,6 +21,7 @@ This document is the minimum context package for a contextless CT.
 ## Quick Links
 - [Master Plan (Cycle 04-06)](./MASTER_PLAN_CYCLE04_06.md)
 - [Session Bootstrap Protocol](./SESSION_BOOTSTRAP_PROTOCOL.md)
+- [Chat CLI Message Protocol](./CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md)
 - [Pre-Cycle4 Feature Lock And Audit](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
 - [Project Brief For Human](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)
 - [Docs Index](./README.md)
@@ -77,6 +78,21 @@ When documents conflict, apply this order:
     2. `cycle-close-packager`
     3. `evidence-redaction-validator`
 
+## 4.2) Chat-CLI Load Shedding Rule (Fixed)
+- Runtime assumption:
+  - CT and workers are chat-triggered. No autonomous CT polling is assumed unless external scheduler is explicitly introduced.
+- Communication model:
+  - Fast lane: short worker L1 summary for rapid triage.
+  - Slow lane: canonical JSON artifacts (`result/handoff`) for acceptance decisions.
+- Antigravity channel lock:
+  - Use worker-specific channel pointer files:
+    - `orchestration/antigravity.current.json`
+    - `orchestration/backend.current.json`
+    - `orchestration/android.current.json`
+  - Additional CT notes must stay in channel files (`notes`, `assumptions`), not scattered markdown comments.
+- Detailed format and templates:
+  - [CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md](./CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md)
+
 ## 5) Immediate Next Gate (Pre-Cycle4)
 Cycle 4 must not begin until `PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md` exit criteria are all checked:
 - Full feature/resource coverage audit completed (not only mode visibility).
@@ -123,5 +139,6 @@ At the end of each cycle, update all five:
 ## 8) Related Documents
 - [MASTER_PLAN_CYCLE04_06.md](./MASTER_PLAN_CYCLE04_06.md)
 - [SESSION_BOOTSTRAP_PROTOCOL.md](./SESSION_BOOTSTRAP_PROTOCOL.md)
+- [CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md](./CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md)
 - [PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md](./PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md)
 - [PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md](./PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md)

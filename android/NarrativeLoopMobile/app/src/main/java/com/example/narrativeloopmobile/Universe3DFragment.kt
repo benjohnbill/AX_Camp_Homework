@@ -16,22 +16,24 @@ import androidx.fragment.app.Fragment
 class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
 
     private lateinit var webView: WebView
+    // Use the official staging gateway URL
+    private val dashboardUrl = "https://ax-camp-universe-gateway-staging.onrender.com/gateway/universe_3d"
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         webView = view.findViewById(R.id.universe_webview)
         configureWebView()
-        loadUniverseWithAuth()
+        loadUrlWithAuth()
     }
 
     private fun configureWebView() {
-        val settings = webView.settings
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.loadsImagesAutomatically = true
-        settings.mediaPlaybackRequiresUserGesture = false
-        settings.cacheMode = WebSettings.LOAD_DEFAULT
-        settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        webView.settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            loadWithOverviewMode = true
+            useWideViewPort = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        }
 
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
@@ -39,43 +41,20 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
 
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = object : WebViewClient() {
-            override fun onReceivedHttpError(
-                view: WebView?,
-                request: WebResourceRequest?,
-                errorResponse: WebResourceResponse?,
-            ) {
-                if (request?.isForMainFrame == true) {
-                    when (errorResponse?.statusCode) {
-                        401, 403 -> {
-                            Toast.makeText(
-                                requireContext(),
-                                "Authentication failed. Please login again.",
-                                Toast.LENGTH_LONG,
-                            ).show()
-                        }
-                    }
-                }
-                super.onReceivedHttpError(view, request, errorResponse)
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                // Let the WebView handle the redirect
+                return false
             }
         }
-
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
     }
 
-    private fun loadUniverseWithAuth() {
-        val universeUrl = BuildConfig.UNIVERSE_URL
-        if (universeUrl.isBlank()) {
-            Toast.makeText(requireContext(), "Universe URL is not configured.", Toast.LENGTH_LONG).show()
-            return
-        }
-
+    private fun loadUrlWithAuth() {
         val token = TokenStore.getAccessToken(requireContext())
-        if (token.isNullOrBlank()) {
-            webView.loadUrl(universeUrl)
-        } else {
-            val headers = mapOf("Authorization" to "Bearer $token")
-            webView.loadUrl(universeUrl, headers)
+        val headers = mutableMapOf<String, String>()
+        if (!token.isNullOrBlank()) {
+            headers["Authorization"] = "Bearer $token"
         }
+        webView.loadUrl(dashboardUrl, headers)
     }
 
     override fun onPause() {

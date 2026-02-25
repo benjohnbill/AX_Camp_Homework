@@ -1,0 +1,70 @@
+{
+    "trace_id":  "trace-narrative_loop-20260225-precycle4",
+    "task_id":  "T-narrative_loop-20260225-android-precycle4",
+    "worker":  "android_ide",
+    "status":  "blocked",
+    "summary":  "Android pre-cycle4 audit remains blocked. Emulator ADB connectivity recovered and app launch probe passed, but mandatory same-window full product journey evidence for emulator plus physical device is still incomplete.",
+    "outputs":  [
+                    {
+                        "kind":  "artifact",
+                        "path":  "orchestration/results/20260225T133646Z.T-narrative_loop-20260225-android-precycle4.result.json",
+                        "description":  "Android pre-cycle4 audit result artifact (schema-valid)."
+                    },
+                    {
+                        "kind":  "report",
+                        "path":  "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+                        "description":  "Android pre-cycle4 audit report with updated blocker details."
+                    },
+                    {
+                        "kind":  "artifact",
+                        "path":  "data/evidence/20260225T134533Z_android_precycle4_device_probe.json",
+                        "description":  "Android emulator recovery probe and app launch evidence."
+                    }
+                ],
+    "evidence":  [
+                     {
+                         "name":  "android_navigation_mode_wiring",
+                         "command":  "Review mobile_navigation.xml + fragment wiring",
+                         "status":  "pass",
+                         "note":  "Navigation wiring across Home/Stream/Desk/Chronos/Universe confirmed. evidence_path=android/NarrativeLoopMobile/app/src/main/res/navigation/mobile_navigation.xml"
+                     },
+                     {
+                         "name":  "android_emulator_connectivity_recovery",
+                         "command":  "android_cycle3_product_mvp_runner.ps1 -Mode device -LaunchApp",
+                         "status":  "pass",
+                         "note":  "emulator-5554 recovered to device state; app launch returned ok. evidence_path=data/evidence/20260225T134533Z_android_precycle4_device_probe.json"
+                     },
+                     {
+                         "name":  "android_product_journey_emulator_full_rerun",
+                         "command":  "Run full emulator journey (write/save/re-open/re-query/universe)",
+                         "status":  "fail",
+                         "note":  "Connectivity recovered but full same-window emulator journey checklist evidence is not yet attached. evidence_path=android/NarrativeLoopMobile/ANDROID_REPORT.md"
+                     },
+                     {
+                         "name":  "android_product_journey_physical_rerun",
+                         "command":  "Physical-device rerun for write/save/re-open/re-query/universe",
+                         "status":  "fail",
+                         "note":  "Blocked: no physical device detected by ADB in this window. evidence_path=android/NarrativeLoopMobile/ANDROID_REPORT.md"
+                     }
+                 ],
+    "risks":  [
+                  {
+                      "severity":  "critical",
+                      "description":  "Pre-cycle4 gate cannot pass until same-window emulator+physical full journey evidence is attached.",
+                      "mitigation":  "Connect physical device, execute full journey on both targets, and republish Android result."
+                  }
+              ],
+    "next_actions":  [
+                         "Connect physical device and verify ADB shows both targets as device.",
+                         "Execute and capture full product journey evidence on emulator and physical device in the same cycle window.",
+                         "Republish android pre-cycle4 result with both rerun verdicts pass and rerun CT gate aggregation."
+                     ],
+    "human_approval_needed":  false,
+    "approval_reason":  "",
+    "timestamp":  "2026-02-25T23:52:00Z",
+    "metrics":  {
+                    "duration_sec":  0,
+                    "input_tokens":  0,
+                    "output_tokens":  0
+                }
+}

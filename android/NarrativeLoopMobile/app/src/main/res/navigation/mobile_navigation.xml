@@ -8,33 +8,29 @@
     <fragment
         android:id="@+id/nav_home"
         android:name="com.example.narrativeloopmobile.HomeFragment"
-        android:label="Home"
-        tools:layout="@layout/fragment_home">
-        <action
-            android:id="@+id/action_homeFragment_to_createNarrativeFragment"
-            app:destination="@id/nav_create_narrative" />
-    </fragment>
+        android:label="Antigravity Home"
+        tools:layout="@layout/fragment_home" />
 
     <fragment
         android:id="@+id/nav_create_narrative"
         android:name="com.example.narrativeloopmobile.CreateNarrativeFragment"
-        android:label="Write Narrative"
-        tools:layout="@layout/fragment_create_narrative">
-        <action
-            android:id="@+id/action_createNarrativeFragment_to_homeFragment"
-            app:destination="@id/nav_home" />
-    </fragment>
+        android:label="Stream Input"
+        tools:layout="@layout/fragment_create_narrative" />
+
+    <fragment
+        android:id="@+id/nav_chronos"
+        android:name="com.example.narrativeloopmobile.ui.chronos.ChronosFragment"
+        android:label="Chronos Timer" />
+
+    <fragment
+        android:id="@+id/nav_desk"
+        android:name="com.example.narrativeloopmobile.ui.desk.DeskFragment"
+        android:label="The Desk" />
 
     <fragment
         android:id="@+id/nav_universe"
         android:name="com.example.narrativeloopmobile.Universe3DFragment"
-        android:label="Universe(3D)"
+        android:label="Universe Dashboard"
         tools:layout="@layout/fragment_universe_3d" />
-
-    <fragment
-        android:id="@+id/nav_debug"
-        android:name="com.example.narrativeloopmobile.ui.debug.DebugFragment"
-        android:label="Debug"
-        tools:layout="@layout/fragment_debug" />
 
 </navigation>

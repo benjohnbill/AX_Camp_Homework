@@ -9,7 +9,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
@@ -33,7 +33,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         logoutButton = view.findViewById(R.id.logout_button)
 
         writeNarrativeButton.setOnClickListener {
-            findNavController().navigate(R.id.action_homeFragment_to_createNarrativeFragment)
+            val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_nav)
+            bottomNav.selectedItemId = R.id.nav_create_narrative
         }
 
         if (BuildConfig.DEBUG) {

@@ -3,22 +3,27 @@
 
     <item
         android:id="@+id/nav_home"
-        android:icon="@drawable/ic_home"
+        android:icon="@android:drawable/ic_menu_today"
         android:title="Home" />
 
     <item
         android:id="@+id/nav_create_narrative"
-        android:icon="@drawable/ic_edit"
-        android:title="Write" />
+        android:icon="@android:drawable/ic_menu_edit"
+        android:title="Stream" />
+
+    <item
+        android:id="@+id/nav_chronos"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="Chronos" />
+
+    <item
+        android:id="@+id/nav_desk"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        android:title="Desk" />
 
     <item
         android:id="@+id/nav_universe"
-        android:icon="@drawable/ic_view"
+        android:icon="@android:drawable/ic_menu_compass"
         android:title="Universe" />
-
-    <item
-        android:id="@+id/nav_debug"
-        android:icon="@android:drawable/ic_menu_manage"
-        android:title="Debug" />
 
 </menu>
