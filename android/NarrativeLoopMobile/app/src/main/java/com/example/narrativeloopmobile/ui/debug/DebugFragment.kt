@@ -63,8 +63,26 @@ class DebugFragment : Fragment() {
         }
 
         saveNarrativeButton.setOnClickListener {
-            val narrative = narrativeEditText.text.toString()
-            responseTextView.text = "Narrative to save: $narrative"
+            val token = tokenEditText.text.toString()
+            responseTextView.text = "Sending request..."
+
+            lifecycleScope.launch {
+                try {
+                    ApiClient.setAuthToken(token)
+                    val response = ApiClient.debugApiService.getUniverse(BuildConfig.UNIVERSE_URL)
+
+                    val responseCode = response.code()
+                    val resultText = if (response.isSuccessful || responseCode == 307) {
+                        "Success: Received response with code $responseCode"
+                    } else {
+                        "Error: Received error response with code $responseCode"
+                    }
+                    responseTextView.text = resultText
+
+                } catch (e: Exception) {
+                    responseTextView.text = "Exception: ${e.message}"
+                }
+            }
         }
     }
 }

@@ -1,23 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/edit_text_narrative"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="top"
-        android:hint="Write your narrative here..."
-        android:inputType="textMultiLine" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-    <Button
-        android:id="@+id/button_save_narrative"
-        android:layout_width="match_parent"
+        <EditText
+            android:id="@+id/edit_text_narrative"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="top"
+            android:hint="Write your narrative here..."
+            android:inputType="textMultiLine" />
+
+        <Button
+            android:id="@+id/button_camera"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Camera" />
+
+        <Button
+            android:id="@+id/button_ai_refine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="AI Refine" />
+
+        <Button
+            android:id="@+id/button_save_narrative"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Save Narrative" />
+
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Save Narrative" />
+        android:layout_centerInParent="true"
+        android:visibility="gone" />
 
-</LinearLayout>
+</RelativeLayout>

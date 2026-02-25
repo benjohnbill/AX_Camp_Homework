@@ -2,7 +2,7 @@
 doc_type: worker_prompt
 owner: control_tower
 authority_level: L2
-last_updated: 2026-02-24
+last_updated: 2026-02-25
 sync_with:
   - android/NarrativeLoopMobile/CT_INBOX_ANDROID.md
   - android/NarrativeLoopMobile/CT_ANDROID_FEEDBACK.md
@@ -10,57 +10,41 @@ sync_with:
 change_triggers:
   - retry unit opened
   - acceptance criteria changed
-sunset_condition: Remove after cycle02 android runtime evidence passes.
-review_by: 2026-02-26
+sunset_condition: Remove after cycle03 android runtime evidence passes.
+review_by: 2026-03-01
 ---
 
 # Android Retry Prompt (Paste to Android Studio)
 
 ```text
 You are android_ide worker for Narrative_Loop.
-Execution unit: cycle02-android-e2e-recovery-02
-Date: 2026-02-24
+Execution unit: cycle03-android-product-mvp-01
+Date: 2026-02-25
 
 You can only read:
-D:\OneDrive\바탕 화면\Life_System\01_Active_Projects\08_AX 코딩 아카데미\Narrative_Loop\android\NarrativeLoopMobile
+D:\dev\Narrative_Loop\android\NarrativeLoopMobile
 
 Read in order:
 1) CT_INBOX_ANDROID.md
 2) CT_ANDROID_FEEDBACK.md
 3) Android_Studio_agent.md
 4) ANDROID_REPORT_TEMPLATE.md
-5) TEMP_ANDROID_PROGRESS_REPORT.md (reference only)
+5) CYCLE3_PRODUCT_MVP_RUNBOOK.md
 
-Target URL:
-https://ax-camp-universe-gateway-staging.onrender.com/gateway/universe_3d
-
-Backend precondition (verified):
-- /debug/token with admin key returns 200 issued
-- `/debug/token` may reject `aud=forbidden-audience` with `403 forbidden_audience` by policy
-
-Important:
-- Code review only is not accepted.
-- You must provide real device runtime evidence.
-- TEMP report is preparation evidence only and cannot close the checklist.
+Objective:
+Complete Cycle 03 Product Journey MVP verification on both emulator and physical device.
 
 Required scenarios:
-1) first bearer request success
-2) cookie follow-up success
-3) clear auth session state (logout/clear cookies) before negative-case tests
-4) 401 friendly UX runtime evidence
-5) 403 friendly UX runtime evidence
-6) lifecycle smoke runtime evidence (tab switch + background/foreground + resume)
+1) Auth lifecycle (Bearer->Cookie) stability proof.
+2) Narrative write/save/re-query flow.
+3) Universe mobile-path UX stability.
+4) 401/403 friendly UX narrative-first copy verification.
+5) Lifecycle smoke (background/foreground/resume) on physical device.
 
-403 token rule:
-- Do not depend on `/debug/token` to mint forbidden audience token.
-- If forbidden audience issuance is blocked, mint a local JWT using project runtime secret/issuer and wrong audience claim.
-- Keep token values masked in report/log artifacts.
-
-Path workaround (if Gradle module detection fails on non-ASCII path):
-- subst X: "D:\OneDrive\바탕 화면\Life_System\01_Active_Projects\08_AX 코딩 아카데미\Narrative_Loop\android\NarrativeLoopMobile"
-- run from X: `gradlew.bat -q projects` then `gradlew.bat :app:tasks`
-- if build/install is needed, continue from X: with `gradlew.bat :app:assembleDebug` or install command
-- cleanup: `subst X: /d`
+Important:
+- Use tools/android_cycle3_product_mvp_runner.ps1 if available.
+- Physical device evidence is mandatory for Cycle 03 closure.
+- Sanitize all evidence and report artifacts.
 
 Write output to:
 ANDROID_REPORT.md
@@ -73,6 +57,5 @@ Use exactly these 4 blocks:
 
 Security:
 - Never expose plain token/key/secret.
-- Keep evidence paths inside android/NarrativeLoopMobile/.
-- Include blocker class if failed (`environment_blocked`, `device_blocked`, `runtime_blocked`).
+- Keep evidence paths inside android/NarrativeLoopMobile/evidence/.
 ```

@@ -19,7 +19,11 @@
         android:id="@+id/nav_create_narrative"
         android:name="com.example.narrativeloopmobile.CreateNarrativeFragment"
         android:label="Write Narrative"
-        tools:layout="@layout/fragment_create_narrative" />
+        tools:layout="@layout/fragment_create_narrative">
+        <action
+            android:id="@+id/action_createNarrativeFragment_to_homeFragment"
+            app:destination="@id/nav_home" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_universe"
