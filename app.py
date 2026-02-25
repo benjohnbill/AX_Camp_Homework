@@ -377,7 +377,7 @@ def apply_atmosphere(entropy_mode: bool):
         [data-testid="stSidebar"] {
             transform: translateX(-108%);
             opacity: 0;
-            margin-left: -19rem;
+            margin-left: calc(-1 * var(--sidebar-width));
             width: 0 !important;
             min-width: 0 !important;
             max-width: 0 !important;
@@ -401,6 +401,7 @@ def apply_atmosphere(entropy_mode: bool):
             --app-text: #f3f5f7;
             --app-muted: #9aa3b2;
             --app-accent: #10a37f;
+            --sidebar-width: 240px;
         }
 
         header {visibility: hidden;}
@@ -416,6 +417,9 @@ def apply_atmosphere(entropy_mode: bool):
         [data-testid="stSidebarCollapsedControl"] { display: none !important; }
         [data-testid="stSidebar"] {
             border-right: 1px solid var(--app-border);
+            width: var(--sidebar-width) !important;
+            min-width: var(--sidebar-width) !important;
+            max-width: var(--sidebar-width) !important;
             transition: transform 0.26s ease, opacity 0.26s ease, margin-left 0.26s ease, width 0.26s ease, min-width 0.26s ease, max-width 0.26s ease;
             will-change: transform, opacity, margin-left, width;
             transform: translateX(0);
@@ -425,9 +429,23 @@ def apply_atmosphere(entropy_mode: bool):
 
         .layout-toolbar {
             display: flex;
-            justify-content: flex-end;
-            margin-bottom: 0.35rem;
-            gap: 0.45rem;
+            justify-content: flex-start;
+            position: fixed;
+            top: 0.62rem;
+            left: 0.68rem;
+            z-index: 1200;
+            margin: 0;
+            gap: 0.2rem;
+        }
+
+        .layout-toolbar .stButton button {
+            border-radius: 999px !important;
+            min-height: 2rem !important;
+            height: 2rem !important;
+            width: 2rem !important;
+            padding: 0 !important;
+            border: 1px solid var(--app-border) !important;
+            background: var(--app-surface-soft) !important;
         }
 
         .stream-shell {
@@ -482,6 +500,18 @@ def apply_atmosphere(entropy_mode: bool):
             letter-spacing: 0.04em;
             text-transform: uppercase;
             margin-bottom: 0.4rem;
+        }
+
+        .sidebar-stream-scroll {
+            border: 1px solid var(--app-border);
+            border-radius: 12px;
+            padding: 0.25rem 0.45rem;
+            background: rgba(255,255,255,0.01);
+        }
+
+        .sidebar-account-dock {
+            border-top: 1px solid var(--app-border);
+            padding-top: 0.4rem;
         }
 
         input, textarea { background-color: rgba(255, 255, 255, 0.03) !important; }
@@ -567,7 +597,7 @@ def render_sidebar_toggle_control() -> None:
         return
     with st.container():
         st.markdown("<div class='layout-toolbar'>", unsafe_allow_html=True)
-        if st.button("⟩ 사이드바 열기", key="main_sidebar_open"):
+        if st.button("⟩", key="main_sidebar_open", help="사이드바 열기"):
             st.session_state["sidebar_open"] = True
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
@@ -594,41 +624,45 @@ def render_sidebar(entropy_mode: bool):
             st.warning(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT")
             st.info("시스템 엔트로피가 임계치를 초과했습니다. [Gap Analysis]가 필요합니다.")
 
+        streak = st.session_state.get('streak_info', {})
+        st.caption(f"Streak {streak.get('streak', 0)}d")
+
         st.divider()
         st.markdown("<div class='sidebar-section-title'>스트림</div>", unsafe_allow_html=True)
-        streams = logic.load_chat_streams(limit=40)
-        active_stream_id = str(st.session_state.get("active_stream_id") or "").strip()
-        if not streams:
-            st.caption("저장된 스트림이 없습니다.")
-        else:
-            for stream in streams:
-                stream_id = str(stream.get("stream_id") or "").strip()
-                if not stream_id:
-                    continue
-                title = _display_stream_title(stream.get("title"))
-                if len(title) > 28:
-                    title = f"{title[:25]}..."
-                if stream_id == active_stream_id:
-                    title = f"● {title}"
-                if st.button(title, key=f"sidebar_stream_{stream_id}", use_container_width=True):
-                    st.session_state["mode"] = "stream"
-                    st.session_state["active_stream_id"] = stream_id
-                    st.session_state["messages"] = _load_messages_for_stream(stream_id)
-                    st.session_state["first_input_of_session"] = len(st.session_state["messages"]) == 0
-                    st.rerun()
-                count = int(stream.get("message_count") or 0)
-                updated = str(stream.get("updated_at") or "")
-                meta = f"{count}개 메시지"
-                if updated:
-                    meta += f" · {updated[:16]}"
-                st.caption(meta)
+        with st.container(border=False, height=430):
+            st.markdown("<div class='sidebar-stream-scroll'>", unsafe_allow_html=True)
+            streams = logic.load_chat_streams(limit=80)
+            active_stream_id = str(st.session_state.get("active_stream_id") or "").strip()
+            if not streams:
+                st.caption("저장된 스트림이 없습니다.")
+            else:
+                for stream in streams:
+                    stream_id = str(stream.get("stream_id") or "").strip()
+                    if not stream_id:
+                        continue
+                    title = _display_stream_title(stream.get("title"))
+                    if len(title) > 28:
+                        title = f"{title[:25]}..."
+                    if stream_id == active_stream_id:
+                        title = f"● {title}"
+                    if st.button(title, key=f"sidebar_stream_{stream_id}", use_container_width=True):
+                        st.session_state["mode"] = "stream"
+                        st.session_state["active_stream_id"] = stream_id
+                        st.session_state["messages"] = _load_messages_for_stream(stream_id)
+                        st.session_state["first_input_of_session"] = len(st.session_state["messages"]) == 0
+                        st.rerun()
+                    count = int(stream.get("message_count") or 0)
+                    updated = str(stream.get("updated_at") or "")
+                    meta = f"{count}개 메시지"
+                    if updated:
+                        meta += f" · {updated[:16]}"
+                    st.caption(meta)
+            st.markdown("</div>", unsafe_allow_html=True)
 
         st.divider()
-        streak = st.session_state.get('streak_info', {})
-        st.metric("Streak", f"{streak.get('streak', 0)}d")
-
-        st.divider()
+        st.markdown("<div class='sidebar-account-dock'>", unsafe_allow_html=True)
         render_api_key_section()
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_runtime_diagnostics_badge(entropy_mode: bool) -> None:
