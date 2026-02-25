@@ -765,7 +765,7 @@ def render_ocr_fallback_entrypoint() -> None:
     st.divider()
 
 
-def render_stream_mode_switch_cards(show_heading: bool = True) -> None:
+def render_stream_mode_switch_cards(show_heading: bool = True, key_prefix: str = "main") -> None:
     if show_heading:
         st.markdown("<div style='text-align:center; color:var(--app-muted); font-size:0.85rem; margin-bottom:0.8rem;'>워크스페이스 전환</div>", unsafe_allow_html=True)
     
@@ -777,7 +777,7 @@ def render_stream_mode_switch_cards(show_heading: bool = True) -> None:
         with col:
             # Consistent formatting: Emoji and Bold Title
             label = f"{emoji} **{title}**"
-            if st.button(label, key=f"stream_hub_{mode}", use_container_width=True, help=subtitle):
+            if st.button(label, key=f"stream_hub_{key_prefix}_{mode}", use_container_width=True, help=subtitle):
                 st.session_state["mode"] = mode
                 st.rerun()
 
@@ -872,7 +872,7 @@ def render_stream_mode():
         st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
         render_stream_ocr_entrypoint(expanded=False) # Changed to collapsed to avoid cluttering title
         st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)        
-        render_stream_mode_switch_cards(show_heading=True)
+        render_stream_mode_switch_cards(show_heading=True, key_prefix="empty")
         st.markdown("</div>", unsafe_allow_html=True)
         # Action block ends
         
@@ -886,7 +886,7 @@ def render_stream_mode():
     # Render Dock if open
     if st.session_state.get("workspace_dock_open", False):
         st.markdown("<div class='workspace-dock-container'>", unsafe_allow_html=True)
-        render_stream_mode_switch_cards(show_heading=False)
+        render_stream_mode_switch_cards(show_heading=False, key_prefix="dock")
         st.markdown("</div>", unsafe_allow_html=True)
 
     # [+] Toggle Button (chat input 위 단독 배치)
