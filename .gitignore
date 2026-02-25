@@ -27,3 +27,7 @@ android/NarrativeLoopMobile/**/captures/
 android/NarrativeLoopMobile/**/.externalNativeBuild/
 android/NarrativeLoopMobile/**/.cxx/
 android/NarrativeLoopMobile/**/local.properties
+**/.gradle-user/
+android/NarrativeLoopMobile/recovery/
+orchestration/local_machine_env.json
+orchestration/loop_state.json
