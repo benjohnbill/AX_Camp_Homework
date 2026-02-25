@@ -64,12 +64,25 @@ When documents conflict, apply this order:
   - JSON artifacts are authoritative for pass/fail.
   - Markdown is explanatory and must not override canonical JSON verdicts.
 
+## 4.1) MCP And Skill Lock (As-Of 2026-02-25)
+- MCP:
+  - Keep current Phase-1 read-only set only (`docs-search`, `db-observer`, `deploy-health`).
+  - No new MCP server is allowed before Pre-Cycle4 gate pass and post-cycle stability review.
+- Skills:
+  - No external skills installation for now.
+  - Keep external registry entries at `candidate` until checksum and pilot gate are satisfied.
+  - Internal operational skill candidates to define:
+    1. `feature-lock-audit`
+    2. `cycle-close-packager`
+    3. `evidence-redaction-validator`
+
 ## 5) Immediate Next Gate (Pre-Cycle4)
 Cycle 4 must not begin until `PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md` exit criteria are all checked:
 - Full feature/resource coverage audit completed (not only mode visibility).
 - Critical user journeys rerun with reproducible evidence.
 - Task/result/handoff contract validation completed for updated artifacts.
 - Cycle4 kickoff package published.
+- MCP/skill governance checks passed with no unauthorized capability expansion.
 
 ## 6) CT Bootstrap Prompt (Copy/Paste)
 Use this as first instruction for a contextless CT:
@@ -85,6 +98,7 @@ Trust source order:
 
 Do not start Cycle 4 work directly.
 First execute Pre-Cycle4 hardening gate from docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md.
+Keep MCP set unchanged and do not install external skills during this gate.
 Then publish cycle4 kickoff artifacts:
 - orchestration/task.json
 - orchestration/dispatch/<cycle4>.worker-prompts.json

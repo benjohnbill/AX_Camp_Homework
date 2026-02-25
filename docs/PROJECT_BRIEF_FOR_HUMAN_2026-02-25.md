@@ -41,6 +41,10 @@ sunset_condition: Replace at next cycle closure with a newer human-readable brie
 - Worker(backend/frontend/android)가 각자 실행하고 증적 JSON을 제출합니다.
 - 최종 상태는 `task/result/handoff` JSON으로 판정하며, 설명 문서는 이를 보조합니다.
 - 사이클 종료 때는 5종 산출물을 반드시 갱신하도록 운영 규격을 고정했습니다.
+- MCP/Skill 운영 원칙:
+  - MCP는 현재 read-only 3종만 유지하고, 추가 확장은 보류합니다.
+  - 외부 skill은 candidate 상태로만 두고, checksum+검증 통과 전에는 승격하지 않습니다.
+  - 내부 운영 스킬 후보(기능잠금/사이클종료/민감정보검증)만 계획에 반영합니다.
 
 ## 3) 전체 계획에서 지금 위치
 - 완료 구간:

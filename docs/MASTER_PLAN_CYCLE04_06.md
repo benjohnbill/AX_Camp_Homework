@@ -40,12 +40,25 @@ Baseline product vision source:
 - Cycle 03 is treated as accepted baseline (`2026-02-25T23:59:59Z`).
 - Cycle 04 begins only after Pre-Cycle4 hardening gate passes.
 
+## 3.1) MCP/Skill Governance Lock
+- MCP lock:
+  - Keep only approved read-only servers in `.mcp.json`.
+  - Do not add new MCP servers in Cycle 04 unless CT records explicit approval in canonical handoff.
+- Skill lock:
+  - External skills remain `candidate` by default (`skills/approved_skills_registry.json`).
+  - No promotion to `pilot/core` without checksum and strict registry gate.
+  - Internal operation-skill candidates for Cycle 04-06:
+    1. `feature-lock-audit`
+    2. `cycle-close-packager`
+    3. `evidence-redaction-validator`
+
 ## 4) Cycle 04 (Phase 1: Stabilization + Native Strengthening)
 ### Committed
 - OCR flow hardening and correction UX stabilization.
 - Write/Save/Re-open/Re-query/Universe user-journey non-regression.
 - Android navigation reliability across Home/Stream/Desk/Chronos/Universe.
 - Cycle artifacts and governance sync stabilization.
+- Integration-status-sync skill refresh to remove stale paths (`INBOX.md`-style assumptions) and align with current CT inbox structure.
 
 ### Exploratory
 - CameraX transition spike: compare system intent vs dedicated camera flow on quality and latency.
@@ -58,6 +71,7 @@ Baseline product vision source:
 - `PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md` exit criteria all passed.
 - Cycle04 kickoff and close artifacts are schema-valid.
 - Critical path blocker count is zero for auth/storage/universe.
+- MCP/skill policy checks pass with no unauthorized expansion.
 
 ## 5) Cycle 05 (Phase 1->2 Bridge: Retrieval Quality + Reflection UX)
 ### Committed

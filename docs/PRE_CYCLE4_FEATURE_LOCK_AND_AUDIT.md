@@ -43,6 +43,7 @@ This audit covers full active resources, not only `Stream/Desk/Chronos/Control/U
 | Android navigation/mode wiring | Home/Desk/Chronos/Universe fragment navigation health | `android/NarrativeLoopMobile/app/src/main/res/navigation/mobile_navigation.xml` + fragment files | android_ide | [ ] |
 | Contract governance | task/result/handoff schema and trace/task alignment | `tools/validate_contracts.py`, `orchestration/contracts/*.schema.json` | control_tower | [ ] |
 | Docs/governance sync | Baseline + status docs aligned with canonical JSON | `integration_status.md`, `CT_BASELINE_2026-02-25.md` | control_tower | [ ] |
+| MCP/Skill governance | MCP unchanged, external skills not promoted, internal skill candidate list documented | `.mcp.json`, `MCP_USAGE_POLICY.md`, `skills/approved_skills_registry.json`, `SKILL_PROMOTION_POLICY.md` | control_tower | [ ] |
 
 ## Mandatory Test Set
 Run at least:
@@ -55,6 +56,7 @@ Run at least:
 - [ ] No unresolved `blocked` item in auth/storage/universe critical path.
 - [ ] Android evidence includes both emulator and physical-device rerun logs for the same cycle window.
 - [ ] Contract validation passes on all updated cycle artifacts.
+- [ ] MCP/skill governance verification passes with no unauthorized server/skill activation.
 - [ ] Cycle 4 kickoff package is published (task/dispatch/result/handoff/baseline).
 
 ## Failure Policy
