@@ -587,7 +587,12 @@ def get_current_echo(reference_text: str = None) -> dict:
 # Entropy Alert (prev. Red Protocol): Debt Logic
 # ============================================================
 def is_entropy_mode() -> bool:
-    """Check if Entropy Mode should be active (debt_count > 0)"""
+    \"\"\"Check if Entropy Mode should be active (debt_count > 0).
+    Cycle 03: Controlled by ENABLE_ENTROPY feature flag.
+    \"\"\"
+    flag = os.getenv("ENABLE_ENTROPY", "false").lower() == "true"
+    if not flag:
+        return False
     return db.get_debt_count() > 0
 
 
@@ -1064,6 +1069,54 @@ def _call_ai_api(system_prompt: str, user_input: str, context: str) -> str:
     except Exception as api_error:
         logger.error(f"AI Generation failed: {api_error}")
         return "우주와의 통신이 원활하지 않습니다. 잠시 후 다시 시도해주세요."
+
+
+import base64
+
+def refine_image_to_narrative_with_ai(image_bytes: bytes) -> str:
+    """
+    [Vision] 이미지를 OpenAI 비전 모델로 분석하여 서사로 변환합니다.
+    """
+    if not is_api_key_configured():
+        return "API 키가 설정되지 않았습니다."
+
+    base64_image = base64.b64encode(image_bytes).decode('utf-8')
+    
+    system_prompt = """너는 사용자가 촬영한 사진(일기, 메모, 풍경 등)을 보고 그 안의 텍스트를 추출하거나 
+상황을 분석하여 '자기 결정적 서사'로 다듬어주는 문학적 천문학자다.
+
+[정제된 서사 형식]
+1. 관찰: (사진에서 보이는 사실 또는 추출된 텍스트)
+2. 성찰: (이 장면이 사용자에게 어떤 의미일지 통찰)
+3. 선언: (이 기록을 바탕으로 사용자가 지켜야 할 원칙이나 결정문)
+
+한국어로 응답하라."""
+
+    client = get_client()
+    try:
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini", # gpt-4o-mini also supports vision now
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "이 사진을 보고 서사를 작성해줘."},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            max_tokens=500
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        logger.error(f"Vision API failed: {e}")
+        return f"이미지 분석 중 오류가 발생했습니다: {e}"
 
 
 

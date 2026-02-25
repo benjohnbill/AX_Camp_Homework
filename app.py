@@ -234,10 +234,9 @@ def init_session_state():
         st.session_state['diagnostics_run'] = True
 
     if 'streak_updated' not in st.session_state:
+        # streak_updated is the per-session guard.
         result = db.check_streak_and_apply_penalty()
         st.session_state['streak_info'] = result['streak_info']
-        # entropy_mode는 is_entropy_mode()가 DB debt_count를 실시간 조회하므로
-        # 별도 trigger 플래그 불필요 — penalty 적용 시 debt가 DB에서 이미 증가됨
         st.session_state['streak_updated'] = True
 
     if 'mode' not in st.session_state:
@@ -373,6 +372,37 @@ def render_sidebar(entropy_mode: bool):
 
         st.divider()
         render_api_key_section()
+        
+        st.divider()
+        st.markdown(f"### {icons.get_icon_text('sparkles')} AI Assistant")
+        
+        # [NEW] Vision Upload Section
+        with st.expander("📷 사진으로 서사 쓰기", expanded=False):
+            uploaded_file = st.file_uploader("이미지 업로드 (메모/풍경 등)", type=['png', 'jpg', 'jpeg'], key="vision_uploader")
+            if uploaded_file:
+                if st.button("사진 분석 및 서사 추출", use_container_width=True):
+                    with st.spinner("이미지에서 서사를 추출하는 중..."):
+                        image_bytes = uploaded_file.read()
+                        vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
+                        st.session_state['refined_memo'] = vision_result
+        
+        raw_memo = st.text_area("거친 메모 입력", placeholder="오늘 있었던 일을 짧게 적어보세요...", height=100)
+        if st.button("서사 정제하기", use_container_width=True):
+            if raw_memo.strip():
+                with st.spinner("별자리를 그리는 중..."):
+                    refined = logic.refine_narrative_with_ai(raw_memo)
+                    st.session_state['refined_memo'] = refined
+            else:
+                st.error("내용을 입력해주세요.")
+        
+        if 'refined_memo' in st.session_state:
+            st.markdown("---")
+            st.info(st.session_state['refined_memo'])
+            if st.button("스트림에 즉시 저장", use_container_width=True, type="primary"):
+                logic.save_log(st.session_state['refined_memo'])
+                st.toast("서사가 스트림에 기록되었습니다.", icon="☄️")
+                del st.session_state['refined_memo']
+                st.rerun()
 
 # ============================================================
 # MODES
@@ -385,20 +415,29 @@ def render_stream_mode():
         st.warning(f"{icons.get_icon_text('shield-alert')} Alignment Error against Core: \"{v['core']['content'][:50]}...\"")
         st.info(f"Input: {v['text']}")
         
+        entropy_enabled = os.getenv("ENABLE_ENTROPY", "false").lower() == "true"
+        
         c1, c2 = st.columns(2)
-        if c1.button(f"{icons.get_icon_text('skull')} Stop & Analyze Gap"):
-            db.increment_debt(1)
-            del st.session_state['violation_pending']
-            st.rerun()
+        if entropy_enabled:
+            if c1.button(f"{icons.get_icon_text('skull')} Stop & Analyze Gap"):
+                db.increment_debt(1)
+                del st.session_state['violation_pending']
+                st.rerun()
+                
+            if c2.button(f"{icons.get_icon_text('zap')} Force Merge (Entropy +1)"):
+                db.increment_debt(1)
+                logic.save_log(v['text'])
+                del st.session_state['violation_pending']
+                st.toast("Forced merge. Entropy increased.", icon="🚨")
+                st.rerun()
+        else:
+            if c1.button(f"{icons.get_icon_text('zap')} Merge Log (Standard)", use_container_width=True):
+                logic.save_log(v['text'])
+                del st.session_state['violation_pending']
+                st.toast("Log merged into stream.", icon="☄️")
+                st.rerun()
             
-        if c2.button(f"{icons.get_icon_text('zap')} Force Merge (Entropy +1)"):
-            db.increment_debt(1)
-            logic.save_log(v['text'])
-            del st.session_state['violation_pending']
-            st.toast("Forced merge. Entropy increased.", icon="🚨")
-            st.rerun()
-            
-        if st.button(f"{icons.get_icon_text('trash')} Discard"):
+        if st.button(f"{icons.get_icon_text('trash')} Discard", use_container_width=True if not entropy_enabled else False):
             del st.session_state['violation_pending']
             st.rerun()
         return
@@ -430,6 +469,7 @@ def process_stream_input(user_input: str):
     if st.session_state['first_input_of_session']:
         st.toast("Log captured. Meteor Effect.", icon="☄️")
         st.session_state['first_input_of_session'] = False
+        # No automated AI response for first input to maintain mystery/speed
     else:
         related = logic.find_related_logs(user_input)
         resp = logic.generate_response(user_input, related)
@@ -437,6 +477,7 @@ def process_stream_input(user_input: str):
         logic.save_chat_message("assistant", resp)
     
     st.session_state['current_echo'] = logic.get_current_echo(reference_text=user_input)
+    # Final rerun to sync state to UI
     st.rerun()
 
 def render_chronos_mode():
@@ -453,18 +494,52 @@ def render_chronos_mode():
 
 def render_chronos_timer():
     rem = st.session_state['chronos_end_time'] - datetime.now(timezone.utc)
-    mins, secs = divmod(max(0, int(rem.total_seconds())), 60)
-    st.markdown(f"<h1 style='text-align:center; font-size:80px; color:#00FFFF;'>{mins:02d}:{secs:02d}</h1>", unsafe_allow_html=True)
+    total_secs = max(0, int(rem.total_seconds()))
+    mins, secs = divmod(total_secs, 60)
+    
+    # JavaScript countdown for smooth ticking and auto-refresh on finish
+    end_ts = int(st.session_state['chronos_end_time'].timestamp() * 1000)
+    components.html(f\"\"\"
+    <div style="text-align:center; font-family:'Courier New',monospace; padding:40px 0;">
+        <div id="timer" style="font-size:96px; font-weight:900; color:#00FFFF;
+             letter-spacing:8px; text-shadow:0 0 40px rgba(0,255,255,0.6);">
+            {mins:02d}:{secs:02d}
+        </div>
+        <div style="color:#666; font-size:14px; margin-top:10px;">
+            {st.session_state['chronos_duration']}분 세션 진행 중
+        </div>
+    </div>
+    <script>
+        const endTime = {end_ts};
+        function tick() {{
+            const now = Date.now();
+            const diff = Math.max(0, endTime - now);
+            const m = Math.floor(diff / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            const timerEl = document.getElementById('timer');
+            timerEl.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+            if (diff <= 0) {{
+                timerEl.style.color = '#FFD700';
+                clearInterval(interval);
+                // Trigger a refresh after a small delay once finished
+                setTimeout(() => {{ window.parent.location.reload(); }}, 1000);
+            }}
+        }}
+        tick();
+        const interval = setInterval(tick, 1000);
+    </script>
+    \"\"\", height=250)
     
     c1, c2 = st.columns(2)
     if c1.button(f"{icons.get_icon_text('check-circle')} 완료", use_container_width=True):
         st.session_state['chronos_running'] = False
         st.session_state['chronos_finished'] = True
+        db.clear_chronos_timer()
         st.rerun()
     if c2.button(f"{icons.get_icon_text('shield-alert')} 취소", use_container_width=True):
         st.session_state['chronos_running'] = False
+        db.clear_chronos_timer()
         st.rerun()
-    time.sleep(2); st.rerun()
 
 def render_chronos_setup():
     c1, c2, c3 = st.columns(3)
@@ -684,7 +759,10 @@ def main():
                     core_id = [c['id'] for c in cores if c['content']==sel][0] if cores else None
                     if core_id:
                         logic.process_gap(reason, core_id, plan, tags=[f_tag] if f_tag else [])
-                        st.success("엔트로피 감소 확인. 시스템 정상화."); time.sleep(1.5); st.rerun()
+                        st.success("엔트로피 감소 확인. 시스템 정상화.")
+                        # Reset session flags that might interfere
+                        st.session_state['interventions_checked'] = False
+                        time.sleep(1.5); st.rerun()
                     else:
                         st.error("Core를 찾을 수 없습니다.")
         return

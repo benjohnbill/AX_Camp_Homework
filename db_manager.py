@@ -280,13 +280,14 @@ def update_streak() -> dict:
 def check_streak_and_apply_penalty() -> dict:
     """
     [Entropy Alert] Check streak status on login.
-    If broken, AUTOMATICALLY increment debt.
+    If broken, AUTOMATICALLY increment debt (if feature enabled).
     Returns: {streak_info, penalty_applied: bool}
     """
     streak_info = update_streak() # Local call
     penalty_applied = False
     
-    if streak_info['status'] == 'broken':
+    flag = os.getenv("ENABLE_ENTROPY", "false").lower() == "true"
+    if streak_info['status'] == 'broken' and flag:
         increment_debt(1) # Local call
         penalty_applied = True
         print("Streak Broken. Debt Incremented.")

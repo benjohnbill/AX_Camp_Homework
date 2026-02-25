@@ -626,7 +626,8 @@ def update_streak() -> dict:
 
 def check_streak_and_apply_penalty() -> dict:
     streak_info = update_streak()
-    penalty_applied = streak_info.get("status") == "broken" and streak_info.get("streak", 0) == 1
+    flag = os.getenv("ENABLE_ENTROPY", "false").lower() == "true"
+    penalty_applied = streak_info.get("status") == "broken" and streak_info.get("streak", 0) == 1 and flag
     if penalty_applied:
         increment_debt(1)
     return {"streak_info": streak_info, "penalty_applied": penalty_applied}

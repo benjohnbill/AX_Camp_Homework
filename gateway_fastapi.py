@@ -2,10 +2,13 @@ import os
 from typing import Any, Mapping
 
 import uvicorn
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Body, File, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 
 import universe_auth as ua
+import narrative_logic as logic
+
+DEFAULT_UPSTREAM_EMBED_URL = "https://benjohnbill-ax-camp-homework.streamlit.app/?embed=universe_3d"
 
 
 DEFAULT_UPSTREAM_EMBED_URL = "https://benjohnbill-ax-camp-homework.streamlit.app/?embed=universe_3d"
@@ -118,6 +121,38 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
                 path="/",
             )
         return response
+
+    @app.post("/v1/narrative/refine")
+    async def refine_narrative(request: Request, body: dict = Body(...)) -> JSONResponse:
+        # Simple open endpoint for MVP
+        text = body.get("text", "")
+        if not text:
+            return JSONResponse({"error": "Empty text"}, status_code=400)
+        
+        refined = logic.refine_narrative_with_ai(text)
+        return JSONResponse({"refined_text": refined})
+
+    @app.post("/v1/narrative/vision")
+    async def vision_narrative(image: UploadFile = File(...)) -> JSONResponse:
+        """
+        Receives an image, processes it with Vision AI, and returns the narrative.
+        """
+        try:
+            content = await image.read()
+            refined = logic.refine_image_to_narrative_with_ai(content)
+            return JSONResponse({"refined_text": refined})
+        except Exception as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
+    @app.post("/v1/narrative")
+    async def save_narrative(request: Request, body: dict = Body(...)) -> JSONResponse:
+        # Simple open save for MVP (In production, should be auth-gated)
+        text = body.get("text", "")
+        if not text:
+            return JSONResponse({"error": "Empty text"}, status_code=400)
+        
+        log = logic.save_log(text)
+        return JSONResponse({"status": "ok", "log_id": log.get("id")})
 
     return app
 
