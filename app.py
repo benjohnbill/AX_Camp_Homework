@@ -777,6 +777,7 @@ def render_stream_ocr_entrypoint(expanded: bool = False) -> None:
             key="stream_vision_uploader",
         )
         if uploaded and st.button("📷 분석하기", key="stream_vision_extract", use_container_width=True):
+            st.session_state.pop("refined_memo_edit", None)  # reset previous edit state
             with st.spinner("이미지에서 서사를 추출하는 중..."):
                 image_bytes = uploaded.read()
                 vision_result = logic.refine_image_to_narrative_with_ai(image_bytes)
@@ -786,15 +787,18 @@ def render_stream_ocr_entrypoint(expanded: bool = False) -> None:
                 st.error(vision_result or "서사 추출에 실패했습니다.")
 
         if "refined_memo" in st.session_state:
-            edited = st.text_area(
+            # Set initial edit value once; let Streamlit manage edits via key
+            if "refined_memo_edit" not in st.session_state:
+                st.session_state["refined_memo_edit"] = st.session_state["refined_memo"]
+            st.text_area(
                 "추출된 서사 (수정 후 저장)",
-                value=st.session_state["refined_memo"],
                 key="refined_memo_edit",
                 height=100,
             )
             if st.button("스트림에 저장", key="stream_save_refined", use_container_width=True, type="primary"):
-                text = edited.strip()
+                text = st.session_state.get("refined_memo_edit", "").strip()
                 del st.session_state["refined_memo"]
+                st.session_state.pop("refined_memo_edit", None)
                 if text:
                     _save_and_respond(text)
                     st.toast("사진 서사가 스트림에 기록되었습니다.", icon="📷")
