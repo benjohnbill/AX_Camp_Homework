@@ -2,7 +2,7 @@
 doc_type: ct_baseline
 owner: control_tower
 authority_level: operational
-last_updated: 2026-02-25
+last_updated: 2026-02-26
 sync_with:
   - orchestration/handoff/latest.handoff.json
   - orchestration/task.json
@@ -73,10 +73,14 @@ When documents conflict, apply this order:
 - Skills:
   - No external skills installation for now.
   - Keep external registry entries at `candidate` until checksum and pilot gate are satisfied.
-  - Internal operational skill candidates to define:
-    1. `feature-lock-audit`
+  - Internal operational pilots:
+    1. `integration-status-sync`
     2. `cycle-close-packager`
-    3. `evidence-redaction-validator`
+  - Internal next candidates:
+    1. `feature-lock-audit`
+    2. `evidence-redaction-validator`
+  - External first-pilot preparation target:
+    - `frontend-design` (keep `candidate` until checksum + rollback + strict gate pass)
 
 ## 4.2) Chat-CLI Load Shedding Rule (Fixed)
 - Runtime assumption:

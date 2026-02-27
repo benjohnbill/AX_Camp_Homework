@@ -1,39 +1,50 @@
-# SKILL: Integration Status Sync (Universal Guide)
-
-- **Owner**: Any active agent in the loop
-- **Trigger**: Execution of `.\tools\ralph_heartbeat.ps1` or explicit task
-- **Goal**: Synchronize all agent results into `integration_status.md` and dispatch the next task.
-
-## 1) Load Required Context
-Read these files before updating:
-1. `Agent.md` (Authority)
-2. `Harness_Policy.md` (Governance)
-3. `integration_status.md` (Current State)
-4. `orchestration/results/*.result.json` (New Evidence)
-5. `android/NarrativeLoopMobile/ANDROID_REPORT.md` (Mobile Evidence)
-
-## 2) Update Integration Status Board
-1. **Analyze Evidence**: Scan `result.json` and `ANDROID_REPORT.md` for completed items.
-2. **Move Items**: If proof is verified (commands, logs, commits), move items from `In Progress` to `Completed (Fact-Checked)`.
-3. **Log Risks**: If a task failed or hit a "Safety Stop", move it to `Open Gaps / Risks`.
-4. **Maintain Timeline**: Record the change in the `Changelog` with timestamp and evidence ID.
-
-## 3) The Dispatcher (Next-Loop Strategy)
-Based on the updated board, decide who should work next:
-- **Backend (Codex)**: If auth/retrieval gaps remain.
-- **Frontend (Antigravity)**: If UI/UX improvements or API connections are needed.
-- **Android**: If mobile integration or E2E validation is required.
-
-## 4) Update INBOX.md (The Signal)
-Update (or create) the target agent's inbox with the following format:
-- **[ACTIVE]** (Status flag for the agent to notice)
-- **Context**: Why this task is assigned now.
-- **Next Action**: Specific implementation or validation goal.
-- **Contract**: Reference to `task.json` if applicable.
-
-## 5) Output Contract (JSON-First)
-- All status updates must align with the `result.json` schema.
-- If evidence is missing, mark as `Blocked: missing evidence`.
-
 ---
-*Note: This is a universal protocol for all agents participating in the Ralph Loop.*
+name: integration-status-sync
+description: Synchronize validated orchestration evidence into integration_status.md and dispatch the next worker through channel pointers and CT inbox files. Use when new result/handoff artifacts arrive or before running CT heartbeat.
+---
+
+# SKILL: Integration Status Sync
+
+## Goal
+Keep `integration_status.md` aligned with canonical JSON evidence and publish the next execution signal.
+
+## Source Priority (Must Follow)
+1. `orchestration/handoff/latest.handoff.json`
+2. `orchestration/task.json`
+3. Latest `orchestration/results/*.result.json`
+4. `integration_status.md`
+5. `android/NarrativeLoopMobile/ANDROID_REPORT.md` (supporting evidence only)
+
+## Required Inputs
+1. `Agent.md` (authority)
+2. `Harness_Policy.md` (governance)
+3. Source-priority files listed above
+
+## Procedure
+1. Collect new result/handoff artifacts since the last board update timestamp.
+2. Validate claims from schema-valid JSON first; treat markdown as supplemental context only.
+3. Update `integration_status.md` sections:
+   - `Completed (Fact-Checked)`: passed items with evidence paths.
+   - `In Progress`: active items with next action.
+   - `Open Gaps / Risks`: blocked/failed items with root cause.
+   - `Latest Validation Snapshot`: newest verdict with artifact paths.
+4. Keep wording factual. If proof is missing, write `Blocked: missing evidence`.
+5. Record trace/task IDs and UTC timestamp in the status timeline/changelog.
+
+## Dispatch Rule
+1. Choose target worker from open blocker class:
+   - auth/storage/retrieval -> `backend_cli`
+   - runtime UI/UX -> `frontend_ide`
+   - mobile/device/e2e -> `android_ide`
+2. Update one channel pointer JSON:
+   - `orchestration/backend.current.json`
+   - `orchestration/antigravity.current.json`
+   - `orchestration/android.current.json`
+3. Update matching CT inbox markdown signal:
+   - frontend/backend scope: `CT_INBOX_ANTIGRAVITY.md` and `CT_INBOX_GEMINI_UI.md` (legacy alias)
+   - android scope: `android/NarrativeLoopMobile/CT_INBOX_ANDROID.md`
+
+## Output Contract
+1. Fast lane: `orchestration/templates/chat_l1_worker_update.md`
+2. Slow lane: schema-valid `orchestration/results/*.result.json` and `orchestration/handoff/*.handoff.json`
+3. Never override canonical JSON verdicts with markdown narrative.

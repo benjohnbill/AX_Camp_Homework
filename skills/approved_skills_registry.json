@@ -43,8 +43,9 @@
       "source": "skills.sh:community-approved",
       "status": "candidate",
       "checksum_sha256": null,
-      "reviewed_at": "2026-02-23",
-      "notes": "Candidate only. Verify source trust before pilot."
+      "reviewed_at": "2026-02-26",
+      "upstream_url": "https://raw.githubusercontent.com/skillcreatorai/Ai-Agent-Skills/main/skills/frontend-design/SKILL.md",
+      "notes": "Selected as first external pilot-prep candidate. Keep candidate until checksum + rollback doc + strict gate are complete. Pilot scope: frontend_ide design/layout tasks (advisory only), excluding auth/security/blocker-recovery tasks."
     }
   ]
 }

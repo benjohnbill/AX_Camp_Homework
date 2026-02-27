@@ -128,4 +128,8 @@ Promotion confidence increases only when these metrics trend stable/improving fo
 ## Current Default
 - Status: `HOLD` (no immediate skill creation).
 - Codex monitors incoming Android/Antigravity reports and applies this policy continuously.
-- Pilot exception: `skills/integration-status-sync/SKILL.md` is active as a limited-scope trial, not a full promotion.
+- Active internal pilot skills:
+  1. `skills/integration-status-sync/SKILL.md`
+  2. `skills/cycle-close-packager/SKILL.md`
+- External pilot-prep focus:
+  - `frontend-design` remains `candidate` until checksum, rollback path, and strict gate are complete.

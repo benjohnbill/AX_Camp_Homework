@@ -14,6 +14,7 @@
 1. UI/UX 관련 실행은 `orchestration/tasks/*frontend*.json`을 기준으로 수행한다.
 2. `app.py` 변경, 테스트, 증적(result/handoff)은 frontend worker 계약으로 제출한다.
 3. 본 문서는 링크 호환성과 과거 아티팩트 참조를 위해 유지한다.
+4. 실행 시작 시 `integration_status.md`, `orchestration/antigravity.current.json`, `CT_INBOX_GEMINI_UI.md`를 함께 확인한다.
 
 ## 3) References
 
@@ -21,3 +22,5 @@
 - `Antigravity_agent.md`
 - `integration_status.md`
 - `orchestration/dispatch/20260224-cycle03.worker-prompts.json`
+- `skills/integration-status-sync/SKILL.md`
+- `skills/cycle-close-packager/SKILL.md`

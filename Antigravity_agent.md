@@ -33,6 +33,17 @@ Antigravity는 현재 "채팅 트리거 기반"으로 동작한다. 즉, 완전 
 5. **No Forced Heartbeat Hook**:
    - `tools/ralph_heartbeat.ps1` 실행은 필수가 아니다. 채팅형 운영에서는 CT 지시와 채널 포인터를 우선한다.
 
+### 1.2) Sync Note (2026-02-26)
+
+`Agent.md` 최신 기준에 따라, 실행 시작 시 아래를 함께 스캔한다.
+- `integration_status.md`
+- 채널 포인터: `orchestration/antigravity.current.json`
+- CT inbox 신호: `CT_INBOX_ANTIGRAVITY.md`, `CT_INBOX_GEMINI_UI.md` (legacy alias)
+
+CT 운영 파일럿 스킬 참고:
+- `skills/integration-status-sync/SKILL.md`
+- `skills/cycle-close-packager/SKILL.md`
+
 ---
 
 ## 2) Scope In

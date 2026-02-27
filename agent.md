@@ -34,7 +34,7 @@ CT의 과부하를 방지하고 에이전트 간 병렬 협업을 극대화하�
    - 지휘관의 최종 승인(Approval)이 필요한 항목은 부관이 실행을 차단하고 보고한다.
 
 2. **자율 제안 (Pull-based Tasking)**:
-   - 워커는 CT의 지시를 기다리지 않고, `integration_status.md`와 `INBOX.md`를 스스로 스캔하여 수행 가능한 작업을 찾아 `task.json` 초안(Proposal)을 제안한다.
+   - 워커는 CT의 지시를 기다리지 않고, `integration_status.md`, 채널 포인터(`orchestration/*.current.json`), CT inbox 문서를 스스로 스캔하여 수행 가능한 작업을 찾아 `task.json` 초안(Proposal)을 제안한다.
    - CT는 제안된 `task.json`을 검토하고 승격(Approve)하는 관리자 역할을 수행한다.
 
 3. **신경망 동기화 (Sync-Dispatcher)**:
@@ -310,6 +310,7 @@ Canonical artifact:
 - `SKILL_PROMOTION_POLICY.md` (`SKILL.md` 승격 조건 및 추천 트리거 기준)
 - `LOCAL_ENV_SETUP.md` (OneDrive 동기화 환경에서의 로컬 venv 복구 기준)
 - `skills/integration-status-sync/SKILL.md` (`integration_status.md` 증적 동기화 파일럿 스킬)
+- `skills/cycle-close-packager/SKILL.md` (cycle-close 필수 5종 아티팩트 패키징 파일럿 스킬)
 - `orchestration/README.md` (`task/result/handoff` 계약 및 샘플 아티팩트 기준)
 - `DOMAIN_MAP.md` (DDD-lite 도메인 경계 기준)
 

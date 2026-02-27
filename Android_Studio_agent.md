@@ -38,6 +38,17 @@ Android 에이전트는 IDE 내부의 피드백 문서와 프로젝트 공용 �
    - Fast lane: `orchestration/templates/chat_l1_worker_update.md` 형식의 짧은 상태 보고를 먼저 제출한다.
    - Slow lane: 최종 증적은 schema-valid `result.json`으로 제출한다.
 
+### 1.2) Sync Note (2026-02-26)
+
+`Agent.md` 최신 기준에 따라, 실행 시작 시 아래를 함께 스캔한다.
+- `integration_status.md`
+- 채널 포인터: `orchestration/android.current.json`
+- CT inbox 신호: `android/NarrativeLoopMobile/CT_INBOX_ANDROID.md`
+
+CT 운영 파일럿 스킬 참고:
+- `skills/integration-status-sync/SKILL.md`
+- `skills/cycle-close-packager/SKILL.md`
+
 ---
 
 ## 2) Scope In

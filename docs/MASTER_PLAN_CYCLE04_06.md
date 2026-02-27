@@ -2,7 +2,7 @@
 doc_type: master_plan
 owner: control_tower
 authority_level: policy
-last_updated: 2026-02-25
+last_updated: 2026-02-26
 sync_with:
   - CT_BASELINE_2026-02-25.md
   - PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md
@@ -48,10 +48,13 @@ Baseline product vision source:
 - Skill lock:
   - External skills remain `candidate` by default (`skills/approved_skills_registry.json`).
   - No promotion to `pilot/core` without checksum and strict registry gate.
-  - Internal operation-skill candidates for Cycle 04-06:
-    1. `feature-lock-audit`
-    2. `cycle-close-packager`
-    3. `evidence-redaction-validator`
+  - Internal operation-skill plan for Cycle 04-06:
+    1. `integration-status-sync` (active pilot refresh)
+    2. `cycle-close-packager` (active pilot bootstrap)
+    3. `feature-lock-audit` (candidate)
+    4. `evidence-redaction-validator` (candidate)
+  - External first-pilot preparation target:
+    - `frontend-design` remains `candidate` until checksum, rollback path, and strict gate are complete.
 
 ## 4) Cycle 04 (Phase 1: Stabilization + Native Strengthening)
 ### Committed
@@ -59,7 +62,8 @@ Baseline product vision source:
 - Write/Save/Re-open/Re-query/Universe user-journey non-regression.
 - Android navigation reliability across Home/Stream/Desk/Chronos/Universe.
 - Cycle artifacts and governance sync stabilization.
-- Integration-status-sync skill refresh to remove stale paths (`INBOX.md`-style assumptions) and align with current CT inbox structure.
+- Integration-status-sync skill refresh to remove stale `INBOX.md` assumptions and align with current channel pointer + CT inbox structure.
+- Cycle-close-packager pilot bootstrap for mandatory five artifact packaging.
 
 ### Exploratory
 - CameraX transition spike: compare system intent vs dedicated camera flow on quality and latency.
