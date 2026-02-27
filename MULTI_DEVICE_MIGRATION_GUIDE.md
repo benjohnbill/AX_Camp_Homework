@@ -14,10 +14,15 @@ Before creating any environment, ensure the system allows script execution.
 ## 2. Phase 1: Dependency & Git Hook Setup
 Automate the boring parts.
 
-1. **Create Virtual Environment**:
+1. **Create/Link Virtual Environment**:
+   - Note: We use a shared hub at `\.venvs_hub` to keep environments out of the project tree.
    ```powershell
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
+   # Create venv in the dynamic hub path
+   if (!(Test-Path "\.venvs_hub\narrative-loop")) {
+       python -m venv "\.venvs_hub\narrative-loop"
+   }
+   # Activate from the hub
+   & "\.venvs_hub\narrative-loop\Scripts\Activate.ps1"
    python -m pip install --upgrade pip
    pip install -r requirements.txt
    ```
