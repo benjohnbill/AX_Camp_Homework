@@ -1,39 +1,28 @@
 # AGENTS.md - Thin Router (Narrative_Loop)
 
-## Purpose
+router_version: 1.0
+required_codex_policy_version: 2026.02.27-r1
 
-This file is the always-on router for agent behavior in this project.
-Keep this file short. Put detailed thresholds in tool-specific policy files.
+## Always-On Rule (Per Turn)
 
-## Always-On Mode Check (Per Turn)
-
-Before final output on every user turn:
-1. Compute a recommended reasoning mode from the active policy file.
+1. Load agent-specific policy (`Codex.md` for Codex CLI).
 2. Compare `current_mode` vs `recommended_mode`.
-3. If different, ask once: "`<recommended_mode>`로 전환할까요?"
-4. If same, execute directly without asking.
+3. If mismatch, ask once: "`<recommended_mode>`로 전환할까요? (사유: <short_reason>)".
+4. If match, execute directly.
 
-## Agent Routing
+## Routing
 
-- If runtime agent is Codex CLI: read `./Codex.md` for detailed mode policy.
-- If runtime agent is Gemini CLI and `./GEMINI.md` exists: read `./GEMINI.md`.
-- If agent-specific policy file is missing: continue with safest default (`medium`) and report missing file.
+- Codex CLI -> `./Codex.md`
+- Gemini CLI -> `./GEMINI.md` (if exists)
+- Missing policy file -> fallback `medium`, then report missing file.
 
-## Minimal Read Strategy
+## Version Lock
 
-- Default read set: `./agent.md`, `./Codex.md`
-- Add only when needed:
-  - Security/token/auth: `./DEBUG_TOKEN_GOVERNANCE.md`
-  - Authority/doc conflict: `./Harness_Policy.md`
-  - Domain boundary: `./DOMAIN_MAP.md`
+- Read `policy_version` from `./Codex.md`.
+- If `policy_version != required_codex_policy_version`, report version drift and suggest sync.
 
-## Core Constraints
+## Constraints
 
-- System constitution docs override project-local docs on conflict.
-- Canonical acceptance evidence is JSON handoff/result artifacts.
-- Approval-required actions follow existing governance docs.
-
-## Budget Guard
-
-- Keep per-turn policy loading minimal.
-- Do not re-load long docs unless task risk changes or conflict appears.
+- System constitution > project docs on conflict.
+- Canonical acceptance evidence: JSON handoff/result/task artifacts.
+- Keep this router short; detailed thresholds stay in `Codex.md`.

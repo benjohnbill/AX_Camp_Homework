@@ -1,5 +1,7 @@
 # Codex Reasoning Policy (Narrative_Loop)
 
+policy_version: 2026.02.27-r1
+router_compat: 1.x
 Last updated: 2026-02-27
 Scope: Codex CLI reasoning mode recommendation in this project
 
