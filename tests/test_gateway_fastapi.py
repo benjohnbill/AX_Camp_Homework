@@ -117,3 +117,62 @@ def test_gateway_session_endpoint_accepts_cookie_after_bootstrap():
     assert second.status_code == 200
     assert second.json()["source"] == "cookie"
     assert second.json()["user_id"] == "session_user"
+
+
+def test_ocr_ingest_canonical_accepts_image_field(monkeypatch):
+    app = gw.create_app(_env())
+    client = _client(app)
+    monkeypatch.setattr(gw.logic, "refine_image_to_narrative_with_ai", lambda content: f"len={len(content)}")
+
+    res = client.post(
+        "/v1/ocr/ingest",
+        files={"image": ("sample.png", b"abc123", "image/png")},
+    )
+
+    assert res.status_code == 200
+    assert res.json()["refined_text"] == "len=6"
+
+
+def test_ocr_ingest_canonical_accepts_file_field(monkeypatch):
+    app = gw.create_app(_env())
+    client = _client(app)
+    monkeypatch.setattr(gw.logic, "refine_image_to_narrative_with_ai", lambda content: f"len={len(content)}")
+
+    res = client.post(
+        "/v1/ocr/ingest",
+        files={"file": ("sample.jpg", b"abcd", "image/jpeg")},
+    )
+
+    assert res.status_code == 200
+    assert res.json()["refined_text"] == "len=4"
+
+
+def test_ocr_ingest_alias_uses_same_handler(monkeypatch):
+    app = gw.create_app(_env())
+    client = _client(app)
+    monkeypatch.setattr(gw.logic, "refine_image_to_narrative_with_ai", lambda content: "alias-ok")
+
+    canonical = client.post(
+        "/v1/ocr/ingest",
+        files={"image": ("a.png", b"1", "image/png")},
+    )
+    alias = client.post(
+        "/v1/narrative/vision",
+        files={"file": ("b.png", b"2", "image/png")},
+    )
+
+    assert canonical.status_code == 200
+    assert alias.status_code == 200
+    assert canonical.json()["refined_text"] == "alias-ok"
+    assert alias.json()["refined_text"] == "alias-ok"
+
+
+def test_ocr_ingest_rejects_missing_multipart_file():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    res = client.post("/v1/ocr/ingest")
+
+    assert res.status_code == 400
+    assert "image" in res.json()["error"]
+    assert "file" in res.json()["error"]

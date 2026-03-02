@@ -1,0 +1,91 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle07",
+  "task_id": "T-narrative_loop-20260302-backend-cycle07",
+  "worker": "backend_cli",
+  "status": "blocked",
+  "summary": "Urgent infra reachability truth run completed under stabilization-only guard. Current backend_cli environment cannot establish TCP 443 to Render staging gateway/debug hosts, so live ingress/TLS/ALPN/route truth for /v1/ocr/ingest cannot be confirmed from this worker at this timestamp window. Infra verdict: unreachable.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T105614Z.T-narrative_loop-20260302-backend-cycle07-infra-reachability.result.json",
+      "description": "Cycle07 urgent infra reachability verdict artifact."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T105614Z_backend_cycle07_infra_curl_ocr_ingest_http11.log",
+      "description": "Staging POST /v1/ocr/ingest curl -v (http1.1) log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T105614Z_backend_cycle07_infra_curl_narrative_vision_http11.log",
+      "description": "Staging POST /v1/narrative/vision curl -v (http1.1) log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T105614Z_backend_cycle07_infra_curl_gateway_paths_http11.log",
+      "description": "Staging /gateway/session and /gateway/universe_3d curl -v (http1.1) log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T105614Z_backend_cycle07_infra_curl_debug_token_http11.log",
+      "description": "Staging debug-token /healthz curl -v (http1.1) log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T105614Z_backend_cycle07_infra_curl_version.log",
+      "description": "curl feature matrix (HTTP/2 support check) log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "render_ingress_log_access_check",
+      "status": "fail",
+      "note": "timestamped_evidence=2026-03-02T10:56:14Z; render_env_credentials=RENDER_ENV_COUNT=0; direct Render ingress log lookup is unavailable from this worker."
+    },
+    {
+      "name": "android_repro_window_reference",
+      "status": "info",
+      "note": "timestamped_evidence=2026-03-02T22:30:00Z and 2026-03-02T23:15:00Z from android/NarrativeLoopMobile/evidence/camera_404_rootcause_log.txt and camera_fix_success_log.txt; historical claim shows /v1/ocr/ingest 200 after fix."
+    },
+    {
+      "name": "http2_h1_ab_capability",
+      "status": "fail",
+      "note": "timestamped_evidence=2026-03-02T10:56:14Z; curl_features_log=data/evidence/20260302T105614Z_backend_cycle07_infra_curl_version.log; installed curl lacks HTTP2 feature and rejects --http2, so h2-vs-h1 A/B forcing is not available on this runner."
+    },
+    {
+      "name": "tls_alpn_mobile_path_diagnosis",
+      "status": "fail",
+      "note": "timestamped_evidence=2026-03-02T10:56:14Z; all staging curl -v probes fail before TLS handshake with 'connect ... failed: Bad access' and HTTP_STATUS=000, so TLS chain/ALPN negotiation details are not observable from this network path."
+    },
+    {
+      "name": "staging_route_truth_v1_ocr_ingest",
+      "status": "fail",
+      "note": "timestamped_evidence=2026-03-02T10:56:14Z; live probe URL=https://ax-camp-universe-gateway-staging.onrender.com/v1/ocr/ingest METHOD=POST CONTENT_TYPE=multipart/form-data STATUS=000 EXIT_CODE=7 LOG=data/evidence/20260302T105614Z_backend_cycle07_infra_curl_ocr_ingest_http11.log; single_truth_from_this_worker=unreachable."
+    },
+    {
+      "name": "staging_gateway_paths_noauth",
+      "status": "fail",
+      "note": "timestamped_evidence=2026-03-02T10:56:14Z; /gateway/session STATUS=000 and /gateway/universe_3d STATUS=000 in data/evidence/20260302T105614Z_backend_cycle07_infra_curl_gateway_paths_http11.log."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "critical",
+      "description": "Infra verdict is unreachable for this worker network path; live staging route/auth/TLS truth cannot be asserted despite historical Android-side success logs.",
+      "mitigation": "Run the same curl set from a network path with Render 443 egress allowed and with Render ingress-log credentials enabled; then reconcile against Android reproduction timestamps."
+    }
+  ],
+  "next_actions": [
+    "Re-run identical timestamped curl probes from an egress-allowed environment.",
+    "Collect Render ingress logs for Android reproduction window and match against /v1/ocr/ingest and /gateway/* requests.",
+    "Republish infra verdict as reachable or partially_reachable only after live 200/4xx probes are observed."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-02T10:56:14Z",
+  "metrics": {
+    "duration_sec": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

@@ -6,14 +6,21 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.util.concurrent.TimeUnit
 
 object ApiClient {
 
     private val authInterceptor = AuthInterceptor()
+    private val eventListener = ConnectionEventListener()
 
     private fun buildClient(disableRedirects: Boolean): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .eventListener(eventListener) // [INSTRUMENTATION] Added for connection tracing
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            
         if (disableRedirects) {
             builder.followRedirects(false)
             builder.followSslRedirects(false)
@@ -28,6 +35,9 @@ object ApiClient {
 
     private fun buildPlainClient(): OkHttpClient {
         val builder = OkHttpClient.Builder()
+            .eventListener(eventListener)
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
         if (BuildConfig.DEBUG) {
             val loggingInterceptor = HttpLoggingInterceptor()
             loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
@@ -41,7 +51,6 @@ object ApiClient {
     }
 
     private val debugClient: OkHttpClient by lazy {
-        // Debug probe path needs raw 307/401/403 responses for contract verification.
         buildClient(disableRedirects = true)
     }
 

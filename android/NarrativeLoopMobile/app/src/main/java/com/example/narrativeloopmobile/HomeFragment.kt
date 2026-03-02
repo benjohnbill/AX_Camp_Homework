@@ -68,19 +68,23 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             val token = normalizeToken(tokenInput.text.toString())
             if (token.isNotBlank()) {
                 TokenStore.saveAccessToken(requireContext(), token)
+                // [FIX] Update interceptor immediately after manual save
+                ApiClient.setAuthToken(token) 
                 tokenInput.text.clear()
                 updateTokenStatus()
-                Toast.makeText(requireContext(), "Token saved.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Token saved and applied.", Toast.LENGTH_SHORT).show()
             }
         }
 
         clearTokenButton.setOnClickListener {
             TokenStore.clear(requireContext())
+            ApiClient.setAuthToken(null) // [FIX] Clear interceptor
             updateTokenStatus()
         }
 
         logoutButton.setOnClickListener {
             TokenStore.clear(requireContext())
+            ApiClient.setAuthToken(null) // [FIX] Clear interceptor
             CookieManager.getInstance().removeAllCookies(null)
             CookieManager.getInstance().flush()
             updateTokenStatus()
@@ -103,6 +107,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         } else {
             "Status: Token is set"
         }
+        // Ensure interceptor stays in sync with persistent store on UI refresh
+        if (!token.isNullOrBlank()) ApiClient.setAuthToken(token)
     }
 
     private fun issueAndSaveDebugToken() {
@@ -117,7 +123,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val ttl = debugTtlInput.text.toString().trim().toIntOrNull()?.coerceIn(1, 120) ?: 60
 
         if (adminKey.isBlank()) {
-            debugIssueResultText.text = "Admin key is required to issue debug token."
+            debugIssueResultText.text = "Admin key is required."
             return
         }
 
@@ -138,9 +144,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     val token = normalizeToken(response.body()?.token.orEmpty())
                     if (token.isNotBlank()) {
                         TokenStore.saveAccessToken(requireContext(), token)
+                        // [FIX] Update interceptor immediately after issue
+                        ApiClient.setAuthToken(token) 
                         updateTokenStatus()
                         debugIssueResultText.text = "Issued and saved. aud=$audience ttl=${ttl}m"
-                        Toast.makeText(requireContext(), "Debug token saved.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Debug token applied.", Toast.LENGTH_SHORT).show()
                     } else {
                         debugIssueResultText.text = "Issued response has empty token."
                     }

@@ -11,9 +11,6 @@ import narrative_logic as logic
 DEFAULT_UPSTREAM_EMBED_URL = "https://benjohnbill-ax-camp-homework.streamlit.app/?embed=universe_3d"
 
 
-DEFAULT_UPSTREAM_EMBED_URL = "https://benjohnbill-ax-camp-homework.streamlit.app/?embed=universe_3d"
-
-
 def _safe_int(raw: Any, default: int) -> int:
     try:
         return int(raw)
@@ -132,17 +129,34 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
         refined = logic.refine_narrative_with_ai(text)
         return JSONResponse({"refined_text": refined})
 
-    @app.post("/v1/narrative/vision")
-    async def vision_narrative(image: UploadFile = File(...)) -> JSONResponse:
-        """
-        Receives an image, processes it with Vision AI, and returns the narrative.
-        """
+    async def _handle_ocr_ingest(image: UploadFile | None, file: UploadFile | None) -> JSONResponse:
+        # Accept both multipart field names for Android/web compatibility.
+        upload = image or file
+        if upload is None:
+            return JSONResponse(
+                {"error": "Missing image file. Use multipart field `image` or `file`."},
+                status_code=400,
+            )
         try:
-            content = await image.read()
+            content = await upload.read()
             refined = logic.refine_image_to_narrative_with_ai(content)
             return JSONResponse({"refined_text": refined})
         except Exception as e:
             return JSONResponse({"error": str(e)}, status_code=500)
+
+    @app.post("/v1/ocr/ingest")
+    async def ocr_ingest(
+        image: UploadFile | None = File(default=None),
+        file: UploadFile | None = File(default=None),
+    ) -> JSONResponse:
+        return await _handle_ocr_ingest(image=image, file=file)
+
+    @app.post("/v1/narrative/vision")
+    async def vision_narrative_alias(
+        image: UploadFile | None = File(default=None),
+        file: UploadFile | None = File(default=None),
+    ) -> JSONResponse:
+        return await _handle_ocr_ingest(image=image, file=file)
 
     @app.post("/v1/narrative")
     async def save_narrative(request: Request, body: dict = Body(...)) -> JSONResponse:

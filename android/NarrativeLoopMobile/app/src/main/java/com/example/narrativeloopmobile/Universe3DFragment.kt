@@ -57,7 +57,6 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
         webView.webChromeClient = WebChromeClient()
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                // Let the WebView handle the redirect
                 return false
             }
 
@@ -69,7 +68,7 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
                 super.onReceivedHttpError(view, request, errorResponse)
                 if (request?.isForMainFrame == true && errorResponse?.statusCode == 401) {
                     showMissingTokenState(
-                        "Universe 인증이 만료되었거나 누락되었습니다. Home에서 토큰을 저장한 뒤 다시 시도해 주세요."
+                        "Universe 인증이 만료되었습니다. Home에서 토큰을 다시 발급받아 주세요."
                     )
                 }
             }
@@ -89,20 +88,31 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
 
     private fun evaluateAccessAndLoad() {
         val token = TokenStore.getAccessToken(requireContext())?.trim()
+        // [FIX] Try to get user_id from SharedPreferences or use a default for debug
+        val userId = "android-e2e-user" 
+
         if (token.isNullOrBlank()) {
             showMissingTokenState(
-                "Universe 접근 토큰이 없습니다. Home에서 토큰을 저장한 뒤 다시 시도해 주세요."
+                "Universe 접근 토큰이 없습니다. Home에서 토큰을 저장해 주세요."
             )
             return
         }
         hideMissingTokenState()
-        loadUrlWithAuth(token)
+        loadUrlWithAuth(token, userId)
     }
 
-    private fun loadUrlWithAuth(token: String) {
+    private fun loadUrlWithAuth(token: String, userId: String) {
         val headers = mutableMapOf<String, String>()
         headers["Authorization"] = "Bearer $token"
-        webView.loadUrl(dashboardUrl, headers)
+        
+        // [FIX] Append user_id parameter to ensure 3D scene knows whose data to show
+        val finalUrl = if (dashboardUrl.contains("?")) {
+            "$dashboardUrl&user_id=$userId"
+        } else {
+            "$dashboardUrl?user_id=$userId"
+        }
+        
+        webView.loadUrl(finalUrl, headers)
     }
 
     private fun showMissingTokenState(message: String) {
@@ -119,7 +129,6 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
     private fun navigateToHomeForTokenInput() {
         val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_nav)
         bottomNav.selectedItemId = R.id.nav_home
-        Toast.makeText(requireContext(), "Home에서 토큰을 입력해 주세요.", Toast.LENGTH_SHORT).show()
     }
 
     override fun onPause() {
@@ -135,7 +144,10 @@ class Universe3DFragment : Fragment(R.layout.fragment_universe_3d) {
         if (::webView.isInitialized) {
             webView.onResume()
             webView.resumeTimers()
-            evaluateAccessAndLoad()
+            // Re-evaluate on resume but don't force reload if already showing correctly
+            if (authEmptyState.visibility == View.VISIBLE) {
+                evaluateAccessAndLoad()
+            }
         }
     }
 

@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle07",
+  "task_id": "T-narrative_loop-20260302-cycle07-infra-blocked-checkpoint",
+  "worker": "docs_worker",
+  "status": "blocked",
+  "summary": "Cycle07 is checkpointed in blocked state due to staging infrastructure integrity issues affecting Android TLS/HTTP2 path. Evidence paths are frozen for next-day restart.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "docs/CYCLE07_NEXTDAY_RESTART_CHECKLIST_2026-03-02.md",
+      "description": "Next-day restart checklist and fixed evidence map."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T110346Z.T-narrative_loop-20260302-backend-cycle07-infra-hotfix.result.json",
+      "description": "Backend infra-hotfix blocked verdict."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T201500Z.T-narrative_loop-20260302-frontend-cycle07-infra-support.result.json",
+      "description": "Frontend infra support validation."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T235900Z.T-narrative_loop-20260302-android-cycle07-infra-hotfix.result.json",
+      "description": "Android infra-hotfix blocked verdict."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/20260303T001500Z.T-narrative_loop-20260302-cycle07-infra-blocked-checkpoint.handoff.json",
+      "description": "Infra blocked checkpoint handoff."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "backend_infra_verdict_unreachable",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260302T110346Z.T-narrative_loop-20260302-backend-cycle07-infra-hotfix.result.json"
+    },
+    {
+      "name": "frontend_support_routes_stable",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260302T201500Z.T-narrative_loop-20260302-frontend-cycle07-infra-support.result.json"
+    },
+    {
+      "name": "android_tls_h2_failure_reproduced",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260302T235900Z.T-narrative_loop-20260302-android-cycle07-infra-hotfix.result.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Cycle07 close cannot be treated as final while infra blocker remains unresolved.",
+      "mitigation": "Keep latest handoff on blocked checkpoint until infra root cause and dual-device pass are confirmed."
+    }
+  ],
+  "next_actions": [
+    "Collect Render/edge logs for 22:30Z~23:59Z on target routes.",
+    "Confirm one infra root cause with timestamped evidence.",
+    "Re-run Android physical/emulator same-window verification after infra adjustment."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-03T00:15:00Z"
+}
+
