@@ -20,6 +20,7 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "UNIVERSE_URL", "\"https://ax-camp-universe-gateway-staging.onrender.com/gateway/universe_3d\"")
+            buildConfigField("String", "DEBUG_TOKEN_BASE_URL", "\"https://ax-camp-debug-token-staging.onrender.com/\"")
         }
         release {
             isMinifyEnabled = false
@@ -28,6 +29,7 @@ android {
                 "proguard-rules.pro"
             )
             buildConfigField("String", "UNIVERSE_URL", "\"\"")
+            buildConfigField("String", "DEBUG_TOKEN_BASE_URL", "\"\"")
         }
     }
     compileOptions {

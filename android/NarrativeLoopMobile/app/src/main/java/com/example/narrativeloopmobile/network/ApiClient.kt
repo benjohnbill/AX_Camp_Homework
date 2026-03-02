@@ -26,6 +26,16 @@ object ApiClient {
         return builder.build()
     }
 
+    private fun buildPlainClient(): OkHttpClient {
+        val builder = OkHttpClient.Builder()
+        if (BuildConfig.DEBUG) {
+            val loggingInterceptor = HttpLoggingInterceptor()
+            loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
+            builder.addInterceptor(loggingInterceptor)
+        }
+        return builder.build()
+    }
+
     private val defaultClient: OkHttpClient by lazy {
         buildClient(disableRedirects = false)
     }
@@ -60,6 +70,15 @@ object ApiClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(NarrativeApiService::class.java)
+    }
+
+    val debugTokenApiService: DebugTokenApiService by lazy {
+        Retrofit.Builder()
+            .baseUrl(BuildConfig.DEBUG_TOKEN_BASE_URL)
+            .client(buildPlainClient())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(DebugTokenApiService::class.java)
     }
 
     fun setAuthToken(token: String?) {

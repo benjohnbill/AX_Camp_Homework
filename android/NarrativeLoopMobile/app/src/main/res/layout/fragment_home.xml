@@ -55,6 +55,60 @@
             android:layout_marginTop="8dp"
             android.hint="Paste Bearer Token here" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Issue debug token (staging)"
+            android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
+
+        <EditText
+            android:id="@+id/debug_user_id_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="user_id (e.g. android-e2e-user)" />
+
+        <EditText
+            android:id="@+id/debug_audience_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="audience (default: android-universe)"
+            android:text="android-universe" />
+
+        <EditText
+            android:id="@+id/debug_ttl_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="ttl_minutes (1..120)"
+            android:inputType="number"
+            android:text="60" />
+
+        <EditText
+            android:id="@+id/debug_admin_key_edittext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="X-Debug-Admin-Key"
+            android:inputType="textPassword" />
+
+        <Button
+            android:id="@+id/issue_debug_token_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Issue &amp; Save Token" />
+
+        <TextView
+            android:id="@+id/debug_issue_result_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+            tools:text="Token issuance status" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

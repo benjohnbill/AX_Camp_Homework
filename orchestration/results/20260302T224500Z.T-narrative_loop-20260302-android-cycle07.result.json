@@ -1,0 +1,32 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle07",
+  "task_id": "T-narrative_loop-20260302-android-cycle07",
+  "worker": "android_ide",
+  "timestamp": "2026-03-02T22:45:00Z",
+  "status": "success",
+  "reason": "Hardened evidence for 404 fix and route contract alignment confirmed across dual-device same-window runs.",
+  "route_contract_proof": {
+    "canonical_endpoint": "POST /v1/ocr/ingest",
+    "staging_truth": "200 OK verified on ax-camp-universe-gateway-staging.onrender.com",
+    "android_implementation": "NarrativeApiService.kt Line 43",
+    "status": "aligned"
+  },
+  "evidence": [
+    {
+      "type": "camera_404_rootcause_log",
+      "path": "android/NarrativeLoopMobile/evidence/camera_404_rootcause_log.txt",
+      "verdict": "pass"
+    },
+    {
+      "type": "camera_fix_success_log",
+      "path": "android/NarrativeLoopMobile/evidence/camera_fix_success_log.txt",
+      "verdict": "pass"
+    },
+    {
+      "type": "universe_401_recovery_flow",
+      "status": "verified",
+      "verdict": "pass"
+    }
+  ],
+  "exit_criteria_met": true
+}

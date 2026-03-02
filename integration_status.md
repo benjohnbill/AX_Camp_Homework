@@ -1,6 +1,6 @@
 # Integration Status: Android <-> Backend
 
-Last updated: 2026-03-02 (Cycle6 Close Published)
+Last updated: 2026-03-02 (Cycle7 Closed)
 Maintainer: Codex (integration coordinator)
 Projects:
 - Backend/Web: Narrative_Loop (Streamlit + Antigravity)
@@ -8,14 +8,14 @@ Projects:
 Documentation governance baseline: `Harness_Policy.md`
 
 ## 0) Adjutant Control Tower (ACT) Briefing
-- **Status**: 🟢 CYCLE6 CLOSED
+- **Status**: 🟢 CYCLE7 CLOSED
 - **Oversight Log**:
   - Backend pre-cycle4 audit: **PASS** (auth gateway contract, Korean rewrite, storage parity).
   - Frontend pre-cycle4 audit: **PASS** (mode routing, write/save/re-query, chronos, universe) with file-based evidence reinforcement.
   - Frontend one-shot manual UI check (loop-stop task): **PASS** (root/embed/diagnostics/OCR visual checklist evidence submitted and schema-validated).
   - Android pre-cycle4 audit: **PASS** (same-window emulator + physical full journey evidence attached and normalized into canonical result schema).
   - CT gate aggregation was refreshed with pass reconciliation and now marked **SUCCESS**.
-- **Current Objective**: Post-cycle06 final checklist and archive freeze.
+- **Current Objective**: Keep cycle07 close artifacts canonical and wait for explicit cycle08 kickoff.
 
 ## 1) Overall Progress
 - Cycle03 baseline: completed and accepted.
@@ -32,9 +32,9 @@ Documentation governance baseline: `Harness_Policy.md`
 - **CT Gate Aggregation**: PASS decision published (`orchestration/results/20260302T061500Z.T-narrative_loop-20260225-precycle4-gate.result.json` and `orchestration/handoff/latest.handoff.json`).
 
 ## 3) In Progress
-- **Post-Close Verification**: Run the cycle06 post-check checklist and finalize coverage verdict.
-- **Archive Freeze**: Preserve cycle06 close artifacts and latest pointers as canonical baseline.
-- **Cycle07 Boundary Control**: Hold cycle07+ execution until explicit approval.
+- **Cycle07 Close Maintenance**: Preserve latest handoff pointer and evidence path stability.
+- **Regression Guarding**: Re-run Android 401/404 regression checks on auth/route changes.
+- **Cycle08 Intake**: Stand by for user-approved objective/scope before dispatch.
 
 ## 4) This Session Update (2026-03-02)
 - **Worker submissions ingested**:
@@ -115,6 +115,27 @@ Documentation governance baseline: `Harness_Policy.md`
   - `orchestration/results/20260302T210500Z.T-narrative_loop-20260302-cycle06-close.result.json`
   - `orchestration/handoff/20260302T210500Z.T-narrative_loop-20260302-cycle06-close.handoff.json`
   - `orchestration/handoff/latest.handoff.json`
+- **Cycle07 kickoff publication completed**:
+  - `orchestration/task.json`
+  - `orchestration/dispatch/20260302-cycle07-kickoff.worker-prompts.json`
+  - `orchestration/results/20260302T214500Z.T-narrative_loop-20260302-cycle07-kickoff.result.json`
+  - `orchestration/handoff/20260302T214500Z.T-narrative_loop-20260302-cycle07-kickoff.handoff.json`
+  - `orchestration/handoff/latest.handoff.json`
+- **Cycle07 iteration-1 lane completion (all PASS)**:
+  - Backend iteration-1: `orchestration/results/20260302T084626Z.T-narrative_loop-20260302-backend-cycle07.result.json`
+  - Frontend iteration-1: `orchestration/results/20260302T221500Z.T-narrative_loop-20260302-frontend-cycle07.result.json`
+  - Android iteration-1: `orchestration/results/20260302T221500Z.T-narrative_loop-20260302-android-cycle07.result.json`
+- **Cycle07 iteration-1 aggregate published**:
+  - `orchestration/results/20260302T223000Z.T-narrative_loop-20260302-cycle07-iteration1-aggregate.result.json`
+  - `orchestration/handoff/20260302T223000Z.T-narrative_loop-20260302-cycle07-iteration1-aggregate.handoff.json`
+  - `orchestration/handoff/latest.handoff.json`
+- **Cycle07 iteration-2 aggregate published**:
+  - `orchestration/results/20260302T232500Z.T-narrative_loop-20260302-cycle07-iteration2-aggregate.result.json`
+  - `orchestration/handoff/20260302T232500Z.T-narrative_loop-20260302-cycle07-iteration2-aggregate.handoff.json`
+- **Cycle07 close publication completed**:
+  - `orchestration/results/20260302T233500Z.T-narrative_loop-20260302-cycle07-close.result.json`
+  - `orchestration/handoff/20260302T233500Z.T-narrative_loop-20260302-cycle07-close.handoff.json`
+  - `orchestration/handoff/latest.handoff.json`
 
 ## 5) Latest Validation Snapshot
 - **Backend (2026-02-25)**: PASS (`orchestration/results/20260225T115812Z.T-narrative_loop-20260225-backend-precycle4.result.json`).
@@ -135,6 +156,10 @@ Documentation governance baseline: `Harness_Policy.md`
 - **Cycle06 Iteration-1 Aggregate (2026-03-02)**: PASS (`orchestration/results/20260302T200000Z.T-narrative_loop-20260302-cycle06-iteration1-aggregate.result.json` and `orchestration/handoff/20260302T200000Z.T-narrative_loop-20260302-cycle06-iteration1-aggregate.handoff.json`).
 - **Cycle06 Iteration-2 Aggregate (2026-03-02)**: PASS (`orchestration/results/20260302T203500Z.T-narrative_loop-20260302-cycle06-iteration2-aggregate.result.json` and `orchestration/handoff/20260302T203500Z.T-narrative_loop-20260302-cycle06-iteration2-aggregate.handoff.json`).
 - **Cycle06 Close (2026-03-02)**: PASS (`orchestration/results/20260302T210500Z.T-narrative_loop-20260302-cycle06-close.result.json` and `orchestration/handoff/latest.handoff.json`).
+- **Cycle07 Kickoff (2026-03-02)**: PASS (`orchestration/results/20260302T214500Z.T-narrative_loop-20260302-cycle07-kickoff.result.json` and `orchestration/handoff/20260302T214500Z.T-narrative_loop-20260302-cycle07-kickoff.handoff.json`).
+- **Cycle07 Iteration-1 Aggregate (2026-03-02)**: PASS (`orchestration/results/20260302T223000Z.T-narrative_loop-20260302-cycle07-iteration1-aggregate.result.json` and `orchestration/handoff/latest.handoff.json`).
+- **Cycle07 Iteration-2 Aggregate (2026-03-02)**: PASS (`orchestration/results/20260302T232500Z.T-narrative_loop-20260302-cycle07-iteration2-aggregate.result.json` and `orchestration/handoff/20260302T232500Z.T-narrative_loop-20260302-cycle07-iteration2-aggregate.handoff.json`).
+- **Cycle07 Close (2026-03-02)**: PASS (`orchestration/results/20260302T233500Z.T-narrative_loop-20260302-cycle07-close.result.json` and `orchestration/handoff/latest.handoff.json`).
 
 ## 6) Frontend 8501 Blocker Runbook
 - Refer to `docs/FRONTEND_LOCALHOST_8501_BLOCKER_RUNBOOK_2026-02-26.md` for step-by-step recovery and evidence capture format.

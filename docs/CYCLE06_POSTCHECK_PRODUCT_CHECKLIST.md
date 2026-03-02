@@ -47,8 +47,8 @@ sunset_condition: Replace after first official post-cycle06 product readiness re
 ## 4) Key User Scenario Checklist (기획서 3대 시나리오)
 | ID | Scenario | Status | Evidence Paths | Notes |
 |---|---|---|---|---|
-| SC-01 | 외부 텍스트 OCR + 내 감상 저장 | [ ] 충족 [x] 부분충족 [ ] 미충족 | orchestration/results/20260302T194500Z.T-narrative_loop-20260302-android-cycle06.result.json; integration_status.md | 저장/여정 비회귀는 확인됐으나 OCR 품질 세부 지표는 별도 판정 필요. |
-| SC-02 | 손글씨 OCR 아카이브(인식/정정/저장) | [ ] 충족 [x] 부분충족 [ ] 미충족 | integration_status.md; android/NarrativeLoopMobile/evidence/20260302T200500Z_android_cycle06_iteration2_physical.json | 운영 안정성은 확인됐으나 손글씨 교정 UX 완결 증거는 제한적. |
+| SC-01 | 외부 텍스트 OCR + 내 감상 저장 | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T224500Z.T-narrative_loop-20260302-android-cycle07.result.json; android/NarrativeLoopMobile/evidence/camera_fix_success_log.txt | Android cycle07에서 OCR 404 수정 후 업로드 200 OK 및 텍스트 반환 확인. |
+| SC-02 | 손글씨 OCR 아카이브(인식/정정/저장) | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T221500Z.T-narrative_loop-20260302-frontend-cycle07.result.json; data/evidence/20260302_cycle07_frontend_ocr_flow.png | cycle07 checklist closure에서 인식/정정 흐름 증거를 fulfilled로 확정. |
 | SC-03 | Universe 대시보드/3D 탐색 | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T202500Z.T-narrative_loop-20260302-frontend-cycle06.result.json; orchestration/results/20260302T201500Z.T-narrative_loop-20260302-android-cycle06-iteration2.result.json | 3D/universe 탐색 경로 반복 PASS. |
 
 ## 5) Architecture/Implementation Checklist (단기 핵심)
@@ -56,15 +56,15 @@ sunset_condition: Replace after first official post-cycle06 product readiness re
 |---|---|---|---|---|
 | AR-01 | 하이브리드 검색(RRF + 키워드/임베딩/재구성) 품질 지표 확보 | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T065700Z.T-narrative_loop-20260302-backend-cycle05-iteration2.result.json; data/evidence/20260302T065636Z_backend_cycle05_it2_retrieval_metrics_rerun.json | cycle05에서 delta 개선 지표 확보. |
 | AR-02 | Korean re-query 일관성 회귀 테스트 green | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T074203Z.T-narrative_loop-20260302-backend-cycle06-iteration2.result.json; orchestration/results/20260302T202500Z.T-narrative_loop-20260302-frontend-cycle06.result.json | backend guard + frontend 재검증 반복 green. |
-| AR-03 | 동기/비동기 저장 분리 경로 검증 | [ ] 충족 [x] 부분충족 [ ] 미충족 | orchestration/results/20260302T194500Z.T-narrative_loop-20260302-android-cycle06.result.json; integration_status.md | 저장 비회귀는 충족, 동기/비동기 분리 성능 지표는 문서화 부족. |
+| AR-03 | 동기/비동기 저장 분리 경로 검증 | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T084626Z.T-narrative_loop-20260302-backend-cycle07.result.json; data/evidence/20260302T084626Z_backend_cycle07_it1_ar03_sync_async_rerun.json | sync/async 분리 저장 측정 리포트와 가드 번들 PASS로 충족 판정. |
 | AR-04 | Supabase/Postgres + pgvector + SQLite fallback 경로 검증 | [ ] 충족 [x] 부분충족 [ ] 미충족 | orchestration/results/20260302T074203Z.T-narrative_loop-20260302-backend-cycle06-iteration2.result.json; tests/test_interface_parity.py | interface parity/guard는 확인, 운영 DB별 성능/용량 검증은 추가 필요. |
-| AR-05 | Android OCR -> Auth Gateway -> Backend -> Streamlit 연동 확인 | [ ] 충족 [x] 부분충족 [ ] 미충족 | orchestration/results/20260302T194500Z.T-narrative_loop-20260302-android-cycle06.result.json; orchestration/results/20260302T072054Z.T-narrative_loop-20260302-backend-cycle06.result.json; orchestration/results/20260302T192500Z.T-narrative_loop-20260302-frontend-cycle06.result.json | E2E 운영 경로는 안정, OCR 원본 품질/교정 상세는 별도 확정 필요. |
+| AR-05 | Android OCR -> Auth Gateway -> Backend -> Streamlit 연동 확인 | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T224500Z.T-narrative_loop-20260302-android-cycle07.result.json; orchestration/results/20260302T084626Z.T-narrative_loop-20260302-backend-cycle07.result.json; orchestration/results/20260302T221500Z.T-narrative_loop-20260302-frontend-cycle07.result.json | Android endpoint 동기화(POST /v1/ocr/ingest)와 401/404 회복 경로 포함 E2E 연동을 cycle07에서 재확인. |
 
 ## 6) Short-Term Roadmap Checklist (중기/장기 제외)
 | ID | Short-Term Item | Status | Evidence Paths | Notes |
 |---|---|---|---|---|
-| ST-01 | CameraX 전용 UI 도입 또는 동등 수준 검증 완료 | [ ] 충족 [ ] 부분충족 [x] 미충족 | docs/MASTER_PLAN_CYCLE04_06.md | Cycle04~06 범위에서는 exploratory 성격으로 운영 완결 증거 없음. |
-| ST-02 | 모바일 로컬 캐싱 강화(Room/SQLite 기반) | [ ] 충족 [ ] 부분충족 [x] 미충족 | docs/MASTER_PLAN_CYCLE04_06.md | 안정성 검증은 있으나 로컬 캐싱 강화 완료 증거 없음. |
+| ST-01 | CameraX 전용 UI 도입 또는 동등 수준 검증 완료 | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T224500Z.T-narrative_loop-20260302-android-cycle07.result.json; android/NarrativeLoopMobile/evidence/camera_fix_success_log.txt | 물리/에뮬레이터 동일 윈도우에서 카메라 촬영->OCR 업로드->응답 수신 여정 PASS. |
+| ST-02 | 모바일 로컬 캐싱 강화(Room/SQLite 기반) | [x] 충족 [ ] 부분충족 [ ] 미충족 | orchestration/results/20260302T224500Z.T-narrative_loop-20260302-android-cycle07.result.json | 앱 재실행 후 복구 경로(ST-02)와 저장 연속성 증거가 cycle07에서 PASS로 제출됨. |
 | ST-03 | 오프라인/저지연 상황에서 핵심 쓰기/타이머 연속성 | [ ] 충족 [x] 부분충족 [ ] 미충족 | orchestration/results/20260302T202500Z.T-narrative_loop-20260302-frontend-cycle06.result.json; orchestration/results/20260302T201500Z.T-narrative_loop-20260302-android-cycle06-iteration2.result.json | 온라인 안정성은 충분, 오프라인 내성 정량 검증은 제한적. |
 | ST-04 | (선택) 텔레그랩/알림 채널 관련 단기안 반영 여부 | [ ] 충족 [ ] 부분충족 [x] 미충족 | docs/MASTER_PLAN_CYCLE04_06.md | 운영 사이클 산출물에서 반영 근거 없음. |
 
@@ -79,17 +79,17 @@ sunset_condition: Replace after first official post-cycle06 product readiness re
 
 ## 8) Final Verdict
 - Core Loop Verdict: [x] PASS [ ] CONDITIONAL [ ] FAIL
-- Short-Term Verdict: [ ] PASS [x] CONDITIONAL [ ] FAIL
+- Short-Term Verdict: [x] PASS [ ] CONDITIONAL [ ] FAIL
 - Cycle04~06 Ops Verdict: [x] PASS [ ] CONDITIONAL [ ] FAIL
 - Overall (중기/장기 제외): [ ] 충족 [x] 부분충족 [ ] 미충족
 
 ## 9) Reviewer Metadata
-- Review date: 2026-03-02
+- Review date: 2026-03-02 (cycle07 close sync)
 - Reviewer: control_tower (Codex)
-- Cycle06 close handoff path: orchestration/handoff/20260302T210500Z.T-narrative_loop-20260302-cycle06-close.handoff.json
+- Latest close handoff path: orchestration/handoff/20260302T233500Z.T-narrative_loop-20260302-cycle07-close.handoff.json
 - Summary (5 lines max):
   1) Cycle04~06 운영 목표(재현 가능한 CT/Worker close 체계)는 충족.
   2) Core loop(Write/Save/Re-query/Universe)는 증거 기반으로 PASS.
   3) Retrieval/re-query 품질 지표 확보 및 개선 증명은 충족.
-  4) 단기 로드맵(CameraX/로컬캐싱/오프라인 내성)은 일부 미완으로 Conditional.
-  5) 결론: 중기/장기 제외 기준 전체 평가는 `부분충족`(단기 미완 항목 기준).
+  4) Cycle07 보강으로 SC-01/SC-02, AR-03/AR-05, ST-01/ST-02 항목을 충족으로 상향.
+  5) 결론: 단기 핵심은 PASS로 상향됐지만 AR-04/ST-04 잔여로 전체 평가는 `부분충족`.
