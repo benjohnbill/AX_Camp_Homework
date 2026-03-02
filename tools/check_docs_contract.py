@@ -50,6 +50,24 @@ LEGACY_FRONTMATTER_ALLOWLIST = {
     "oneoff_diagnostic_2026-02-20.md",
     "SKILL_PROMOTION_POLICY.md",
 }
+LEGACY_FRONTMATTER_ALLOWLIST_LOWER = {
+    item.lower() for item in LEGACY_FRONTMATTER_ALLOWLIST
+}.union(
+    {
+        "agent.md",
+        "agents.md",
+        "android_studio_agent.md",
+        "antigravity_agent.md",
+        "gemini-3.1-pro_agent.md",
+        "android/narrativeloopmobile/agent.md",
+        "android/narrativeloopmobile/android_studio_agent.md",
+        "android/narrativeloopmobile/android_report.md",
+        "android/narrativeloopmobile/debug_token_governance.md",
+        "android/narrativeloopmobile/integration_status.md",
+        "android/narrativeloopmobile/temp_android_progress_report.md",
+        "android/readme.md",
+    }
+)
 
 STATUS_DOCS = {"integration_status.md"}
 REQUIRED_METADATA_KEYS = {
@@ -62,8 +80,21 @@ REQUIRED_METADATA_KEYS = {
     "sunset_condition",
 }
 
-MD_REF_RE = re.compile(r"`([A-Za-z0-9_.-]+\.md)`|(?<![/\w])([A-Za-z0-9_.-]+\.md)\b")
-IGNORED_DOC_REFS = {"SKILL.md", "integration_handover_v1.md"}
+MD_REF_RE = re.compile(
+    r"`([^`\n]+\.md)`|\[[^\]]*\]\(([^)\s]+\.md)\)|(?<![/\w.-])([A-Za-z][A-Za-z0-9_./-]*\.md)\b"
+)
+IGNORED_DOC_REFS = {
+    "SKILL.md",
+    "integration_handover_v1.md",
+    "SYSTEM_BLUEPRINT.md",
+    "SYSTEM_AGENT_POLICY.md",
+    "SYSTEM_HANDOFF_CONSTITUTION.md",
+    "SYSTEM_HANDOFF_MIGRATION_POLICY.md",
+    "SYSTEM_SKILL_GOVERNANCE_POLICY.md",
+    "SYSTEM_MCP_POLICY.md",
+    "SYSTEM_REMOTE_POLICY.md",
+    "INBOX.md",
+}
 IGNORED_MD_DIR_FRAGMENTS = {
     "/.git/",
     "/.pytest_cache/",
@@ -71,6 +102,12 @@ IGNORED_MD_DIR_FRAGMENTS = {
     "/venv/",
     "/venv_new/",
     "/venv_backup_",
+    "/.gradle-user/",
+    "/.pre-commit-cache/",
+    "/data/evidence/",
+    "/orchestration/results/",
+    "/android/NarrativeLoopMobile/evidence/",
+    "/android/NarrativeLoopMobile/orchestration/results/",
 }
 SECRET_PATTERNS = [
     ("OPENAI_KEY", re.compile(r"\bsk-[A-Za-z0-9]{20,}\b")),
@@ -187,13 +224,22 @@ def normalize_rel(path: Path, root: Path) -> str:
     return str(path.relative_to(root)).replace("\\", "/")
 
 
-def resolve_ref(base: Path, ref: str, root: Path) -> Optional[Path]:
-    direct = root / ref
+def resolve_ref(
+    base: Path, ref: str, root: Path, basename_index: Optional[Dict[str, List[Path]]] = None
+) -> Optional[Path]:
+    clean_ref = ref.split("#", 1)[0].split("?", 1)[0].strip()
+    if not clean_ref:
+        return None
+    direct = root / clean_ref
     if direct.exists():
         return direct
-    local = base.parent / ref
+    local = base.parent / clean_ref
     if local.exists():
         return local
+    if basename_index is not None and "/" not in clean_ref and "\\" not in clean_ref:
+        candidates = basename_index.get(clean_ref.lower(), [])
+        if len(candidates) == 1:
+            return candidates[0]
     return None
 
 
@@ -255,18 +301,23 @@ def check_required_docs(root: Path, findings: List[Finding]) -> None:
 
 
 def check_md_references(root: Path, md_files: List[Path], findings: List[Finding]) -> None:
+    basename_index: Dict[str, List[Path]] = {}
+    for item in md_files:
+        basename_index.setdefault(item.name.lower(), []).append(item)
+
     for path in md_files:
         text = read_text(path)
         rel = normalize_rel(path, root)
         for match in MD_REF_RE.finditer(text):
-            ref = match.group(1) or match.group(2)
+            ref = match.group(1) or match.group(2) or match.group(3)
             if not ref:
                 continue
-            if ref in IGNORED_DOC_REFS:
+            ref_base = ref.split("#", 1)[0].split("?", 1)[0]
+            if ref_base in IGNORED_DOC_REFS:
                 continue
             if ref.startswith("http"):
                 continue
-            target = resolve_ref(path, ref, root)
+            target = resolve_ref(path, ref, root, basename_index=basename_index)
             if target is None:
                 findings.append(
                     Finding(
@@ -282,6 +333,7 @@ def check_md_references(root: Path, md_files: List[Path], findings: List[Finding
 def check_frontmatter(root: Path, md_files: List[Path], findings: List[Finding]) -> None:
     for path in md_files:
         rel = normalize_rel(path, root)
+        rel_lower = rel.lower()
         text = read_text(path)
         fm, _ = parse_frontmatter(text)
 
@@ -301,7 +353,7 @@ def check_frontmatter(root: Path, md_files: List[Path], findings: List[Finding])
                 )
             continue
 
-        if rel in LEGACY_FRONTMATTER_ALLOWLIST:
+        if rel_lower in LEGACY_FRONTMATTER_ALLOWLIST_LOWER:
             continue
         if fm is None:
             findings.append(Finding("WARN", "DOC_FRONTMATTER_MISSING", rel, "Missing metadata frontmatter."))

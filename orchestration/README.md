@@ -29,4 +29,5 @@ Optional single-file validation:
 
 When operating in chat-triggered CLI mode:
 - Use `orchestration/templates/chat_l1_worker_update.md` for quick status reports.
+- Use `orchestration/templates/chat_l2_ct_directive.md` for worker directives; include the `common_guard` line in each per-worker paste block.
 - Keep final decisions based on schema-valid `result/handoff` artifacts.

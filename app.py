@@ -1235,8 +1235,8 @@ def main():
         if st.button("⟩", key="main_sb_open"):
             st.session_state["sidebar_open"] = True
             st.rerun()
-    # render_runtime_diagnostics_badge(is_entropy)
-    # render_ocr_fallback_entrypoint()
+    render_runtime_diagnostics_badge(is_entropy)
+    render_ocr_fallback_entrypoint()
     
     if is_entropy:
         st.error(f"{icons.get_icon_text('shield-alert')} ENTROPY ALERT: SYSTEM UNSTABLE")

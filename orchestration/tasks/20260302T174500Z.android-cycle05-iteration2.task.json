@@ -1,0 +1,65 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-android-cycle05-iteration2",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Execute Cycle05 iteration-2 android lane to verify dual-device journey resilience remains stable while cycle05 quality uplift iterations progress.",
+  "inputs": [
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T165500Z.T-narrative_loop-20260302-android-cycle05.result.json",
+      "description": "Iteration-1 android baseline result."
+    },
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+      "description": "Android continuity report baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/MASTER_PLAN_CYCLE04_06.md",
+      "description": "Cycle05 committed scope and DoD."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No new feature development. Dual-device same-window evidence is mandatory."
+  },
+  "acceptance": [
+    "Physical and emulator journey checks pass in the same execution window.",
+    "No regression across create/save/re-open/re-query/universe path.",
+    "Android iteration-2 result artifact is schema-valid."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Device/runtime variability can hide regressions unless dual-device evidence is synchronized."
+  },
+  "next_actions": [
+    "Run physical and emulator checks in same window.",
+    "Capture timestamped evidence with device IDs.",
+    "Publish schema-valid android iteration-2 result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T17:45:00Z",
+  "context_docs": [
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "android_cycle05_iteration2",
+    "priority": "P1",
+    "deadline_utc": "2026-03-04T18:00:00Z"
+  }
+}

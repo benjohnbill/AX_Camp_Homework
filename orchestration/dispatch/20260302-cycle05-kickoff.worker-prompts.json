@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-cycle05-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/tasks/20260302T163000Z.cycle05-kickoff.task.json",
+  "deadline_utc": "2026-03-04T12:00:00Z",
+  "deadline_note": "Cycle05 kickoff lane execution artifacts should be produced in this window.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "Cycle05 scope: retrieval quality uplift, Korean re-query consistency, and universe entry resilience.",
+    "Keep MCP/skill lock unchanged unless explicit approval is recorded in canonical handoff."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260302T163000Z.backend-cycle05.task.json",
+      "scope_in": [
+        "Retrieval quality uplift with measurable artifacts",
+        "Korean re-query consistency checks",
+        "Auth/storage/universe regression guard bundle"
+      ],
+      "scope_out": [
+        "Unapproved schema/API expansion",
+        "Deploy without approval",
+        "Cross-domain feature expansion"
+      ],
+      "prompt": "You are backend_cli worker for Narrative_Loop cycle05 kickoff window. Follow orchestration/tasks/20260302T163000Z.backend-cycle05.task.json. Deliver measurable retrieval/re-query improvements while preserving stabilization guardrails."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260302T163000Z.frontend-cycle05.task.json",
+      "scope_in": [
+        "Re-query UX consistency",
+        "Universe entry resilience and guidance path",
+        "Frontend evidence refresh for cycle05 metrics"
+      ],
+      "scope_out": [
+        "Backend contract edits",
+        "Unapproved design expansion",
+        "Android native implementation"
+      ],
+      "prompt": "You are frontend_ide worker for Narrative_Loop cycle05 kickoff window. Follow orchestration/tasks/20260302T163000Z.frontend-cycle05.task.json. Focus on consistency and resilience with reproducible evidence."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260302T163000Z.android-cycle05.task.json",
+      "scope_in": [
+        "Dual-device journey resilience verification",
+        "Universe entry stability on Android",
+        "Cycle05 evidence refresh with device-traceability"
+      ],
+      "scope_out": [
+        "New feature development",
+        "Unapproved permission/scope changes",
+        "Backend API redesign"
+      ],
+      "prompt": "You are android_ide worker for Narrative_Loop cycle05 kickoff window. Follow orchestration/tasks/20260302T163000Z.android-cycle05.task.json. Validate reliability and resilience with schema-valid evidence-backed result."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts cycle05 kickoff iteration when backend/frontend/android lane artifacts are schema-valid, metric-backed, and aligned with approved cycle05 scope."
+}

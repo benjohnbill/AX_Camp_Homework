@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle06",
+  "task_id": "T-narrative_loop-20260302-backend-cycle06",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Execute cycle06 backend lane for operationalization readiness: reproducible guard execution, contract lock checks, and closure artifact consistency support.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle06 kickoff baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T065700Z.T-narrative_loop-20260302-backend-cycle05-iteration2.result.json",
+      "description": "Latest backend quality baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/MASTER_PLAN_CYCLE04_06.md",
+      "description": "Cycle06 committed scope."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "backend/",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No unapproved schema/API expansion; prioritize repeatable execution and evidence integrity."
+  },
+  "acceptance": [
+    "Mandatory backend guard bundle remains reproducibly green.",
+    "Contract validation and docs-contract checks produce no new critical mismatch.",
+    "Schema-valid backend cycle06 result artifact is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Operationalization drift can occur if guard/contract commands are not executed in fixed order."
+  },
+  "next_actions": [
+    "Run required backend guard and contract checks.",
+    "Capture reproducibility-oriented evidence logs.",
+    "Publish schema-valid backend cycle06 result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T19:05:00Z",
+  "context_docs": [
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "backend_operationalization",
+    "priority": "P1",
+    "deadline_utc": "2026-03-05T12:00:00Z"
+  }
+}

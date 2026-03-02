@@ -1,0 +1,61 @@
+{
+    "trace_id": "trace-narrative_loop-20260225-precycle4",
+    "task_id": "T-narrative_loop-20260225-frontend-ui-manual-check",
+    "worker": "frontend_ide",
+    "status": "success",
+    "summary": "One-shot manual GUI validation for root, embed, diagnostics, and OCR completed successfully. Local Streamlit 8501 runtime restored and visual evidence captured. Root shell, embed route detection, and escape actions verified.",
+    "outputs": [
+        {
+            "kind": "artifact",
+            "path": "orchestration/results/20260302T050400Z.T-narrative_loop-20260225-frontend-ui-manual-check.result.json",
+            "description": "Frontend UI Manual Check Result Document"
+        },
+        {
+            "kind": "report",
+            "path": "data/evidence/20260302_frontend_manual_browser_ui_check.md",
+            "description": "Manual GUI validation report with check details and verdicts."
+        },
+        {
+            "kind": "file",
+            "path": "data/evidence/20260302_frontend_root_shell_visible.png",
+            "description": "Screenshot of root URL shell visibility (sidebar, mode selector, OCR)."
+        },
+        {
+            "kind": "file",
+            "path": "data/evidence/20260302_frontend_embed_route_screen.png",
+            "description": "Screenshot of embed route (?embed=universe_3d) detection and error rendering."
+        },
+        {
+            "kind": "file",
+            "path": "data/evidence/20260302_frontend_embed_escape_success.png",
+            "description": "Screenshot of successful escape from embed route back to full app."
+        }
+    ],
+    "evidence": [
+        {
+            "name": "Root URL shell visibility",
+            "status": "pass",
+            "note": "Sidebar, mode selector, and OCR entrypoints visible. evidence_path=data/evidence/20260302_frontend_root_shell_visible.png"
+        },
+        {
+            "name": "Embed route detection",
+            "status": "pass",
+            "note": "Embed route detected, error handled, return-to-full-app action works. evidence_path=data/evidence/20260302_frontend_embed_route_screen.png"
+        },
+        {
+            "name": "Diagnostics badge values",
+            "status": "pass",
+            "note": "Verified values for query.embed, is_embed_route, ENABLE_ENTROPY, is_entropy_mode, and session.mode."
+        },
+        {
+            "name": "OCR entrypoint availability",
+            "status": "pass",
+            "note": "Main area OCR fallback CTA and sidebar OCR are present."
+        }
+    ],
+    "risks": [],
+    "next_actions": [
+        "CT to re-aggregate results for pre-cycle4 gate closure."
+    ],
+    "timestamp": "2026-03-02T05:04:00Z"
+}

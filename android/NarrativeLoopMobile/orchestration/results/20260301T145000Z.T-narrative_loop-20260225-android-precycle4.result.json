@@ -1,0 +1,23 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-android-precycle4",
+  "worker": "android_ide",
+  "timestamp": "2026-03-01T14:50:00Z",
+  "status": "success",
+  "reason": "Emulator + Physical same-window evidence rule satisfied. Full journey (Write/Save/Re-open/Universe) confirmed on both devices.",
+  "evidence": [
+    {
+      "type": "physical_full_journey",
+      "path": "android/NarrativeLoopMobile/evidence/20260301T144500Z_android_precycle4_full_journey_physical.json",
+      "device_id": "R3CR80HR90W",
+      "verdict": "pass"
+    },
+    {
+      "type": "emulator_full_journey",
+      "path": "android/NarrativeLoopMobile/evidence/20260301T141500Z_android_precycle4_full_journey_emulator.json",
+      "device_id": "emulator-5554",
+      "verdict": "pass"
+    }
+  ],
+  "exit_criteria_met": true
+}

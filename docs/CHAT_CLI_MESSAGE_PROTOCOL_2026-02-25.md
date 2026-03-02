@@ -2,7 +2,7 @@
 doc_type: playbook
 owner: control_tower
 authority_level: operational
-last_updated: 2026-02-25
+last_updated: 2026-03-02
 sync_with:
   - CT_BASELINE_2026-02-25.md
   - SESSION_BOOTSTRAP_PROTOCOL.md
@@ -65,6 +65,8 @@ Reduce Control Tower (CT) overload in a chat-triggered runtime where CT cannot p
 - L2 (CT directive):
   - Short execution instruction to one worker.
   - Template: `orchestration/templates/chat_l2_ct_directive.md`
+  - Mandatory line in every worker-paste block:
+    - `common_guard: Canonical JSON verdict > markdown narrative. No deploy/schema migration/permission elevation/destructive command without explicit approval.`
 - L3 (CT cycle summary):
   - Aggregated decision summary for cycle/session boundary.
   - Template: `orchestration/templates/chat_l3_ct_summary.md`

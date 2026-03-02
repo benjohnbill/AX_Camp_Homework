@@ -1,0 +1,74 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-backend-cycle05-iteration2",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "Cycle05 iteration-2 backend lane completed with measurable retrieval uplift and Korean re-query consistency hardening while maintaining stabilization guardrails. Retrieval metrics show positive delta versus baseline (recall_at_k and acceptance_top1 both improved). Mandatory auth/storage/universe guard pytest and contracts validation passed.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T065700Z.T-narrative_loop-20260302-backend-cycle05-iteration2.result.json",
+      "description": "Cycle05 iteration-2 backend result artifact."
+    },
+    {
+      "kind": "report",
+      "path": "data/evidence/20260302T065636Z_backend_cycle05_it2_retrieval_metrics_rerun.json",
+      "description": "Iteration-2 retrieval metrics report (baseline vs rewritten)."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T065636Z_backend_cycle05_it2_guard_pytest_rerun.log",
+      "description": "Iteration-2 mandatory guard pytest bundle rerun log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T065650Z_backend_cycle05_it2_validate_contracts.log",
+      "description": "Iteration-2 validate_contracts log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "retrieval_delta_uplift_iteration2",
+      "command": ".\\tools\\project_python.ps1 tools/eval_korean_retrieval.py --dataset data/korean_retrieval_eval.json --json-report data/evidence/20260302T065636Z_backend_cycle05_it2_retrieval_metrics_rerun.json",
+      "status": "pass",
+      "note": "exit_code=0; key_log_path=data/evidence/20260302T065636Z_backend_cycle05_it2_retrieval_metrics_rerun.log; baseline={recall_at_k:0.625,acceptance_top1:0.375}; rewritten={recall_at_k:0.75,acceptance_top1:0.625}; delta={recall_at_k:+0.125,acceptance_top1:+0.25}."
+    },
+    {
+      "name": "guard_bundle_auth_storage_universe",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py tests/test_korean_query_rewrite.py tests/test_interface_parity.py tests/test_universe_auth.py",
+      "status": "pass",
+      "note": "exit_code=0; key_log_path=data/evidence/20260302T065636Z_backend_cycle05_it2_guard_pytest_rerun.log; result=17 passed in 4.20s."
+    },
+    {
+      "name": "contracts_validation",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py",
+      "status": "pass",
+      "note": "exit_code=0; key_log_path=data/evidence/20260302T065650Z_backend_cycle05_it2_validate_contracts.log; result=PASS sample handoff/result/task."
+    },
+    {
+      "name": "first_failure_trace",
+      "status": "info",
+      "note": "initial_guard_pytest_exit_code=1; first_failure_log=data/evidence/20260302T065608Z_backend_cycle05_it2_guard_pytest.log; root_cause=korean_query_rewrite expansion regression for work-stress query; mitigation=use raw+normalized tokens in rewrite processing; resolved in rerun."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "low",
+      "description": "No critical auth/storage/universe regression observed after iteration-2 retrieval uplift patch.",
+      "mitigation": "Keep the same guard pytest bundle mandatory for each retrieval tuning iteration."
+    }
+  ],
+  "next_actions": [
+    "Submit iteration-2 backend artifact and metrics report to CT aggregation.",
+    "Use 20260302T065636Z metrics report as new baseline for iteration-3.",
+    "Escalate immediately if future guard bundle introduces critical-path failures."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-02T06:57:00Z",
+  "metrics": {
+    "duration_sec": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-backend-cycle05-iteration2",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Execute Cycle05 iteration-2 backend lane with measurable retrieval uplift proof while preserving auth/storage/universe guard stability.",
+  "inputs": [
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T063744Z.T-narrative_loop-20260302-backend-cycle05.result.json",
+      "description": "Iteration-1 backend baseline result."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "data/evidence/20260302T063642Z_backend_cycle05_retrieval_metrics.json",
+      "description": "Iteration-1 metrics baseline (delta=0)."
+    },
+    {
+      "kind": "file",
+      "value": "docs/MASTER_PLAN_CYCLE04_06.md",
+      "description": "Cycle05 committed scope and DoD."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "backend/",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No deploy/schema/API expansion without explicit approval. Guard bundle is mandatory."
+  },
+  "acceptance": [
+    "Retrieval metric delta is explicitly positive versus iteration-1 baseline on at least one key metric (acceptance_top1 or recall_at_k).",
+    "Mandatory guard pytest bundle passes for auth/storage/universe critical paths.",
+    "Contracts validation passes and backend result artifact is schema-valid."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Quality uplift attempts may cause regression in critical paths if guard bundle is skipped."
+  },
+  "next_actions": [
+    "Run retrieval experiment and produce before/after metric report.",
+    "Run guard pytest bundle and contracts validation.",
+    "Publish schema-valid backend iteration-2 result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T17:45:00Z",
+  "context_docs": [
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "backend_cycle05_iteration2",
+    "priority": "P1",
+    "deadline_utc": "2026-03-04T18:00:00Z"
+  }
+}

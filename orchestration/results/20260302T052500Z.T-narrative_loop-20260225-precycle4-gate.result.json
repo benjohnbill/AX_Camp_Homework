@@ -1,0 +1,66 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-precycle4-gate",
+  "worker": "docs_worker",
+  "status": "blocked",
+  "summary": "Pre-cycle4 CT gate remains blocked. Backend and frontend latest artifacts are PASS and schema-valid. Android artifact remains blocked due missing same-window physical-device evidence.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T044544Z.T-narrative_loop-20260225-backend-precycle4-rerun.result.json",
+      "description": "Backend pre-cycle4 rerun artifact (PASS)."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T050400Z.T-narrative_loop-20260225-frontend-ui-manual-check.result.json",
+      "description": "Frontend manual UI check artifact (PASS)."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260301T135113Z.T-narrative_loop-20260225-android-precycle4.result.json",
+      "description": "Android pre-cycle4 artifact (BLOCKED)."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/20260302T052500Z.T-narrative_loop-20260225-precycle4-gate.handoff.json",
+      "description": "Canonical CT handoff for latest pre-cycle4 gate aggregation."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "backend_precycle4_latest",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260302T044544Z.T-narrative_loop-20260225-backend-precycle4-rerun.result.json"
+    },
+    {
+      "name": "frontend_manual_ui_latest",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260302T050400Z.T-narrative_loop-20260225-frontend-ui-manual-check.result.json"
+    },
+    {
+      "name": "android_precycle4_latest",
+      "status": "fail",
+      "note": "status=blocked; evidence_path=orchestration/results/20260301T135113Z.T-narrative_loop-20260225-android-precycle4.result.json"
+    },
+    {
+      "name": "android_physical_same_window_requirement",
+      "command": "adb devices -l + same-window full journey",
+      "status": "fail",
+      "note": "No physical-device same-window evidence in latest accepted Android artifact."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "critical",
+      "description": "Pre-cycle4 gate cannot pass without Android same-window emulator+physical evidence.",
+      "mitigation": "Connect physical device, collect same-window full journey evidence, republish Android result, and rerun CT gate."
+    }
+  ],
+  "next_actions": [
+    "Collect Android physical same-window journey evidence with emulator evidence in same window.",
+    "Republish Android pre-cycle4 result with pass criteria satisfied.",
+    "Rerun CT gate aggregation and publish cycle4 kickoff only on PASS."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-03-02T05:25:00Z"
+}

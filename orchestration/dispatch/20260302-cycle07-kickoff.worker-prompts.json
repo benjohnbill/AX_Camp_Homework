@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle07",
+  "task_id": "T-narrative_loop-20260302-cycle07-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/tasks/20260302T213500Z.cycle07-kickoff.task.json",
+  "deadline_utc": "2026-03-07T12:00:00Z",
+  "deadline_note": "Cycle07 kickoff must produce measurable closure evidence for post-cycle06 checklist partial/unmet items.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "Cycle07 scope is checklist closure, not broad feature expansion.",
+    "Canonical JSON verdicts override markdown narratives."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260302T213500Z.backend-cycle07.task.json",
+      "scope_in": [
+        "AR-03 sync/async persistence verification",
+        "AR-04 pgvector and SQLite fallback verification depth",
+        "Contract-safe evidence packaging"
+      ],
+      "scope_out": [
+        "Unapproved schema/API redesign",
+        "Cross-domain UX work",
+        "Deployment changes"
+      ],
+      "prompt": "You are backend_cli for cycle07 kickoff. Close AR-03/AR-04 gaps with measurable evidence, keep guard/contracts green, and publish schema-valid result artifacts."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260302T213500Z.frontend-cycle07.task.json",
+      "scope_in": [
+        "SC-01/SC-02 correction-flow evidence quality",
+        "ST-03 continuity behavior under constrained runtime",
+        "Contract-compliant reporting"
+      ],
+      "scope_out": [
+        "Backend contract edits",
+        "Android native implementation",
+        "Unapproved feature expansion"
+      ],
+      "prompt": "You are frontend_ide for cycle07 kickoff. Convert SC-01/SC-02/ST-03 from partial to fulfilled using reproducible flow evidence and schema-valid artifacts."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260302T213500Z.android-cycle07.task.json",
+      "scope_in": [
+        "ST-01 CameraX-equivalent journey validation",
+        "ST-02 local cache strengthening evidence",
+        "SC-01/SC-02 and AR-05 continuity evidence on dual-device"
+      ],
+      "scope_out": [
+        "Backend API redesign",
+        "Unapproved permission changes",
+        "Non-checklist feature additions"
+      ],
+      "prompt": "You are android_ide for cycle07 kickoff. Use same-window dual-device runs to close ST-01/ST-02 and reinforce SC/AR continuity evidence with canonical packaging."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts cycle07 kickoff when task and dispatch are trace/task aligned and each lane has measurable checklist-closure acceptance plus canonical evidence path requirements."
+}

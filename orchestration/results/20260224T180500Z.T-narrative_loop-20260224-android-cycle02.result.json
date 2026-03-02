@@ -47,7 +47,7 @@
     },
     {
       "name": "adb_devices_probe",
-      "command": "C:\\Users\\조진근\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe devices",
+      "command": "C:\\Users\\benjohnbill\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe devices",
       "status": "fail",
       "note": "ADB command runs but connected_device_count=0."
     },

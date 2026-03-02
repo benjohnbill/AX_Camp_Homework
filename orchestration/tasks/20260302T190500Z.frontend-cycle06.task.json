@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle06",
+  "task_id": "T-narrative_loop-20260302-frontend-cycle06",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Execute cycle06 frontend lane for operationalization readiness: stable runtime surface, reproducible evidence packaging, and contract-compliant result reporting.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle06 kickoff baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T181500Z.T-narrative_loop-20260302-frontend-cycle05-iteration2.result.json",
+      "description": "Latest frontend stability baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/MASTER_PLAN_CYCLE04_06.md",
+      "description": "Cycle06 committed scope."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md",
+      "docs/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No backend contract edits; emphasize reproducible runtime and evidence capture."
+  },
+  "acceptance": [
+    "Frontend runtime/non-regression surface remains stable.",
+    "Evidence package is reproducible and contract-aligned.",
+    "Schema-valid frontend cycle06 result artifact is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Evidence packaging inconsistency can break cycle-close reproducibility."
+  },
+  "next_actions": [
+    "Run frontend non-regression/runtime checks.",
+    "Refresh evidence in canonical structure.",
+    "Publish schema-valid frontend cycle06 result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T19:05:00Z",
+  "context_docs": [
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "frontend_operationalization",
+    "priority": "P1",
+    "deadline_utc": "2026-03-05T12:00:00Z"
+  }
+}

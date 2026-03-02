@@ -1,0 +1,68 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-frontend-cycle05",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Execute Cycle05 frontend lane for re-query UX consistency and universe entry resilience, preserving 401/403 friendly guidance and runtime stability.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260302T163000Z.cycle05-kickoff.task.json",
+      "description": "Cycle05 kickoff draft baseline."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Frontend runtime entrypoint."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T081500Z.T-narrative_loop-20260302-frontend-cycle04.result.json",
+      "description": "Latest frontend stabilization pass baseline."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md",
+      "docs/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Do not modify backend API contracts; preserve existing auth guidance behavior."
+  },
+  "acceptance": [
+    "Re-query UX consistency checks and evidence are published.",
+    "Universe entry and 401/403 friendly path remain stable.",
+    "Schema-valid frontend cycle05 result artifact is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "UX-level tweaks may regress critical guidance if diagnostics and flow checks are not repeated."
+  },
+  "next_actions": [
+    "Run cycle05 frontend non-regression and resilience checks.",
+    "Capture refreshed evidence for re-query and universe entry paths.",
+    "Publish frontend cycle05 result artifact."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T16:30:00Z",
+  "context_docs": [
+    "agent.md",
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "frontend_cycle05_bridge",
+    "priority": "P1",
+    "deadline_utc": "2026-03-04T12:00:00Z"
+  }
+}

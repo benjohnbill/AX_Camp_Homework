@@ -30,7 +30,7 @@ Define a decision-complete execution plan from Cycle 04 through Cycle 06, with c
 - `Speculative (idea backlog for Cycle 7+)`
 
 Baseline product vision source:
-- `D:\OneDrive\바탕 화면\Life_System\00_Inbox\2021117038 조진근.md`
+- `D:\OneDrive\Desktop\Life_System\00_Inbox\2021117038 조진근.md`
 
 ## 2) Planning Ratio (Locked)
 - Committed: `70%`

@@ -41,7 +41,7 @@ When documents conflict, apply this order:
 2. `orchestration/task.json`
 3. `orchestration/results/*.result.json` (latest timestamp)
 4. `integration_status.md`
-5. Human planning references (for direction only), including `D:\OneDrive\바탕 화면\Life_System\00_Inbox\2021117038 조진근.md`
+5. Human planning references (for direction only), including `D:\OneDrive\Desktop\Life_System\00_Inbox\2021117038 조진근.md`
 
 ## 3) Current Verified Functional Surface
 - Web app (`app.py`):

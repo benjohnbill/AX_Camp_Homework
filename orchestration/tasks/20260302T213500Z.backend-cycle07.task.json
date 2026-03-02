@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle07",
+  "task_id": "T-narrative_loop-20260302-backend-cycle07",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Execute cycle07 backend lane to close checklist gaps: sync/async persistence validation, DB-path verification depth, and OCR-auth-backend linkage evidence hardening.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260302T213500Z.cycle07-kickoff.task.json",
+      "description": "Cycle07 kickoff baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T074203Z.T-narrative_loop-20260302-backend-cycle06-iteration2.result.json",
+      "description": "Latest backend operationalization baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/CYCLE06_POSTCHECK_PRODUCT_CHECKLIST.md",
+      "description": "Gap targets: AR-03, AR-04, AR-05."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "backend/",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No unapproved schema/API expansion; improvements must be test-and-evidence driven."
+  },
+  "acceptance": [
+    "AR-03 closure evidence includes measurable sync/async path verification outputs.",
+    "AR-04 closure evidence includes pgvector path plus SQLite fallback verification logs.",
+    "Backend artifacts are schema-valid and contract checks remain pass."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Checklist item reclassification will fail if backend presents narrative claims without quantified evidence."
+  },
+  "next_actions": [
+    "Run backend guard/contract bundle before and after changes.",
+    "Generate and publish AR-03/AR-04 targeted evidence logs.",
+    "Publish schema-valid backend cycle07 result artifact."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T21:35:00Z",
+  "context_docs": [
+    "docs/CYCLE06_POSTCHECK_PRODUCT_CHECKLIST.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "backend_checklist_closure",
+    "priority": "P1",
+    "deadline_utc": "2026-03-07T12:00:00Z"
+  }
+}

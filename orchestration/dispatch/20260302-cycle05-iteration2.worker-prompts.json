@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-cycle05-iteration2-dispatch-sync",
+  "version": "1.0",
+  "source_task": "orchestration/task.json",
+  "deadline_utc": "2026-03-04T18:00:00Z",
+  "deadline_note": "Cycle05 iteration-2 lane artifacts should include measurable uplift and regression guard evidence.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "No feature-scope expansion beyond approved cycle05 lane objectives.",
+    "L1 update first, schema-valid result second."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260302T174500Z.backend-cycle05-iteration2.task.json",
+      "scope_in": [
+        "Measured retrieval uplift (delta > 0) against iteration-1 baseline",
+        "Korean re-query consistency verification",
+        "Mandatory auth/storage/universe guard bundle + contracts check"
+      ],
+      "scope_out": [
+        "Unapproved schema/API expansion",
+        "Deploy without approval",
+        "Cross-domain feature expansion"
+      ],
+      "prompt": "You are backend_cli for cycle05 iteration-2. Deliver measurable retrieval uplift with explicit metric deltas while preserving critical-path guard bundle stability."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260302T174500Z.frontend-cycle05-iteration2.task.json",
+      "scope_in": [
+        "Re-query UX consistency",
+        "Universe entry resilience including 401/403 friendly path",
+        "Non-regression evidence refresh"
+      ],
+      "scope_out": [
+        "Backend contract edits",
+        "Unapproved design expansion",
+        "Android native implementation"
+      ],
+      "prompt": "You are frontend_ide for cycle05 iteration-2. Keep UX stable during backend uplift work and publish reproducible evidence-backed result."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260302T174500Z.android-cycle05-iteration2.task.json",
+      "scope_in": [
+        "Dual-device same-window resilience check",
+        "Journey non-regression for create/save/re-open/re-query/universe",
+        "Traceable evidence with device ID and timestamp"
+      ],
+      "scope_out": [
+        "New feature development",
+        "Unapproved permission/scope changes",
+        "Backend API redesign"
+      ],
+      "prompt": "You are android_ide for cycle05 iteration-2. Validate journey resilience in physical and emulator runs and publish schema-valid evidence-backed result."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts cycle05 iteration-2 when all lanes are schema-valid, backend reports measurable uplift delta, and no critical regression is introduced."
+}

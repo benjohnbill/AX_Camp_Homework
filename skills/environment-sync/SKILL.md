@@ -1,39 +1,46 @@
-# SKILL: environment-sync (Project Instance)
+---
+name: environment-sync
+description: Detect and report local runtime environment drift for Narrative_Loop before execution. Use when a session starts, after pull/clone, or when Python/venv/dependency mismatch symptoms appear.
+---
 
-> **Status**: ACTIVE ENGINE (Model B)
-> **Reference**: [Master Template](D:\OneDrive\바탕 화면\Life_System\02_Core_Resources\01_Agent_Orchastration_System\SYSTEM_SKILL_ENVIRONMENT_SYNC.md)
+# SKILL: Environment Sync
 
-## 1. Local Goal
-Ensure the `narrative-loop` environment matches the latest requirements on this device.
+## Goal
+Keep local runtime alignment with project runtime policy before feature or gate execution.
 
-## 2. Dynamic Path Resolution (Local)
-- Current Project: `narrative-loop`
-- Local Venv Hub: `\.venvs_hub\narrative-loop`
+## Source Priority
+1. `agent.md`
+2. `LOCAL_ENV_SETUP.md`
+3. `requirements.txt`
+4. `MULTI_DEVICE_MIGRATION_GUIDE.md`
 
-## 3. Operational Protocol (Model B: Advisory Assistant)
+## Runtime Naming Rules (Must Follow)
+- Canonical venv name: `Narrative_Loop.venv`
+- Compatibility alias: `narrative_loop`
+- Resolved root: `$env:LIFE_VENV_ROOT` or default `%USERPROFILE%\.venvs_hub` (fallback `C:\venvs_hub` for non-ASCII profile environments)
 
-### Step 1: Silent Scan (Post-Pull/Clone)
-Whenever a session starts or `git pull` is detected:
-1. **Check venv**: Verify `\.venvs_hub\narrative-loop\Scripts\Activate.ps1`.
-2. **Check requirements**: Scan `requirements.txt` for updates since last install.
-3. **Check .env**: Compare local `.env` with mandatory keys in `MULTI_DEVICE_MIGRATION_GUIDE.md`.
+## Procedure
+1. Verify project python resolver works:
+   - `.\tools\project_python.ps1 --version`
+2. Verify canonical/alias venv paths exist under resolved venv root.
+3. Compare `requirements.txt` against installed packages in the active project python.
+4. Check `.env` required keys against `MULTI_DEVICE_MIGRATION_GUIDE.md` mandatory list.
+5. Report drift with three classes only:
+   - `missing_venv`
+   - `dependency_drift`
+   - `missing_env_keys`
 
-### Step 2: Advisory Report
-If drift is detected, report to the user:
-- [Missing] Virtual Environment
-- [Out-of-Sync] Packages (e.g., pandas added)
-- [Missing] Secret Keys (e.g., GEMINI_API_KEY)
+## Ask-Then-Execute Rule
+When drift is detected, report first and ask for approval before mutation.
 
-### Step 3: Ask & Execute (Y/n)
-Ask: *'Environment drift detected. Should I automatically sync and fix these issues? (Y/n)'*
+Allowed remediation examples after approval:
+- `.\tools\bootstrap_env.ps1 -Recreate -InstallPreCommit`
+- `.\tools\project_python.ps1 -m pip install -r requirements.txt`
 
-Upon 'Y':
-1. Create venv if missing: `python -m venv \.venvs_hub\narrative-loop`
-2. Run: `pip install -r requirements.txt`
-3. Prompt for any missing mandatory `.env` keys.
+## Output Contract
+- Emit concise drift report with:
+  - detected class
+  - evidence command/log path
+  - proposed remediation command
+- Do not silently install or mutate environment.
 
-## 4. Maintenance Rule
-When adding a new library or environment variable, the Agent MUST:
-1. Update `requirements.txt`.
-2. Update `MULTI_DEVICE_MIGRATION_GUIDE.md` (Mandatory list).
-3. Push changes so other devices can detect the drift.

@@ -1,0 +1,68 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle04",
+  "task_id": "T-narrative_loop-20260302-backend-cycle04",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Execute cycle04 phase1 backend stabilization: auth/storage/universe non-regression and evidence refresh without API/schema expansion.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle04 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/MASTER_PLAN_CYCLE04_06.md",
+      "description": "Cycle04 committed scope."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T044544Z.T-narrative_loop-20260225-backend-precycle4-rerun.result.json",
+      "description": "Latest backend pass baseline."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "backend/",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No deploy/schema migration/permission expansion."
+  },
+  "acceptance": [
+    "Required backend regression bundle passes.",
+    "No auth/storage/universe critical blocker introduced.",
+    "Schema-valid backend result artifact is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Backend contract drift can invalidate frontend/android evidence."
+  },
+  "next_actions": [
+    "Run backend required validation bundle.",
+    "Publish backend cycle04 result artifact.",
+    "Escalate immediately if contract drift is observed."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T06:30:00Z",
+  "context_docs": [
+    "agent.md",
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "backend_stabilization",
+    "priority": "P1",
+    "deadline_utc": "2026-03-03T12:00:00Z"
+  }
+}

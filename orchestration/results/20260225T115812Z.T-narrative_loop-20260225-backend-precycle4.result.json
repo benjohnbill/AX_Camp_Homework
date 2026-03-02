@@ -45,7 +45,7 @@
     },
     {
       "name": "python_multipart_prerequisite",
-      "command": "C:\\Users\\조진근\\.venvs_hub\\narrative_loop\\Scripts\\python.exe -m pip show python-multipart",
+      "command": "C:\\Users\\benjohnbill\\.venvs_hub\\narrative_loop\\Scripts\\python.exe -m pip show python-multipart",
       "status": "pass",
       "note": "python-multipart 0.0.22 installed. evidence_path=data/evidence/20260225T210016Z_python_multipart_check.log"
     }

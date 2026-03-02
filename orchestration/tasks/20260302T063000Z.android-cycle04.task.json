@@ -1,0 +1,66 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle04",
+  "task_id": "T-narrative_loop-20260302-android-cycle04",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Execute cycle04 phase1 Android stabilization for navigation reliability and product journey non-regression across emulator and physical device.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle04 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+      "description": "Latest Android pass baseline report."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T060500Z.T-narrative_loop-20260225-android-precycle4.result.json",
+      "description": "Canonical Android pre-cycle4 pass artifact."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No new feature development; focus on reliability + evidence."
+  },
+  "acceptance": [
+    "Cycle04 android reliability checks pass on target devices.",
+    "No regression in write/save/re-query/universe journey.",
+    "Schema-valid android result artifact is published."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Device/runtime instability can re-open critical blocker class."
+  },
+  "next_actions": [
+    "Run Android cycle04 stabilization checklist on emulator and physical device.",
+    "Capture updated evidence/report artifacts.",
+    "Publish android cycle04 result artifact."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T06:30:00Z",
+  "context_docs": [
+    "agent.md",
+    "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "android_stabilization",
+    "priority": "P1",
+    "deadline_utc": "2026-03-03T12:00:00Z"
+  }
+}

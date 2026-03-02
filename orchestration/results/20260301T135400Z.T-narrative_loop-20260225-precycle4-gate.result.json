@@ -1,0 +1,55 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-precycle4-gate",
+  "worker": "docs_worker",
+  "status": "blocked",
+  "summary": "Pre-cycle4 gate remains blocked after Android worker intake refresh. Frontend runtime mitigation is in place, but frontend GUI screenshot checklist and Android physical same-window evidence are still incomplete.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260228T165000Z.T-narrative_loop-20260225-frontend-ui-manual-check.result.json",
+      "description": "Latest frontend manual-check artifact (partial)."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260301T135113Z.T-narrative_loop-20260225-android-precycle4.result.json",
+      "description": "Latest Android worker-ingested artifact (blocked)."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/20260301T135400Z.T-narrative_loop-20260225-precycle4-gate.handoff.json",
+      "description": "Canonical CT handoff after Android intake refresh."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "backend_precycle4_baseline",
+      "status": "pass",
+      "note": "Backend PASS baseline unchanged: orchestration/results/20260225T115812Z.T-narrative_loop-20260225-backend-precycle4.result.json"
+    },
+    {
+      "name": "frontend_manual_check_latest",
+      "status": "fail",
+      "note": "Status=partial, GUI screenshot checklist pending."
+    },
+    {
+      "name": "android_worker_intake_latest",
+      "status": "fail",
+      "note": "Physical same-window evidence missing; evidence_path=orchestration/results/20260301T135113Z.T-narrative_loop-20260225-android-precycle4.result.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "critical",
+      "description": "Pre-cycle4 closure remains blocked until Android physical same-window evidence and frontend GUI visual evidence are attached.",
+      "mitigation": "Close both lane blockers and rerun CT aggregation immediately."
+    }
+  ],
+  "next_actions": [
+    "Connect physical Android device and capture same-window full journey evidence.",
+    "Finish frontend GUI screenshot checklist and republish frontend manual-check result.",
+    "Rerun CT gate aggregation for pass/fail decision."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-03-01T13:54:00Z"
+}

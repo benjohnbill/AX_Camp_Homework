@@ -1,0 +1,53 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-android-precycle4",
+  "worker": "android_ide",
+  "status": "success",
+  "summary": "Android pre-cycle4 blocker cleared. Emulator and physical-device full journey evidence were both captured in the same cycle window and satisfy strict same-window gate policy.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/orchestration/results/20260301T145000Z.T-narrative_loop-20260225-android-precycle4.result.json",
+      "description": "Android worker raw result artifact (non-canonical schema)."
+    },
+    {
+      "kind": "report",
+      "path": "android/NarrativeLoopMobile/ANDROID_REPORT.md",
+      "description": "Android pre-cycle4 report (updated with same-window pass addendum)."
+    },
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/evidence/20260301T141500Z_android_precycle4_full_journey_emulator.json",
+      "description": "Emulator same-window full journey evidence."
+    },
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/evidence/20260301T144500Z_android_precycle4_full_journey_physical.json",
+      "description": "Physical-device same-window full journey evidence."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "android_emulator_same_window_full_journey",
+      "status": "pass",
+      "note": "device_id=emulator-5554; evidence_path=android/NarrativeLoopMobile/evidence/20260301T141500Z_android_precycle4_full_journey_emulator.json"
+    },
+    {
+      "name": "android_physical_same_window_full_journey",
+      "status": "pass",
+      "note": "device_id=R3CR80HR90W; evidence_path=android/NarrativeLoopMobile/evidence/20260301T144500Z_android_precycle4_full_journey_physical.json"
+    },
+    {
+      "name": "android_same_window_rule",
+      "command": "Compare emulator and physical evidence timestamps within same pre-cycle window",
+      "status": "pass",
+      "note": "emulator_ts=2026-03-01T14:15:00Z; physical_ts=2026-03-01T14:45:00Z"
+    }
+  ],
+  "risks": [],
+  "next_actions": [
+    "Provide canonical Android PASS artifact to CT gate re-aggregation."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-03-02T06:05:00Z"
+}

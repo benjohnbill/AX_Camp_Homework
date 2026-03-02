@@ -13,15 +13,15 @@ _SYNONYM_GROUPS = [
     {"회사", "직장", "업무", "일", "출근"},
     {"상사", "팀장", "리더", "매니저"},
     {"힘들다", "버겁다", "지치다", "스트레스", "피곤하다"},
-    {"불안", "초조", "긴장", "걱정"},
-    {"우울", "무기력", "가라앉다", "침체"},
-    {"기쁨", "행복", "즐겁다", "뿌듯"},
-    {"운동", "헬스", "러닝", "달리기", "조깅"},
-    {"카페", "커피", "카페인"},
-    {"연애", "관계", "애인", "남친", "여친"},
+    {"불안", "불안하다", "초조", "긴장", "걱정", "걱정된다"},
+    {"우울", "우울하다", "무기력", "무기력하다", "가라앉다", "침체"},
+    {"기쁨", "행복", "행복했다", "즐겁다", "뿌듯", "좋아졌다", "기분"},
+    {"운동", "헬스", "러닝", "달리기", "조깅", "산책"},
+    {"카페", "커피", "카페인", "쉬다"},
+    {"연애", "관계", "애인", "애인과", "남친", "여친", "갈등"},
     {"공부", "학습", "학원", "시험"},
-    {"잠", "수면", "불면"},
-    {"돈", "지출", "소비", "예산", "재정"},
+    {"잠", "수면", "불면", "불면증", "지친다"},
+    {"돈", "지출", "소비", "예산", "재정", "걱정"},
 ]
 
 
@@ -49,12 +49,36 @@ def tokenize(text: str) -> List[str]:
     return [tok.lower() for tok in _TOKEN_RE.findall(text or "")]
 
 
+def _normalize_token(token: str) -> str:
+    out = (token or "").lower().strip()
+    if not out:
+        return ""
+    # Trim common postpositions to improve synonym-map hit rate for Korean queries.
+    for suffix in ("으로", "에서", "에게", "께서", "보다", "처럼", "하고", "과", "와", "은", "는", "이", "가", "을", "를"):
+        if out.endswith(suffix) and len(out) > len(suffix) + 1:
+            out = out[: -len(suffix)]
+            break
+    # Trim frequent sentence endings.
+    for ending in ("했다", "한다", "된다", "하다", "한다", "했다", "다"):
+        if out.endswith(ending) and len(out) > len(ending) + 1:
+            out = out[: -len(ending)]
+            break
+    return out
+
+
 def rewrite_query_for_hybrid(query_text: str, max_expansions: int = 8) -> RewriteResult:
     original = (query_text or "").strip()
     if not original:
         return RewriteResult("", "", [], False)
 
-    tokens = tokenize(original)
+    raw_tokens = tokenize(original)
+    tokens: List[str] = []
+    for tok in raw_tokens:
+        if tok:
+            tokens.append(tok)
+        norm = _normalize_token(tok)
+        if norm and norm != tok:
+            tokens.append(norm)
     seen = set()
     base_terms: List[str] = []
     for token in tokens:

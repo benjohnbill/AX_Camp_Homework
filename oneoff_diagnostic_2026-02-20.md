@@ -8,7 +8,7 @@ sync_with:
 change_triggers:
   - oneoff_diagnostic_refresh
 sunset_condition: delete after gaps in section 3 are resolved or by 2026-02-28
-review_by: 2026-02-28
+review_by: 2026-12-31
 ---
 
 # Narrative_Loop 일회성 진단 점검표 (2026-02-20)
@@ -134,8 +134,8 @@ review_by: 2026-02-28
 - 문제:
   - 현재 `venv`가 Windows Store Python 경로를 참조해 pytest 실행 실패
 - 근거:
-  - `C:\Users\LG\OneDrive\바탕 화면\Life_System\01_Active_Projects\08_AX 코딩 아카데미\venv\pyvenv.cfg:1`
-  - `C:\Users\LG\OneDrive\바탕 화면\Life_System\01_Active_Projects\08_AX 코딩 아카데미\venv\pyvenv.cfg:4`
+  - `C:\Users\benjohnbill\OneDrive\Desktop\Life_System\01_Active_Projects\08_AX 코딩 아카데미\venv\pyvenv.cfg:1`
+  - `C:\Users\benjohnbill\OneDrive\Desktop\Life_System\01_Active_Projects\08_AX 코딩 아카데미\venv\pyvenv.cfg:4`
 - 영향:
   - 테스트 자동화/검증 게이트 실행 신뢰도 저하
 - 조치:

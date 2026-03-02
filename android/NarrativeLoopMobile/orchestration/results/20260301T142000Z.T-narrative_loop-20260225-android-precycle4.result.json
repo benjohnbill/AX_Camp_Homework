@@ -1,0 +1,26 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-android-precycle4",
+  "worker": "android_ide",
+  "timestamp": "2026-03-01T14:20:00Z",
+  "status": "blocked",
+  "reason": "Emulator + Physical same-window evidence rule is not satisfied. Physical device was missing in this window.",
+  "evidence": [
+    {
+      "type": "emulator_full_journey",
+      "path": "android/NarrativeLoopMobile/evidence/20260301T141500Z_android_precycle4_full_journey_emulator.json",
+      "verdict": "pass"
+    },
+    {
+      "type": "physical_full_journey",
+      "path": "android/NarrativeLoopMobile/evidence/20260301T141500Z_android_precycle4_full_journey_physical.json",
+      "verdict": "blocked"
+    },
+    {
+      "type": "adb_probe",
+      "command": "adb devices -l",
+      "result_summary": "No physical device found"
+    }
+  ],
+  "exit_criteria_met": false
+}

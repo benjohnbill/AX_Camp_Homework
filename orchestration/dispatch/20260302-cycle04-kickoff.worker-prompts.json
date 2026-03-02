@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle04",
+  "task_id": "T-narrative_loop-20260302-cycle04-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/task.json",
+  "deadline_utc": "2026-03-03T12:00:00Z",
+  "deadline_note": "Cycle04 kickoff execution readiness artifacts should be produced in this window.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "Cycle04 phase1 is stabilization-focused; no feature-scope expansion.",
+    "MCP/skill lock remains unchanged unless explicit approval is recorded in canonical handoff."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260302T063000Z.backend-cycle04.task.json",
+      "scope_in": [
+        "Auth/storage/universe non-regression",
+        "Backend evidence refresh",
+        "Contract-stable validation bundle"
+      ],
+      "scope_out": [
+        "Schema migrations",
+        "Deploy without approval",
+        "Cross-domain feature expansion"
+      ],
+      "prompt": "You are backend_cli worker for Narrative_Loop cycle04 kickoff window. Follow orchestration/tasks/20260302T063000Z.backend-cycle04.task.json. Execute stabilization checks, publish schema-valid result, and escalate immediately on critical-path drift."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260302T063000Z.frontend-cycle04.task.json",
+      "scope_in": [
+        "Write/save/re-open/re-query/universe UX stability",
+        "Diagnostics consistency",
+        "Frontend evidence refresh"
+      ],
+      "scope_out": [
+        "Backend contract edits",
+        "Unapproved design expansion",
+        "Android native implementation"
+      ],
+      "prompt": "You are frontend_ide worker for Narrative_Loop cycle04 kickoff window. Follow orchestration/tasks/20260302T063000Z.frontend-cycle04.task.json. Focus on non-regression and reproducible evidence only."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260302T063000Z.android-cycle04.task.json",
+      "scope_in": [
+        "Android navigation reliability",
+        "Product journey non-regression",
+        "Device evidence refresh"
+      ],
+      "scope_out": [
+        "New feature development",
+        "Unapproved permission/scope changes",
+        "Backend API redesign"
+      ],
+      "prompt": "You are android_ide worker for Narrative_Loop cycle04 kickoff window. Follow orchestration/tasks/20260302T063000Z.android-cycle04.task.json. Validate reliability and publish schema-valid evidence-backed result."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts cycle04 kickoff when task/dispatch/result/handoff/baseline artifacts are published, schema-valid, and aligned with stabilization-only scope."
+}

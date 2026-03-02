@@ -1,0 +1,55 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-android-cycle05",
+  "worker": "android_ide",
+  "status": "success",
+  "summary": "Cycle05 Android lane completed. Journey resilience across create/save/re-open/re-query/universe was validated on physical and emulator devices in the same execution window with no regression detected.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T165500Z.T-narrative_loop-20260302-android-cycle05.result.json",
+      "description": "Cycle05 android lane result artifact."
+    },
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/evidence/20260302T164500Z_android_cycle05_resilience_physical.json",
+      "description": "Cycle05 physical-device resilience evidence."
+    },
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/evidence/20260302T165000Z_android_cycle05_resilience_emulator.json",
+      "description": "Cycle05 emulator resilience evidence."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "physical_resilience_check",
+      "status": "pass",
+      "note": "device_id=R3CR80HR90W; timestamp=2026-03-02T16:45:00Z; verdict=pass; path=android/NarrativeLoopMobile/evidence/20260302T164500Z_android_cycle05_resilience_physical.json"
+    },
+    {
+      "name": "emulator_resilience_check",
+      "status": "pass",
+      "note": "device_id=emulator-5554; timestamp=2026-03-02T16:50:00Z; verdict=pass; path=android/NarrativeLoopMobile/evidence/20260302T165000Z_android_cycle05_resilience_emulator.json"
+    },
+    {
+      "name": "same_window_dual_device_rule",
+      "status": "pass",
+      "note": "Physical/emulator checks completed in the same cycle05 execution window."
+    }
+  ],
+  "risks": [],
+  "next_actions": [
+    "Submit android cycle05 artifact to CT aggregation.",
+    "Re-run dual-device resilience checks on navigation/auth-affecting changes.",
+    "Keep scope limited to approved cycle05 lane contract."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-02T16:55:00Z",
+  "metrics": {
+    "duration_sec": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

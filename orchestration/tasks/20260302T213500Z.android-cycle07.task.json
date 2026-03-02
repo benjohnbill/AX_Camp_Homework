@@ -1,0 +1,65 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle07",
+  "task_id": "T-narrative_loop-20260302-android-cycle07",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Execute cycle07 android lane to close checklist gaps: CameraX-equivalent journey validation, local cache strengthening evidence, and OCR-to-backend continuity proof on dual-device runs.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260302T213500Z.cycle07-kickoff.task.json",
+      "description": "Cycle07 kickoff baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T201500Z.T-narrative_loop-20260302-android-cycle06-iteration2.result.json",
+      "description": "Latest android operationalization baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/CYCLE06_POSTCHECK_PRODUCT_CHECKLIST.md",
+      "description": "Gap targets: ST-01, ST-02, SC-01, SC-02, AR-05."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Same-window dual-device validation remains mandatory; no unrelated feature expansion."
+  },
+  "acceptance": [
+    "ST-01 evidence demonstrates CameraX-equivalent journey quality and reliability.",
+    "ST-02 evidence demonstrates strengthened local caching behavior under restart/reopen conditions.",
+    "Schema-valid android cycle07 result artifact is published with dual-device traceability."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Device-target drift and weak cache-path evidence can keep short-term checklist items unresolved."
+  },
+  "next_actions": [
+    "Run same-window physical/emulator scenario with gap-targeted steps.",
+    "Capture cache and OCR continuity evidence with device/timestamp fields.",
+    "Publish schema-valid android cycle07 result artifact."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T21:35:00Z",
+  "context_docs": [
+    "docs/CYCLE06_POSTCHECK_PRODUCT_CHECKLIST.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "android_checklist_closure",
+    "priority": "P1",
+    "deadline_utc": "2026-03-07T12:00:00Z"
+  }
+}

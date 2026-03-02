@@ -127,7 +127,11 @@ def _init_user_stats(cursor):
 def _run_schema_migrations(cursor):
     """기존 스키마에 새로운 컬럼들을 추가하는 마이그레이션 로직입니다."""
     # user_stats 컬럼 추가
-    user_stats_cols = [("recovery_points", "INTEGER DEFAULT 0"), ("last_log_at", "TIMESTAMP")]
+    user_stats_cols = [
+        ("recovery_points", "INTEGER DEFAULT 0"),
+        ("last_log_at", "TIMESTAMP"),
+        ("chronos_end_time", "TIMESTAMP"),
+    ]
     for col, ctype in user_stats_cols:
         try:
             cursor.execute(f"ALTER TABLE user_stats ADD COLUMN {col} {ctype}")
@@ -334,6 +338,45 @@ def get_longest_streak() -> int:
     result = cursor.fetchone()
     conn.close()
     return result['longest_streak'] if result else 0
+
+
+def set_chronos_timer(end_time: datetime) -> None:
+    """Persist Chronos timer end timestamp for session restore."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE user_stats SET chronos_end_time = ? WHERE id = 1",
+        (end_time.isoformat() if end_time else None,),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_chronos_timer() -> Optional[datetime]:
+    """Return persisted Chronos timer end timestamp if still valid."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT chronos_end_time FROM user_stats WHERE id = 1")
+    row = cursor.fetchone()
+    conn.close()
+
+    raw = row["chronos_end_time"] if row else None
+    if not raw:
+        return None
+    try:
+        # Keep naive datetime for compatibility with existing app math.
+        return datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def clear_chronos_timer() -> None:
+    """Clear persisted Chronos timer state."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE user_stats SET chronos_end_time = NULL WHERE id = 1")
+    conn.commit()
+    conn.close()
 
 
 def get_recovery_points() -> int:

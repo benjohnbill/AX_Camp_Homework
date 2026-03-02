@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle06",
+  "task_id": "T-narrative_loop-20260302-cycle06-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/task.json",
+  "deadline_utc": "2026-03-05T12:00:00Z",
+  "deadline_note": "Cycle06 kickoff artifacts should establish repeatable closure operations and contract-locked packaging discipline.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema change/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "Cycle06 scope: operationalization and reproducible closure; avoid uncontrolled feature expansion.",
+    "Maintain mandatory five-artifact closure discipline throughout cycle06."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260302T190500Z.backend-cycle06.task.json",
+      "scope_in": [
+        "Reproducible backend guard execution",
+        "Contract and docs-consistency checks",
+        "Closure-ready evidence packaging"
+      ],
+      "scope_out": [
+        "Unapproved schema/API expansion",
+        "Deploy without approval",
+        "Cross-domain feature expansion"
+      ],
+      "prompt": "You are backend_cli for cycle06 kickoff. Prioritize repeatable guard/contract execution and closure-ready evidence artifacts."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260302T190500Z.frontend-cycle06.task.json",
+      "scope_in": [
+        "Runtime surface stability",
+        "Reproducible evidence packaging",
+        "Contract-compliant reporting"
+      ],
+      "scope_out": [
+        "Backend contract edits",
+        "Unapproved design expansion",
+        "Android native implementation"
+      ],
+      "prompt": "You are frontend_ide for cycle06 kickoff. Focus on stable runtime and reproducible, contract-compliant artifact packaging."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260302T190500Z.android-cycle06.task.json",
+      "scope_in": [
+        "Dual-device same-window repeatability",
+        "Journey resilience preservation",
+        "Closure-evidence packaging discipline"
+      ],
+      "scope_out": [
+        "New feature development",
+        "Unapproved permission/scope changes",
+        "Backend API redesign"
+      ],
+      "prompt": "You are android_ide for cycle06 kickoff. Maintain same-window dual-device reproducibility and publish contract-compliant evidence artifacts."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts cycle06 kickoff when task/dispatch/result/handoff/baseline/pointers are synchronized and schema-valid under operationalization scope."
+}

@@ -1,0 +1,56 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-frontend-ui-manual-check",
+  "worker": "frontend_ide",
+  "status": "partial",
+  "summary": "Frontend localhost runtime is now reproducibly healthy after disabling Streamlit usage-stats onboarding prompt via project config. 8501 probe passes (LISTENING + HTTP 200). Manual GUI screenshot checklist is still pending due non-interactive CLI environment.",
+  "outputs": [
+    {
+      "kind": "file",
+      "path": ".streamlit/config.toml",
+      "description": "Project Streamlit config to disable onboarding prompt and avoid startup deadlock."
+    },
+    {
+      "kind": "report",
+      "path": "data/evidence/20260228T163200Z_frontend_manual_browser_ui_check.md",
+      "description": "Frontend manual-check progress report with runtime probe evidence."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260228T162510Z_frontend_streamlit_config_probe_stdout.log",
+      "description": "Startup probe log proving no email prompt and successful local binding."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "frontend_config_prompt_disable",
+      "status": "pass",
+      "note": "browser.gatherUsageStats=false set in .streamlit/config.toml"
+    },
+    {
+      "name": "frontend_8501_config_probe",
+      "command": "python -m streamlit run app.py --server.address 127.0.0.1 --server.port 8501",
+      "status": "pass",
+      "note": "EMAIL_PROMPT=False; LISTENING=YES; HTTP 200; evidence_path=data/evidence/20260228T162510Z_frontend_streamlit_config_probe_stdout.log"
+    },
+    {
+      "name": "frontend_manual_browser_visual_check",
+      "status": "fail",
+      "note": "Blocked: no interactive browser session in current execution context."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Visual acceptance (root/embed/diagnostics/OCR) remains unproven without GUI screenshots.",
+      "mitigation": "Run one-shot manual browser check from interactive desktop and attach required screenshots."
+    }
+  ],
+  "next_actions": [
+    "Run GUI one-shot browser checklist and capture required screenshots.",
+    "Republish frontend manual-check result as PASS/BLOCKED with visual evidence.",
+    "Feed updated frontend artifact into CT gate re-aggregation."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-28T16:32:00Z"
+}

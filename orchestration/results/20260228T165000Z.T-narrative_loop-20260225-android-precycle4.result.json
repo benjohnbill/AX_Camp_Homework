@@ -1,0 +1,36 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-android-precycle4",
+  "worker": "android_ide",
+  "status": "blocked",
+  "summary": "Android pre-cycle4 remains blocked. Fresh current-window ADB probe still reports no attached devices, so same-window emulator+physical journey evidence cannot be produced.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "data/evidence/20260228T164818Z_android_precycle4_device_probe.json",
+      "description": "Latest ADB probe for current execution window."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "android_adb_probe_current_window",
+      "command": "adb devices -l",
+      "status": "fail",
+      "note": "No devices attached; evidence_path=data/evidence/20260228T164818Z_android_precycle4_device_probe.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Android lane still blocks pre-cycle4 closure until same-window emulator+physical evidence is attached.",
+      "mitigation": "Attach emulator and physical device and rerun full journey in same cycle window."
+    }
+  ],
+  "next_actions": [
+    "Attach emulator and physical device and verify adb lists both as device.",
+    "Capture same-window full journey evidence for both devices.",
+    "Republish Android result for CT gate rerun."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-28T16:50:00Z"
+}

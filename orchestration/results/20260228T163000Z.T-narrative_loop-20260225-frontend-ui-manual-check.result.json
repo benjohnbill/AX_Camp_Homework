@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-frontend-ui-manual-check",
+  "worker": "frontend_ide",
+  "status": "partial",
+  "summary": "Frontend localhost runtime blocker was partially mitigated. Initial 8501/8502 startup probes failed due Streamlit first-run email prompt; forced empty-input startup confirmed 8501 LISTENING with HTTP 200. Manual browser visual checks (root/embed/diagnostics/OCR CTA) remain blocked in this CLI-only execution context.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "data/evidence/20260228T163000Z_frontend_manual_browser_ui_check.md",
+      "description": "Frontend one-shot manual-check report with runtime probe and blocker evidence."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260228T161329Z_frontend_streamlit_8501_startup.log",
+      "description": "Recovered localhost startup log showing Streamlit boot path during forced prompt pass."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260228T160951Z_frontend_streamlit_8501_stdout.log",
+      "description": "Initial 8501 startup output showing blocking prompt state."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "frontend_8501_initial_probe",
+      "command": "python -m streamlit run app.py --server.address 127.0.0.1 --server.port 8501",
+      "status": "fail",
+      "note": "LISTENING=NO; HTTP_FAIL(connection refused); evidence_path=data/evidence/20260228T160951Z_frontend_streamlit_8501_stdout.log"
+    },
+    {
+      "name": "frontend_8502_fallback_probe",
+      "command": "python -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502",
+      "status": "fail",
+      "note": "LISTENING=NO; HTTP_FAIL(connection refused); evidence_path=data/evidence/20260228T161123Z_frontend_streamlit_8502_stdout.log"
+    },
+    {
+      "name": "frontend_8501_prompt_bypass_probe",
+      "command": "\"\" | python -m streamlit run app.py --server.address 127.0.0.1 --server.port 8501 --browser.gatherUsageStats false",
+      "status": "pass",
+      "note": "LISTENING=YES; HTTP 200; evidence_path=data/evidence/20260228T161329Z_frontend_streamlit_8501_startup.log"
+    },
+    {
+      "name": "frontend_manual_browser_visual_check",
+      "status": "fail",
+      "note": "Blocked: no interactive browser session in this execution context; root/embed/diagnostics visual checks not attestable."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Manual browser visual acceptance items are still unverified (root/embed/diagnostics/OCR CTA).",
+      "mitigation": "Run one-shot browser validation on an interactive desktop session and attach screenshot evidence."
+    }
+  ],
+  "next_actions": [
+    "Run one-shot manual browser validation on interactive GUI session and capture required screenshots.",
+    "Republish frontend manual-check result as PASS or BLOCKED with complete visual evidence.",
+    "Feed updated frontend result into CT gate re-aggregation."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-28T16:30:00Z"
+}

@@ -1,0 +1,9 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "device_type": "physical",
+  "timestamp": "2026-03-01T14:15:00Z",
+  "status": "blocked",
+  "reason": "No physical device detected via 'adb devices -l' in the current execution window.",
+  "adb_output": "No running devices found.",
+  "verdict": "blocked"
+}

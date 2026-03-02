@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle07",
+  "task_id": "T-narrative_loop-20260302-frontend-cycle07",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Execute cycle07 frontend lane to close checklist gaps: OCR correction UX completion evidence, low-latency/offline tolerance verification, and end-to-end continuity reporting.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260302T213500Z.cycle07-kickoff.task.json",
+      "description": "Cycle07 kickoff baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T202500Z.T-narrative_loop-20260302-frontend-cycle06.result.json",
+      "description": "Latest frontend operationalization baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/CYCLE06_POSTCHECK_PRODUCT_CHECKLIST.md",
+      "description": "Gap targets: SC-01, SC-02, ST-03."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md",
+      "docs/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No backend contract edits; emphasize measurable UX/e2e evidence rather than narrative notes."
+  },
+  "acceptance": [
+    "SC-01/SC-02 related frontend evidence includes correction-flow usability and completion proof.",
+    "ST-03 evidence includes low-latency/offline-like scenario logs or controlled degradation behavior proof.",
+    "Schema-valid frontend cycle07 result artifact is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "If evidence remains screenshot-only without scenario logs, checklist status cannot be upgraded to fulfilled."
+  },
+  "next_actions": [
+    "Run frontend regression/runtime suite and gather targeted gap evidence.",
+    "Capture OCR correction and continuity flow visuals with reproducible steps.",
+    "Publish schema-valid frontend cycle07 result artifact."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T21:35:00Z",
+  "context_docs": [
+    "docs/CYCLE06_POSTCHECK_PRODUCT_CHECKLIST.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "frontend_checklist_closure",
+    "priority": "P1",
+    "deadline_utc": "2026-03-07T12:00:00Z"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "trace_id": "trace-narrative_loop-20260225-precycle4",
+  "task_id": "T-narrative_loop-20260225-android-precycle4",
+  "worker": "android_ide",
+  "status": "blocked",
+  "summary": "Android pre-cycle4 remains blocked. Fresh ADB probe shows no attached devices (no emulator, no physical). Same-window full journey evidence requirement cannot be satisfied.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "data/evidence/20260228T161812Z_android_precycle4_device_probe.json",
+      "description": "Fresh ADB device probe evidence for current execution window."
+    },
+    {
+      "kind": "artifact",
+      "path": "data/evidence/20260225T141942Z_android_precycle4_full_journey_emulator.json",
+      "description": "Historical emulator same-window journey evidence from prior window."
+    },
+    {
+      "kind": "artifact",
+      "path": "data/evidence/20260225T141942Z_android_precycle4_full_journey_physical.json",
+      "description": "Historical physical-device probe evidence from prior window (blocked)."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "android_adb_probe_current_window",
+      "command": "adb devices -l",
+      "status": "fail",
+      "note": "No devices attached in current window; evidence_path=data/evidence/20260228T161812Z_android_precycle4_device_probe.json"
+    },
+    {
+      "name": "android_same_window_requirement",
+      "status": "fail",
+      "note": "Emulator + physical full journey in same window not satisfiable without devices."
+    },
+    {
+      "name": "strict_gate_rule_enforced",
+      "status": "info",
+      "note": "Historical window evidence is retained for context but not accepted as current PASS evidence."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Pre-cycle4 cannot pass without same-window emulator+physical Android full journey evidence.",
+      "mitigation": "Attach emulator and physical device, execute full journey in same window, and republish android result."
+    }
+  ],
+  "next_actions": [
+    "Attach emulator and physical device and confirm both are listed as device in adb.",
+    "Capture same-window full journey evidence for emulator and physical paths.",
+    "Republish Android pre-cycle4 result and trigger CT re-aggregation."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-02-28T16:30:00Z"
+}

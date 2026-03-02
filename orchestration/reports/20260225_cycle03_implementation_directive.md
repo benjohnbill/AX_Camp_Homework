@@ -7,7 +7,7 @@ sync_with:
   - agent.md
   - integration_status.md
   - android/NarrativeLoopMobile/CT_INBOX_ANDROID.md
-context_ref: "D:/OneDrive/바탕 화면/Life_System/02_Core_Resources/01_Agent_Orchastration_System"
+context_ref: "D:/OneDrive/Desktop/Life_System/02_Core_Resources/01_Agent_Orchastration_System"
 ---
 
 # Cycle 03 Implementation Directive: Android Recovery & Product MVP

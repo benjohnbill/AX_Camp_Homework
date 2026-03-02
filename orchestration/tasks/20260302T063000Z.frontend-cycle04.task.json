@@ -1,0 +1,68 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle04",
+  "task_id": "T-narrative_loop-20260302-frontend-cycle04",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Execute cycle04 phase1 frontend stabilization for write/save/re-open/re-query/universe UX and diagnostics consistency without new feature expansion.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle04 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "app.py",
+      "description": "Runtime UI flow entrypoint."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T050400Z.T-narrative_loop-20260225-frontend-ui-manual-check.result.json",
+      "description": "Latest frontend pass baseline."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md",
+      "docs/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No backend API contract changes; keep UX non-regression focus."
+  },
+  "acceptance": [
+    "Cycle04 frontend regression checks pass with evidence paths.",
+    "Universe/embed/diagnostics behavior remains stable.",
+    "Schema-valid frontend result artifact is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "UI regressions can re-open pre-cycle class blockers."
+  },
+  "next_actions": [
+    "Run frontend non-regression checks.",
+    "Capture evidence for key UX paths.",
+    "Publish frontend cycle04 result artifact."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T06:30:00Z",
+  "context_docs": [
+    "agent.md",
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "frontend_stabilization",
+    "priority": "P1",
+    "deadline_utc": "2026-03-03T12:00:00Z"
+  }
+}

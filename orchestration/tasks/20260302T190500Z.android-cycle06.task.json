@@ -1,0 +1,65 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle06",
+  "task_id": "T-narrative_loop-20260302-android-cycle06",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Execute cycle06 android lane for operationalization readiness: repeatable dual-device validation and closure-evidence packaging discipline.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/task.json",
+      "description": "Cycle06 kickoff baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T181500Z.T-narrative_loop-20260302-android-cycle05-iteration2.result.json",
+      "description": "Latest android stability baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/MASTER_PLAN_CYCLE04_06.md",
+      "description": "Cycle06 committed scope."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No new feature development; same-window dual-device rule remains mandatory."
+  },
+  "acceptance": [
+    "Dual-device validation remains reproducibly pass in same-window runs.",
+    "Evidence pack contains canonical, traceable artifacts with device/timestamp fields.",
+    "Schema-valid android cycle06 result artifact is published."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Loss of same-window dual-device discipline weakens closure reproducibility guarantees."
+  },
+  "next_actions": [
+    "Run physical/emulator checks with same-window timestamps.",
+    "Package evidence in canonical structure.",
+    "Publish schema-valid android cycle06 result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T19:05:00Z",
+  "context_docs": [
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "android_operationalization",
+    "priority": "P1",
+    "deadline_utc": "2026-03-05T12:00:00Z"
+  }
+}

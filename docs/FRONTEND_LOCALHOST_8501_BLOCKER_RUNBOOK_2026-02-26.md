@@ -49,7 +49,7 @@ Get-Process -Name streamlit,python -ErrorAction SilentlyContinue
 
 ## Step 3) Start Streamlit with explicit host/port and capture logs
 ```powershell
-.\tools\project_python.ps1 -m streamlit run app.py --server.address 127.0.0.1 --server.port 8501 *> data/evidence/<TS>_frontend_streamlit_8501_startup.log
+.\tools\project_python.ps1 -m streamlit run app.py --server.address 127.0.0.1 --server.port 8501 --browser.gatherUsageStats false *> data/evidence/<TS>_frontend_streamlit_8501_startup.log
 ```
 
 - Confirm startup line includes local URL binding.
@@ -57,7 +57,7 @@ Get-Process -Name streamlit,python -ErrorAction SilentlyContinue
 
 ## Step 4) If 8501 still fails, use fallback port (document explicitly)
 ```powershell
-.\tools\project_python.ps1 -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502 *> data/evidence/<TS>_frontend_streamlit_8502_startup.log
+.\tools\project_python.ps1 -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502 --browser.gatherUsageStats false *> data/evidence/<TS>_frontend_streamlit_8502_startup.log
 ```
 
 - Use `http://localhost:8502` for manual validation.
@@ -94,6 +94,7 @@ Get-Process -Name streamlit,python -ErrorAction SilentlyContinue
 ## Notes
 - This blocker is environment/runtime class and is separate from Android physical-device blocker.
 - Do not start cycle4 feature expansion while pre-cycle4 gate remains blocked.
+- Project default disables onboarding prompt via `.streamlit/config.toml` (`browser.gatherUsageStats=false`).
 
 ## Recurrence Prevention Policy (Fixed)
 Use the rules below for every frontend manual validation run:

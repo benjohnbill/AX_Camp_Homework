@@ -20,7 +20,7 @@ Every time a session begins or `git pull` is executed, the Agent MUST:
 4. **Health Check**: Run `.	ools\bootstrap_env.ps1` to confirm all layers (OS, Venv, Secrets, DB) are synchronized.
 
 ## 3. Rules for Guide Creation/Updates
-When the Agent creates or modifies a `MIGRATION_GUIDE.md`:
+When the Agent creates or modifies `MULTI_DEVICE_MIGRATION_GUIDE.md`:
 1. **Use Relative Logic**: Always provide commands that work regardless of the drive letter.
 2. **Categorize Secrets**: Clearly mark [Core/Global] vs [Local/Optional] secrets.
 3. **Automate Questions**: Include a section for "Questions for the User" if setup cannot be fully automated.

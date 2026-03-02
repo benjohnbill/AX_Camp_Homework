@@ -1,0 +1,74 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-backend-cycle05",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "Cycle05 backend lane executed in stabilization-only scope. Retrieval quality and Korean re-query consistency metrics were captured with baseline-vs-rewritten comparison, and required auth/storage/universe regression guard bundle passed. No schema/API expansion was performed.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260302T063744Z.T-narrative_loop-20260302-backend-cycle05.result.json",
+      "description": "Cycle05 backend lane result artifact."
+    },
+    {
+      "kind": "report",
+      "path": "data/evidence/20260302T063642Z_backend_cycle05_retrieval_metrics.json",
+      "description": "Retrieval and Korean re-query metrics report (baseline vs rewritten)."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T063642Z_backend_cycle05_retrieval_metrics.log",
+      "description": "Retrieval/re-query metrics execution log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T063701Z_backend_cycle05_guard_pytest.log",
+      "description": "Required guard regression pytest bundle log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260302T063724Z_backend_cycle05_validate_contracts.log",
+      "description": "Contracts validation command log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "retrieval_requery_metrics",
+      "command": ".\\tools\\project_python.ps1 tools/eval_korean_retrieval.py --dataset data/korean_retrieval_eval.json --json-report data/evidence/20260302T063642Z_backend_cycle05_retrieval_metrics.json",
+      "status": "pass",
+      "note": "exit_code=0; key_log_path=data/evidence/20260302T063642Z_backend_cycle05_retrieval_metrics.log; baseline={recall_at_k:0.625,precision_at_k:0.2083,acceptance_top1:0.375}; rewritten={recall_at_k:0.625,precision_at_k:0.2083,acceptance_top1:0.375}; delta={0.0,0.0,0.0}."
+    },
+    {
+      "name": "guard_bundle_auth_storage_universe",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py tests/test_korean_query_rewrite.py tests/test_interface_parity.py tests/test_universe_auth.py",
+      "status": "pass",
+      "note": "exit_code=0; key_log_path=data/evidence/20260302T063701Z_backend_cycle05_guard_pytest.log; result=17 passed in 10.81s."
+    },
+    {
+      "name": "contracts_validation",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py",
+      "status": "pass",
+      "note": "exit_code=0; key_log_path=data/evidence/20260302T063724Z_backend_cycle05_validate_contracts.log; result=PASS sample handoff/result/task."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "low",
+      "description": "No auth/storage/universe regression observed while running cycle05 retrieval/re-query checks.",
+      "mitigation": "Keep guard bundle mandatory for subsequent retrieval tuning iterations."
+    }
+  ],
+  "next_actions": [
+    "Submit this cycle05 backend artifact to CT for iteration aggregation.",
+    "Use the generated retrieval metrics report as baseline for next uplift iteration.",
+    "Escalate immediately if future guard bundle shows auth/storage/universe drift."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-02T06:37:44Z",
+  "metrics": {
+    "duration_sec": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

@@ -2,7 +2,7 @@
 doc_type: prep_plan
 owner: control_tower
 authority_level: operational
-last_updated: 2026-02-26
+last_updated: 2026-03-01
 sync_with:
   - PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md
   - MASTER_PLAN_CYCLE04_06.md
@@ -63,3 +63,16 @@ Prepare cycle4 execution infrastructure and evidence paths without starting feat
 - All three prep lanes publish schema-valid `result.json`.
 - At least one actionable blocker mitigation exists per blocked lane.
 - No file indicates cycle4 feature expansion started.
+
+## Progress Snapshot (2026-03-01)
+- Frontend lane:
+  - Runtime mitigation implemented (`.streamlit/config.toml` + startup probe PASS on `8501`).
+  - Automated runtime-surface checks added and passing (`5 passed` evidence log).
+  - Remaining blocker: manual GUI screenshot checklist (root/embed/diagnostics/OCR) pending.
+- Backend lane:
+  - Prior pre-cycle4 backend PASS baseline remains valid.
+- Android lane:
+  - Latest ADB probe still shows no attached devices in current window.
+  - Remaining blocker: same-window emulator + physical full journey evidence.
+- Gate status:
+  - Pre-cycle4 gate remains `BLOCKED` in latest canonical artifacts.

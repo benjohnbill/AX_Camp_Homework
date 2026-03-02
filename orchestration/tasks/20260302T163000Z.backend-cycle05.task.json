@@ -1,0 +1,68 @@
+{
+  "trace_id": "trace-narrative_loop-20260302-cycle05",
+  "task_id": "T-narrative_loop-20260302-backend-cycle05",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Execute Cycle05 backend lane for retrieval quality uplift and Korean re-query consistency hardening, while preserving auth/storage/universe regression safety.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260302T163000Z.cycle05-kickoff.task.json",
+      "description": "Cycle05 kickoff draft baseline."
+    },
+    {
+      "kind": "file",
+      "value": "docs/MASTER_PLAN_CYCLE04_06.md",
+      "description": "Cycle05 committed scope and definition-of-done."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260302T061111Z.T-narrative_loop-20260302-backend-cycle04.result.json",
+      "description": "Latest backend stabilization pass baseline."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "backend/",
+      "tools/",
+      "tests/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No schema/API expansion without explicit cycle05 approval record in canonical handoff."
+  },
+  "acceptance": [
+    "Retrieval/re-query focused backend checks and metrics artifacts are produced.",
+    "Required auth/storage/universe regression safety bundle passes.",
+    "Schema-valid backend cycle05 result artifact is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Retrieval tuning can introduce regression in auth/storage/universe paths if guard bundle is skipped."
+  },
+  "next_actions": [
+    "Run cycle05 backend lane checks with retrieval/re-query metrics capture.",
+    "Run mandatory regression bundle before publishing lane result.",
+    "Publish backend cycle05 result and escalate if blocker appears."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-02T16:30:00Z",
+  "context_docs": [
+    "agent.md",
+    "docs/MASTER_PLAN_CYCLE04_06.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "backend_cycle05_bridge",
+    "priority": "P1",
+    "deadline_utc": "2026-03-04T12:00:00Z"
+  }
+}
