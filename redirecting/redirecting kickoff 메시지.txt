@@ -1,0 +1,67 @@
+ [L2_CT_DIRECTIVE]
+  target_worker: control_tower
+  trace_id: trace-narrative_loop-20260303-redirecting-kickoff
+  task_file: redirecting/REDIRECTING_CT_MASTER_PROMPT_2026-03-03.md
+  priority: P0
+  common_guard: Canonical JSON verdict > markdown narrative. No deploy/schema migration/permission
+  elevation/destructive command without explicit approval.
+
+  scope:
+  - Start redirecting execution using redirecting folder as canonical package.
+  - Enforce source priority: handoff/latest.handoff.json > orchestration/task.json > latest
+  result.json > integration_status.md > markdown docs.
+  - Keep v1 direction locked:
+    - Core loop: Frog -> Time-Box -> Focus -> Reflection
+    - Stream is assist-secondary, not default home
+    - Dashboard is guidance-oriented (never coercive, skip/defer path required)
+    - Async AI is non-blocking (core loop must run without worker completion)
+  - Apply Data/API contract as endpoint source of truth:
+    - session_id-scoped endpoints
+    - today endpoint included
+    - week insight as v1-lite rule-based first, AI non-blocking merge
+    - jobs polling endpoint included
+  - Preserve keep/kill decisions:
+    - Keep+Expand: Android OCR
+    - Keep+Rescope: Universe 2D
+    - Keep+Demote: 3D Universe weekly replay
+    - MCP integration later
+  - Respect phase rollout semantics:
+    - Phase2 can keep Stream default during internal QA
+    - Final acceptance (chat hidden on home) applies from Phase4 default switch
+  - Ensure 3D replay exit action stays non-coercive:
+    - CTA priority: create next block
+    - Skip allowed
+
+  exit_criteria:
+  1) Publish fact-only current state summary with explicit file evidence paths.
+  2) Produce gap matrix for redirecting docs using statuses:
+     - 충족 / 부분충족 / 미흡 / 심각
+  3) Provide decision-complete implementation order by lane:
+     - backend / frontend / android / CT
+     - include dependencies and phase gates
+  4) Lock acceptance + metrics contract:
+     - include non-coercive dashboard conversion metrics
+     - include async worker non-blocking SLO + degradation thresholds
+  5) Publish rollback/risk plan with feature flags and degraded-mode behavior.
+  6) Draft first dispatch package:
+     - L2 directives per lane
+     - required schema-valid result evidence package
+
+  required_output:
+  1) L3 summary format:
+     [L3_CT_SUMMARY]
+     timestamp_basis: <ISO-8601>
+     files_read:
+     1) <file1>
+     2) <file2>
+     3) <file3>
+     current_state: <one paragraph>
+     next_3_actions:
+     1) <action1>
+     2) <action2>
+     3) <action3>
+     conflicts:
+     1) <conflict or none>
+     2) <conflict or none>
+
+  2) schema-valid result JSON package with evidence paths for each major claim.
