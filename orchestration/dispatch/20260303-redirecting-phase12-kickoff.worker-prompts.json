@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260303-redirecting-phase12",
+  "task_id": "T-narrative_loop-20260303-redirecting-phase12-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/tasks/20260303T120000Z.redirecting-phase12-kickoff.task.json",
+  "deadline_utc": "2026-03-08T12:00:00Z",
+  "deadline_note": "Deliver Phase 1 demo pass first, then Phase 2 constrained pass without streamlit instability regression.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema migration/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "Phase 1 completion gate is mandatory before Phase 2 scope activation.",
+    "Core loop must remain non-blocking when OCR/AI operations are delayed or failed."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260303T120000Z.backend-redirecting-phase12.task.json",
+      "scope_in": [
+        "Phase 1 minimal execution-session API path or compatibility equivalent",
+        "OCR/AI non-blocking behavior and compatibility endpoint guarantees",
+        "Phase 2 ai_jobs minimal lifecycle plus insight fallback"
+      ],
+      "scope_out": [
+        "Full distributed worker platform rollout",
+        "Unapproved schema redesign unrelated to redirecting checklist",
+        "Deploy changes"
+      ],
+      "prompt": "You are backend_cli for redirecting phase12 demo. Complete Phase 1 minimal loop API and non-blocking behavior first, publish evidence, then implement only the minimum Phase 2 async lifecycle needed for demo."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260303T120000Z.frontend-redirecting-phase12.task.json",
+      "scope_in": [
+        "Phase 1 dual-entry loop and rerun-safe streamlit UX",
+        "Phase 1 buffering mitigation and deterministic demo flow",
+        "Phase 2 evidence curation and 3-tier weekly replay UI"
+      ],
+      "scope_out": [
+        "High-risk streamlit-incompatible drag-heavy SPA conversion",
+        "Backend contract ownership changes",
+        "Unapproved expansion to Phase 3 architecture work"
+      ],
+      "prompt": "You are frontend_ide for redirecting phase12 demo. Prioritize a stable Phase 1 loop for live demo, then add constrained Phase 2 replay/curation features without destabilizing streamlit rerun behavior."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260303T120000Z.android-redirecting-phase12.task.json",
+      "scope_in": [
+        "Phase 1 OCR ingest contract alignment and verification",
+        "Auxiliary evidence-input flow quality for demo",
+        "Phase 2 auth continuity/replay-entry compatibility checks"
+      ],
+      "scope_out": [
+        "Full native parity for all web flows in this phase window",
+        "Backend API redesign",
+        "Unapproved permission model changes"
+      ],
+      "prompt": "You are android_ide for redirecting phase12 demo. Lock OCR contract compatibility and stable auxiliary demo path first, then perform limited Phase 2 continuity support with clear evidence and role boundaries."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts kickoff when lane tasks are aligned to redirecting Phase 1/2 checklists, phase gate order is explicit, and each lane has measurable evidence obligations."
+}

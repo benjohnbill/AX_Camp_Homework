@@ -1,0 +1,86 @@
+{
+  "trace_id": "trace-narrative_loop-20260304-redirecting-phase2",
+  "task_id": "T-narrative_loop-20260304-redirecting-phase2-kickoff",
+  "owner": "control_tower",
+  "assigned_worker": "generic_worker",
+  "goal": "Activate redirecting Phase 2 execution after Phase 1 PASS with bounded demo scope: non-blocking async insights, reflection evidence curation, and 3-tier weekly replay quality uplift.",
+  "inputs": [
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/handoff/20260304T131500Z.T-narrative_loop-20260303-redirecting-phase12-phase1-gate.handoff.json",
+      "description": "Canonical Phase 1 PASS gate handoff."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_MID_MVP_2026-03-03.md",
+      "description": "Phase 2 product scope baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 2 operational acceptance checklist."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_EXECUTION_PLAN_2026-03-04.md",
+      "description": "Phase 2 lane-by-lane execution plan."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/ANDROID_EXTERNAL_REPO_ARTIFACT_BRIDGE_2026-03-04.md",
+      "description": "Android separate-repo artifact bridge protocol."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "gateway_fastapi.py",
+      "narrative_logic.py",
+      "db_manager_postgres.py",
+      "universe_3d.py",
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "redirecting/",
+      "docs/",
+      "tests/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No deploy/schema migration/permission elevation/destructive command without explicit user approval. Keep core loop non-blocking under AI/OCR delays."
+  },
+  "acceptance": [
+    "Phase 2 kickoff package is trace/task aligned across task.json, dispatch, and lane tasks.",
+    "Scope lock is explicit: 7-day read-only replay, single CTA+Skip, no auto core promotion.",
+    "Backend/frontend/android lane directives include measurable evidence obligations and schema-valid output requirements.",
+    "Android separate-repo bridge protocol is explicitly embedded in lane constraints."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Primary risk is scope expansion into Phase 3-level architecture and streamlit stability regression."
+  },
+  "next_actions": [
+    "Dispatch Phase 2 lane directives to backend/frontend/android workers.",
+    "Collect iteration-1 lane evidence focused on async fallback and reflection curation.",
+    "Publish Phase 2 iteration-1 aggregate with pass/partial/blocked decisions."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-04T14:00:00Z",
+  "context_docs": [
+    "docs/CT_BASELINE_2026-03-03_REDIRECTING_DEMO.md",
+    "redirecting/REDIRECTING_PHASE2_EXECUTION_PLAN_2026-03-04.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle": "redirecting_phase2_execution",
+    "domain": "phase2_demo_uplift",
+    "priority": "P0",
+    "deadline_utc": "2026-03-10T12:00:00Z"
+  }
+}

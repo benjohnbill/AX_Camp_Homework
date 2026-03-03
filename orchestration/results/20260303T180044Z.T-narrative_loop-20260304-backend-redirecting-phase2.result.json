@@ -1,0 +1,106 @@
+{
+  "trace_id": "trace-narrative_loop-20260304-redirecting-phase2",
+  "task_id": "T-narrative_loop-20260304-backend-redirecting-phase2",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "Phase2 backend lane completed with bounded scope. ai_jobs lifecycle idempotency behavior was hardened for deterministic minimum job handling, session/week insight endpoints preserve immediate response with rule fallback under AI delay/failure, and Phase1 core loop non-blocking regression checks remain pass.",
+  "outputs": [
+    {
+      "kind": "patch",
+      "path": "gateway_fastapi.py",
+      "description": "Hardened ai_jobs enqueue idempotency, week insight fallback/ai source selection, and reflection projection non-blocking persistence."
+    },
+    {
+      "kind": "patch",
+      "path": "tests/test_gateway_fastapi.py",
+      "description": "Added Phase2 stabilization tests for deterministic idempotency, async delay/failure non-blocking behavior, and week insight fallback/ai-source checks."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_async_pytest.log",
+      "description": "Phase2 async fallback/idempotency focused pytest log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_phase1_regression_pytest.log",
+      "description": "Phase1 non-blocking regression pytest log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_full_pytest.log",
+      "description": "Combined gateway regression pytest log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_result_schema.log",
+      "description": "Result schema validation log."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_handoff_schema.log",
+      "description": "Handoff schema validation log."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260303T180044Z.L1-backend-redirecting-phase2-update.md",
+      "description": "Fast lane L1 backend phase2 update."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/20260303T180044Z.T-narrative_loop-20260304-backend-redirecting-phase2.handoff.json",
+      "description": "Backend phase2 handoff artifact."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "phase2_async_fallback_and_lifecycle_pytest",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py -k \"phase2_ai_job_lifecycle_and_polling or phase2_insight_fallback_when_ai_jobs_fail or phase2_ai_job_idempotency_is_deterministic or phase2_core_loop_non_blocking_under_ai_delay_and_failure or phase2_week_insight_uses_ai_when_available\"",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260303T180044Z_backend_redirecting_phase2_async_pytest.log; result=5 passed, 13 deselected."
+    },
+    {
+      "name": "phase1_non_blocking_regression_pytest",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py -k \"phase1_ or ocr_ingest\"",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260303T180044Z_backend_redirecting_phase2_phase1_regression_pytest.log; result=8 passed, 10 deselected."
+    },
+    {
+      "name": "full_gateway_regression_pytest",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260303T180044Z_backend_redirecting_phase2_full_pytest.log; result=18 passed."
+    },
+    {
+      "name": "result_schema_validation",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260303T180044Z.T-narrative_loop-20260304-backend-redirecting-phase2.result.json --schema orchestration/contracts/result.schema.json",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260303T180044Z_backend_redirecting_phase2_result_schema.log; result schema validation passed."
+    },
+    {
+      "name": "handoff_schema_validation",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py --file orchestration/handoff/20260303T180044Z.T-narrative_loop-20260304-backend-redirecting-phase2.handoff.json --schema orchestration/contracts/handoff.schema.json",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260303T180044Z_backend_redirecting_phase2_handoff_schema.log; handoff schema validation passed."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Background reflection projection still invokes legacy narrative logic that can emit Streamlit-context warnings in bare test/runtime threads.",
+      "mitigation": "Keep projection path non-blocking and isolate projection hardening as follow-up without impacting core loop availability."
+    }
+  ],
+  "next_actions": [
+    "Aggregate backend phase2 evidence with frontend/android lane artifacts for iteration verdict.",
+    "Track week insight ai/rule source ratio during demo rehearsals to validate fallback quality.",
+    "Prepare optional projection-path cleanup task to remove Streamlit context dependency from background threads."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-03T18:00:44Z",
+  "metrics": {
+    "duration_sec": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

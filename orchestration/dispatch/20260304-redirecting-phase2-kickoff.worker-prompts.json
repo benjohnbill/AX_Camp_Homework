@@ -1,0 +1,63 @@
+{
+  "trace_id": "trace-narrative_loop-20260304-redirecting-phase2",
+  "task_id": "T-narrative_loop-20260304-redirecting-phase2-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/tasks/20260304T140000Z.redirecting-phase2-kickoff.task.json",
+  "deadline_utc": "2026-03-10T12:00:00Z",
+  "deadline_note": "Deliver bounded Phase 2 demo uplift without breaking Phase 1 non-blocking guarantees.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema migration/permission elevation/destructive command without explicit User approval.",
+    "Use canonical contracts for artifacts: task/result/handoff JSON schema must pass validation.",
+    "Preserve non-blocking core loop behavior under AI/OCR delay and failure.",
+    "Keep Phase 2 within checklist scope; no expansion into Phase 3 architecture transition."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260304T140000Z.backend-redirecting-phase2.task.json",
+      "scope_in": [
+        "ai_jobs minimum lifecycle hardening",
+        "session/week insight non-blocking fallback guarantees",
+        "Phase 2 evidence publication with schema-valid artifacts"
+      ],
+      "scope_out": [
+        "Full distributed worker platform rollout",
+        "Unapproved DB schema redesign",
+        "Deploy or infrastructure changes"
+      ],
+      "prompt": "You are backend_cli for redirecting Phase 2. Harden minimum async lifecycle and fallback behavior while preserving core-loop non-blocking guarantees and publish schema-valid evidence artifacts."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260304T140000Z.frontend-redirecting-phase2.task.json",
+      "scope_in": [
+        "Reflection evidence curation (1~2 items + meaning/skip)",
+        "7-day 3-tier replay UX with CTA+Skip",
+        "streamlit buffering/rerun mitigation"
+      ],
+      "scope_out": [
+        "3D high-complexity editor features",
+        "Phase 3 frontend stack migration",
+        "Backend contract ownership changes"
+      ],
+      "prompt": "You are frontend_ide for redirecting Phase 2. Implement curation and constrained replay UX with 3-tier clarity while keeping streamlit performance stable and core loop non-blocking."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260304T140000Z.android-redirecting-phase2.task.json",
+      "scope_in": [
+        "OCR path reuse and auth continuity checks",
+        "universe entry path verification for demo readiness",
+        "separate-repo bridge compliant artifact delivery"
+      ],
+      "scope_out": [
+        "Native full parity for all web flows",
+        "Backend API redesign",
+        "Unapproved permission model changes"
+      ],
+      "prompt": "You are android_ide for redirecting Phase 2. Validate continuity for OCR/auth/universe paths and deliver bridge-compliant artifacts with clear blocked/migration notes where needed."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts Phase 2 kickoff when lane scope, checklist mapping, and schema-valid evidence obligations are explicit for all workers."
+}

@@ -1,0 +1,86 @@
+{
+  "trace_id": "trace-narrative_loop-20260303-redirecting-phase12",
+  "task_id": "T-narrative_loop-20260303-redirecting-phase12-kickoff",
+  "owner": "control_tower",
+  "assigned_worker": "generic_worker",
+  "goal": "Activate redirecting Phase 1 and Phase 2 demo execution so a new CT can dispatch backend/frontend/android workers with objective acceptance, non-blocking core loop guarantees, and streamlit-safe scope discipline.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_INDEX_2026-03-03.md",
+      "description": "Canonical redirecting doc index."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 1 demo scope and gate."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 2 demo scope and gate."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_DATA_API_CONTRACT_2026-03-03.md",
+      "description": "Execution session and async contract target."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/handoff/20260303T001500Z.T-narrative_loop-20260302-cycle07-infra-blocked-checkpoint.handoff.json",
+      "description": "Latest pre-redirecting blocked checkpoint to supersede."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "gateway_fastapi.py",
+      "narrative_logic.py",
+      "db_manager_postgres.py",
+      "universe_3d.py",
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "redirecting/",
+      "docs/",
+      "tests/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No deploy/schema migration/permission elevation/destructive command without explicit user approval. Keep Gap/Entropy disabled for demo mode unless explicitly re-enabled."
+  },
+  "acceptance": [
+    "Kickoff package is trace/task aligned across orchestration/task.json, dispatch, and lane task files.",
+    "Phase 1 exit gate is explicit: Focus/Reflection core loop demoable in <=3 minutes and OCR failure does not block completion.",
+    "Phase 2 start gate is explicit: enters only after Phase 1 acceptance evidence is published in schema-valid artifacts.",
+    "Lane scopes are bounded to redirecting Phase 1/2 demo outcomes and avoid uncontrolled platform expansion."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Primary risk is over-engineering under time pressure, causing demo instability and missed Phase 1 completion."
+  },
+  "next_actions": [
+    "Dispatch redirecting phase12 lane prompts to backend/frontend/android workers.",
+    "Collect Phase 1 evidence first and publish gate decision artifact before Phase 2 implementation.",
+    "Run Phase 2 limited-scope pass (insight/3-tier replay) only after Phase 1 pass."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-03T12:00:00Z",
+  "context_docs": [
+    "docs/CT_BASELINE_2026-03-03_REDIRECTING_DEMO.md",
+    "docs/SESSION_BOOTSTRAP_PROTOCOL.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "cycle": "redirecting_phase12_demo",
+    "domain": "redirecting_demo_delivery",
+    "priority": "P0",
+    "deadline_utc": "2026-03-08T12:00:00Z"
+  }
+}

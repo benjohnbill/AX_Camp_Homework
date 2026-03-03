@@ -1,3 +1,5 @@
+import time
+
 from fastapi.testclient import TestClient
 
 import gateway_fastapi as gw
@@ -176,3 +178,252 @@ def test_ocr_ingest_rejects_missing_multipart_file():
     assert res.status_code == 400
     assert "image" in res.json()["error"]
     assert "file" in res.json()["error"]
+
+
+def test_phase1_execution_core_loop_and_today():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "plan"})
+    assert start.status_code == 200
+    session_id = start.json()["session_id"]
+    assert start.json()["flow_stage"] == "frog"
+
+    focus_start = client.post(f"/v1/execution/session/{session_id}/focus/start")
+    assert focus_start.status_code == 200
+    assert focus_start.json()["flow_stage"] == "focus_running"
+
+    focus_end = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    assert focus_end.status_code == 200
+    assert focus_end.json()["flow_stage"] == "reflect_pending"
+
+    reflect = client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={
+            "reflection_good": "집중 시작이 빨랐다.",
+            "reflection_hard": "중간 알림이 방해됐다.",
+            "reflection_next_action": "내일은 알림 차단 후 시작한다.",
+        },
+    )
+    assert reflect.status_code == 200
+    assert reflect.json()["flow_stage"] == "done"
+
+    today = client.get("/v1/execution/session/today")
+    assert today.status_code == 200
+    payload = today.json()
+    assert payload["status"] == "ok"
+    assert payload["session"]["id"] == session_id
+    assert payload["session"]["flow_stage"] == "done"
+
+
+def test_phase1_reflect_requires_three_required_fields():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "focus_now"})
+    session_id = start.json()["session_id"]
+
+    reflect = client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={"reflection_good": "good", "reflection_hard": "hard"},
+    )
+    assert reflect.status_code == 400
+    assert "required" in reflect.json()["error"]
+
+
+def test_phase1_journal_promote_and_core_promote():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    entry = client.post(
+        "/v1/journal/entry",
+        json={"entry_text": "오늘 계획 없이 바로 집중했다.", "next_action": "내일은 25분 먼저 시작."},
+    )
+    assert entry.status_code == 200
+    entry_id = entry.json()["entry_id"]
+
+    promote = client.post(f"/v1/journal/{entry_id}/promote")
+    assert promote.status_code == 200
+    session_id = promote.json()["session_id"]
+
+    core = client.post(
+        "/v1/core/promote",
+        json={
+            "source_type": "execution_session",
+            "source_id": session_id,
+            "title": "아침 첫 집중은 알림 차단",
+            "body": "집중 전 방해 요소 제거가 재현 가능한 규칙이다.",
+            "promoted_by": "user_test",
+        },
+    )
+    assert core.status_code == 200
+    assert core.json()["status"] == "ok"
+    assert core.json()["core_entry_id"].startswith("core_")
+
+
+def test_phase1_ocr_ingest_non_blocking_on_ai_failure(monkeypatch):
+    app = gw.create_app(_env())
+    client = _client(app)
+    monkeypatch.setattr(
+        gw.logic,
+        "refine_image_to_narrative_with_ai",
+        lambda content: (_ for _ in ()).throw(RuntimeError("ai down")),
+    )
+
+    res = client.post(
+        "/v1/ocr/ingest",
+        files={"image": ("sample.png", b"abc123", "image/png")},
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["status"] == "accepted"
+    assert payload["image_event_id"].startswith("img_")
+    assert payload["ocr_status"] in {"queued", "running", "failed"}
+
+
+def test_phase2_ai_job_lifecycle_and_polling():
+    app = gw.create_app(_env(REDIRECTING_AI_DELAY_MS="50"))
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "plan"})
+    session_id = start.json()["session_id"]
+
+    commit = client.post(f"/v1/execution/session/{session_id}/commit")
+    assert commit.status_code == 200
+    assert len(commit.json()["queued_jobs"]) == 1
+
+    end_focus = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    assert end_focus.status_code == 200
+    assert len(end_focus.json()["queued_jobs"]) == 2
+
+    insights = client.get(f"/v1/execution/session/{session_id}/insights")
+    assert insights.status_code == 200
+    payload = insights.json()
+    assert payload["status"] == "ok"
+    assert payload["job_status"]["auto_tag_extraction"] in {"queued", "running", "succeeded"}
+    assert payload["job_status"]["similar_session_linking"] in {"queued", "running", "succeeded"}
+    assert payload["job_status"]["next_action_recommendation"] in {"queued", "running", "succeeded"}
+
+    job_id = payload["job_ids"]["next_action_recommendation"]
+    terminal_state = None
+    for _ in range(20):
+        polled = client.get(f"/v1/jobs/{job_id}")
+        assert polled.status_code == 200
+        terminal_state = polled.json()["job"]["state"]
+        if terminal_state in {"succeeded", "failed"}:
+            break
+        time.sleep(0.02)
+    assert terminal_state == "succeeded"
+
+
+def test_phase2_insight_fallback_when_ai_jobs_fail():
+    app = gw.create_app(
+        _env(REDIRECTING_AI_FAIL_JOB_TYPES="similar_session_linking,next_action_recommendation")
+    )
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "focus_now"})
+    session_id = start.json()["session_id"]
+    client.post(f"/v1/execution/session/{session_id}/focus/end")
+
+    client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={
+            "reflection_good": "시작은 좋았다.",
+            "reflection_hard": "알림 방해가 있었다.",
+            "reflection_next_action": "내일은 알림을 끄고 시작한다.",
+        },
+    )
+
+    # Give background workers a short window to transition to failed state.
+    time.sleep(0.05)
+    insights = client.get(f"/v1/execution/session/{session_id}/insights")
+    assert insights.status_code == 200
+    payload = insights.json()
+    assert payload["status"] == "ok"
+    assert payload["insight_source"] == "rule"
+    assert payload["insights"]["next_action"] == "내일은 알림을 끄고 시작한다."
+    assert payload["job_status"]["next_action_recommendation"] == "failed"
+    assert payload["job_status"]["similar_session_linking"] == "failed"
+
+
+def test_phase2_ai_job_idempotency_is_deterministic():
+    app = gw.create_app(_env(REDIRECTING_AI_DELAY_MS="250"))
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "plan"})
+    session_id = start.json()["session_id"]
+
+    first = client.post(f"/v1/execution/session/{session_id}/commit")
+    second = client.post(f"/v1/execution/session/{session_id}/commit")
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json()["queued_jobs"][0] == second.json()["queued_jobs"][0]
+
+    first_focus = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    second_focus = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    assert first_focus.status_code == 200
+    assert second_focus.status_code == 200
+    assert first_focus.json()["queued_jobs"] == second_focus.json()["queued_jobs"]
+
+
+def test_phase2_core_loop_non_blocking_under_ai_delay_and_failure():
+    app = gw.create_app(
+        _env(
+            REDIRECTING_AI_DELAY_MS="1000",
+            REDIRECTING_AI_FAIL_JOB_TYPES="auto_tag_extraction,similar_session_linking,next_action_recommendation",
+        )
+    )
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "focus_now"})
+    session_id = start.json()["session_id"]
+
+    t0 = time.perf_counter()
+    focus_end = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    elapsed_focus_end = time.perf_counter() - t0
+    assert focus_end.status_code == 200
+    assert elapsed_focus_end < 0.8
+
+    t1 = time.perf_counter()
+    reflect = client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={
+            "reflection_good": "집중은 시작했다.",
+            "reflection_hard": "중간에 알림이 많았다.",
+            "reflection_next_action": "다음엔 알림 차단 후 시작한다.",
+        },
+    )
+    elapsed_reflect = time.perf_counter() - t1
+    assert reflect.status_code == 200
+    assert reflect.json()["flow_stage"] == "done"
+    assert elapsed_reflect < 0.8
+
+    t2 = time.perf_counter()
+    week = client.get("/v1/execution/insight/week")
+    elapsed_week = time.perf_counter() - t2
+    assert week.status_code == 200
+    week_payload = week.json()
+    assert week_payload["status"] == "ok"
+    assert week_payload["insight_source"] == "rule"
+    assert elapsed_week < 0.8
+
+
+def test_phase2_week_insight_uses_ai_when_available():
+    app = gw.create_app(_env(REDIRECTING_AI_DELAY_MS="10"))
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "plan"})
+    session_id = start.json()["session_id"]
+    client.post(f"/v1/execution/session/{session_id}/commit")
+    client.post(f"/v1/execution/session/{session_id}/focus/end")
+
+    # Wait shortly for background jobs to complete.
+    time.sleep(0.05)
+    week = client.get("/v1/execution/insight/week")
+    assert week.status_code == 200
+    payload = week.json()
+    assert payload["status"] == "ok"
+    assert payload["insight_source"] in {"rule", "ai"}
+    assert payload["metrics"]["sessions_started"] >= 1

@@ -2,11 +2,12 @@
 doc_type: playbook
 owner: control_tower
 authority_level: operational
-last_updated: 2026-02-25
+last_updated: 2026-03-03
 sync_with:
-  - CT_BASELINE_2026-02-25.md
-  - MASTER_PLAN_CYCLE04_06.md
-  - PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md
+  - CT_BASELINE_2026-03-03_REDIRECTING_DEMO.md
+  - redirecting/REDIRECTING_INDEX_2026-03-03.md
+  - redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md
+  - redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md
   - CHAT_CLI_MESSAGE_PROTOCOL_2026-02-25.md
 change_triggers:
   - bootstrap_flow_change
@@ -40,10 +41,10 @@ You are control_tower finishing this session.
 Generate a session-close package without changing governance rules.
 
 Read in order:
-1) docs/CT_BASELINE_2026-02-25.md
-2) docs/PRE_CYCLE4_FEATURE_LOCK_AND_AUDIT.md
-3) docs/MASTER_PLAN_CYCLE04_06.md
-4) docs/PROJECT_BRIEF_FOR_HUMAN_2026-02-25.md
+1) docs/CT_BASELINE_2026-03-03_REDIRECTING_DEMO.md
+2) redirecting/REDIRECTING_INDEX_2026-03-03.md
+3) redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md
+4) redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md
 5) orchestration/handoff/latest.handoff.json
 6) orchestration/task.json
 
@@ -66,10 +67,11 @@ Hard constraints:
 - Do not override canonical JSON verdicts with markdown narrative.
 - Keep MCP set unchanged unless explicit approval exists in handoff.
 - Do not promote external skills beyond candidate without checksum+strict gate.
+- Do not start Phase 2 work before explicit Phase 1 gate pass is published.
 
 Return:
 1) Current state summary
-2) Immediate gate status (Pre-Cycle4 if applicable)
+2) Immediate gate status (Phase 1 / Phase 2)
 3) Next 3 executable actions
 4) Any conflicts between docs and canonical JSON
 ```
@@ -83,6 +85,6 @@ Return:
 
 ## Relationship To Cycle Deliverables
 - Cycle close still requires the mandatory five outputs defined in:
-  - `docs/CT_BASELINE_2026-02-25.md`
-  - `docs/MASTER_PLAN_CYCLE04_06.md`
+  - `docs/CT_BASELINE_2026-03-03_REDIRECTING_DEMO.md`
+  - `orchestration/contracts/*.schema.json`
 - Session close is additive, not a substitute.

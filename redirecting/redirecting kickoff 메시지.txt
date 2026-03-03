@@ -11,10 +11,14 @@
   - Enforce source priority: handoff/latest.handoff.json > orchestration/task.json > latest
   result.json > integration_status.md > markdown docs.
   - Keep v1 direction locked:
-    - Core loop: Frog -> Time-Box -> Focus -> Reflection
+    - Core loop convergence:
+      - Plan-first: Frog -> Time-Box -> Focus -> Reflection
+      - Focus-first: Focus -> Retro Time-Box -> Reflection
     - Stream is assist-secondary, not default home
     - Dashboard is guidance-oriented (never coercive, skip/defer path required)
     - Async AI is non-blocking (core loop must run without worker completion)
+    - Journal free-writing allowed (promotion-based KPI inclusion)
+    - OCR evidence optional, auto-anchored, reflection curation-first
   - Apply Data/API contract as endpoint source of truth:
     - session_id-scoped endpoints
     - today endpoint included
@@ -31,10 +35,14 @@
   - Ensure 3D replay exit action stays non-coercive:
     - CTA priority: create next block
     - Skip allowed
+  - Enforce 3-tier session hierarchy in 3D/insight:
+    - Tier 1: session_completed (Focus+Reflection)
+    - Tier 2: session_interrupted (incomplete/stopped)
+    - Tier 3: supporting_evidence (OCR/support)
 
   exit_criteria:
   1) Publish fact-only current state summary with explicit file evidence paths.
-  2) Produce gap matrix for redirecting docs using statuses:
+  2) Produce coverage matrix for redirecting docs using statuses:
      - 충족 / 부분충족 / 미흡 / 심각
   3) Provide decision-complete implementation order by lane:
      - backend / frontend / android / CT

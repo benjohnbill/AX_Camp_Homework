@@ -1,211 +1,209 @@
-# agent.md — Narrative_Loop 통합 운영 문서 (SSOT)
+# agent.md — NarrativeLoopMobile Redirecting 운영 기준 (Standalone Mirror)
 
-이 문서는 Narrative_Loop의 단일 진실 원천이다.  
-모든 AI 도구(Codex CLI, Antigravity, Android Studio, Gemini 3.1 Pro)는 이 문서를 우선 기준으로 작업한다.
-
----
-
-## 0) 프로젝트 핵심 목적
-
-이 프로젝트는 생산성 앱이 아니라, 다음 목적의 자기서사 도구다.
-
-1. 과거 기록을 근거로 현재 감정을 회고한다.
-2. 스스로 원칙(Core) 기반의 결정을 선언한다.
-3. 반복 기록을 통해 "자기결정" 비중을 높인다.
-
-행동의 질서도(프로젝트 기준):
-
-1. 무의식적 행동
-2. 충동/우발적 행동
-3. 결정을 미루며 시간을 보내는 행동
-4. 불확실성 속에서도 스스로 결정한 행동
-
-목표는 1~3의 비중을 줄이고 4의 비중을 늘리는 것이다.
+이 문서는 Android lane 작업 기준 문서다.
+Android가 독립 레포로 동작하는 전제를 기본값으로 하며, 로컬 미러 SSOT를 우선 사용한다.
 
 ---
 
-## 1) 현재 시스템 스냅샷 (2026-02)
+## 0) Source-of-Truth 우선순위
 
-- Runtime UI: Streamlit (`app.py`)
-- Core Logic: `narrative_logic.py`
-  - `EvidenceGateway` (I/O)
-  - `PolicyEngine` (판단 로직)
-- DB Router: `db_router.py`
-- DB Backend:
-  - 운영: `db_manager_postgres.py` (`DATASTORE=postgres`)
-  - fallback: `db_manager_sqlite.py` (로컬/롤백 전용)
-- Main DB: Supabase PostgreSQL
-  - `logs`, `chat_history`, `connections`, `user_stats`
+1. `orchestration/handoff/latest.handoff.json`
+2. `orchestration/task.json`
+3. 최신 `orchestration/results/*.result.json`
+4. `orchestration/docs/*.md`
+5. `integration_status.md`
+6. 본 `agent.md`
 
-중요 경계:
+충돌 시 상위 우선순위를 따른다.
 
-- Streamlit은 UI/상태 관리용이다.
-- 모바일 앱의 외부 POST 수신 API 서버 역할은 Streamlit이 아니라 별도 인제스트 계층이 담당한다.
+참고:
+
+- 루트 레포의 canonical `orchestration/*`는 CT 집계용이다.
+- Android 워커는 로컬 `orchestration/*`만으로 작업 가능해야 한다.
 
 ---
 
-## 2) 현재 코드 구조 요약
+## 1) Redirecting 목적 (Android 관점)
 
-### UI 라우팅 (`app.py`)
+Android의 v1 목적은 다음 3가지다.
 
-- `process_stream_input()`
-- `render_stream_mode()`
-- `render_chronos_mode()`
-- `render_universe_mode()`
-- `render_control_mode()`
-- `render_desk_mode()`
-- `main()`
+1. OCR 캡처를 안정적으로 업로드한다.
+2. 업로드된 증거가 세션 흐름을 막지 않도록 한다.
+3. Phase 1에서는 Android를 `보조 입력 채널`로 명확히 포지셔닝한다.
 
-### 로직 핵심 (`narrative_logic.py`)
+금지:
 
-- Search: `hybrid_search()`, `find_related_logs()`
-- Response: `generate_response()`
-- Write: `save_log()`, `save_chronos_log()`, `create_kanban_card()`, `land_kanban_card()`
-- Policy: `evaluate_input_integrity()`, `process_gap()`
-- Ops: `run_startup_diagnostics()`
+- Phase 1에서 Android 단독으로 전체 Focus/Reflection 네이티브 완결을 약속하지 않는다.
+- Phase 2 진입 전, CT의 Phase 1 PASS 선언 없이 범위를 확장하지 않는다.
 
 ---
 
-## 3) 필수 아키텍처 원칙
+## 2) Phase 게이트 규칙
 
-1. `EvidenceGateway`는 I/O만 담당한다.
-2. `PolicyEngine`은 DB를 직접 호출하지 않는다.
-3. `narrative_logic.py`에서 UI 상태(`st.session_state`) 직접 조작 금지.
-4. `DATABASE_URL`, API Key 등 민감값은 로그/문서에 절대 노출하지 않는다.
-5. SQLite는 운영 DB가 아니라 fallback/로컬 개발용이다.
+### Phase 1 (선행 필수)
 
----
+필수 조건:
 
-## 4) 멀티도구 역할 분담
+1. `/v1/ocr/ingest` 계약 정렬
+2. 인증 헤더 경로 확인 (`Authorization: Bearer <token>`)
+3. 성공/실패 증거를 재현 가능한 경로로 제출
 
-### Codex CLI (기획/통합)
+### Phase 2 (Phase 1 PASS 후)
 
-- 철학 정렬, 아키텍처 결정, 통합 설계, 문서 기준 확정.
-- 에이전트 산출물 검토 및 충돌 해소.
+필수 조건:
 
-### Antigravity (Backend + Streamlit)
-
-- 인제스트 API 계층 구현/운영.
-- `narrative_logic.py` 재사용 연결.
-- Supabase 저장 규약/무결성/운영 점검 책임.
-
-### Android Studio (모바일)
-
-- CameraX, OCR 입력 UX, 네트워크 재시도, 응답 렌더링 책임.
-- 키를 클라이언트에 두지 않고 토큰 기반 인증만 사용.
-
-### Gemini 3.1 Pro (UI 전문)
-
-- 내러티브 UX 개선.
-- 숙제화 없는 카피/인터랙션 설계.
-- Streamlit 화면 개선안 제안(구현은 Antigravity와 연동).
+1. replay/auth 연속성 점검
+2. 미구현은 `blocked + root cause + mitigation`로 제출
 
 ---
 
-## 5) Android OCR 통합 기준 워크플로우
+## 3) Android 역할 분담
 
-기준 파이프라인:
-
-1. Android에서 촬영(CameraX)
-2. 인제스트 API에 업로드
-3. OCR(Gemini Vision) 수행
-4. 정규화 텍스트를 기존 파이프라인으로 연결
-5. `save_log()` 계열 저장 + `find_related_logs()` + `generate_response()`
-6. Android에 응답 반환
-7. 동일 로그가 Streamlit Universe/Desk 회고에 반영
+1. CameraX/이미지 선택 -> 업로드 UX 안정화
+2. 네트워크 실패/재시도/타임아웃 처리
+3. 인증 토큰 전달 경로 검증
+4. 데모에서 Android 역할을 보조 입력 채널로 명확히 고지
 
 ---
 
-## 6) 공통 API 계약 (초안)
+## 4) OCR 워크플로우 (Redirecting 기준)
 
-### `POST /v1/ocr/ingest`
+1. Android에서 이미지 캡처 또는 선택
+2. 인제스트 API로 업로드
+3. 서버는 이미지 이벤트를 우선 수락/저장
+4. OCR/요약은 비동기로 진행 가능
+5. OCR 지연/실패가 코어 루프를 막지 않아야 함
 
-Request fields:
+핵심 원칙:
 
-- `user_id` (string)
-- `image_base64` (string)
-- `client_ts` (ISO8601 string)
-- `session_id` (string)
-- `mode_hint` (`stream` | `desk` | `auto`)
-- `manual_override_text` (optional string)
-
-Response fields:
-
-- `request_id`
-- `ocr_text_raw`
-- `ocr_text_normalized`
-- `confidence` (0~1)
-- `saved_log_id`
-- `ai_response`
-- `related_log_ids`
-- `warnings`
-
-Error codes:
-
-- `400`, `401`, `422`, `429`, `500`
+- Evidence saved first, narrative linking later.
 
 ---
 
-## 7) 데이터 저장 규칙
+## 5) API 계약 (v1 Demo 우선)
 
-- `meta_type`: `Log`
-- `content`: 최종 확정 텍스트
-- `dimension`: 필요 시 `handwriting` 반영
-- `tags`: `source:android_ocr`, `input:handwritten` 계열 태깅
-- `keywords`: 기존 메타 추출 결과 유지
+### 5.1 `POST /v1/ocr/ingest`
 
-원칙:
+우선 계약:
 
-- 외부 소스 구분 가능해야 한다.
-- 검색/회고 경로에서 동일한 1급 로그로 취급한다.
+- `multipart/form-data` 업로드 지원
+- form-data key: `image` (또는 서버 호환 key `file`)
+- 선택 필드: `session_id`
+
+응답 최소 필드(현재 서버 기준):
+
+- `status` (`accepted`)
+- `image_event_id`
+- `ocr_status`
+- `refined_text` (optional/지연 가능)
+
+호환 경로:
+
+- `POST /v1/narrative/vision` alias 지원 가능
+
+주의:
+
+- 과거 `image_base64` JSON 계약은 레거시 호환 대상이며, v1 demo 기준 우선 경로가 아니다.
+
+### 5.2 기타 연계 API (참조)
+
+- `POST /v1/execution/session/start`
+- `POST /v1/execution/session/{session_id}/focus/start`
+- `POST /v1/execution/session/{session_id}/focus/end`
+- `POST /v1/execution/session/{session_id}/reflect`
+- `GET /v1/execution/session/today`
 
 ---
 
-## 8) 품질 게이트
+## 6) 데이터/표현 원칙
 
-실행 기준:
+1. Android OCR 데이터는 evidence 성격을 우선한다.
+2. OCR 실패 시에도 업로드 acceptance 자체는 유지되어야 한다.
+3. 사용자 의미 부여는 Reflection 단계에서 확정된다.
+4. Core 승격은 사용자 수동 확정만 허용한다(자동 승격 금지).
+
+---
+
+## 7) 보안 원칙
+
+1. API 키/DB 키를 앱 내에 저장하지 않는다.
+2. 토큰 기반 인증만 사용한다.
+3. 로그/증빙에 민감값을 남기지 않는다.
+4. 이미지 원본 보관은 최소화 원칙을 따른다.
+
+---
+
+## 8) 검증/품질 게이트
+
+최소 검증:
 
 ```powershell
-python tools/preflight_postgres_auth.py
-python tools/check_supabase_phase1.py
-python tools/check_postdeploy_smoke.py --strict-postgres
-python tools/check_data_integrity.py --expect-postgres --max-dup-chat 0 --report-json data/integrity_latest.json
-python -m pytest -q tests/
+Get-Content orchestration/results/<android_result>.json | ConvertFrom-Json | Out-Null
+Get-Content orchestration/handoff/<android_handoff>.json | ConvertFrom-Json | Out-Null
 ```
 
-원스텝:
+canonical validator 사용 가능 환경(선택):
 
 ```powershell
-python tools/run_agent_a_gate.py
+.\tools\project_python.ps1 tools/validate_contracts.py --file orchestration/results/<android_result>.json
+.\tools\project_python.ps1 tools/validate_contracts.py --file orchestration/handoff/<android_handoff>.json
 ```
 
----
+추가 권장:
 
-## 9) 보안 기준
-
-1. OpenAI/Gemini/DB 키는 서버에만 저장한다.
-2. Android 앱에는 키를 넣지 않는다.
-3. 로그 출력 시 DSN/키 마스킹을 기본으로 한다.
-4. OCR 이미지 원본은 최소 보관 원칙을 따른다.
+- 실기기/에뮬레이터 각각 1회 이상 OCR 업로드 성공/실패 시나리오 증빙
+- auth header 전달 검증 증빙
 
 ---
 
-## 10) 인계 포맷 (모든 도구 공통)
+## 9) 인계 포맷 (필수)
 
-각 작업 완료 보고는 아래 4블록으로 고정한다.
+Fast lane:
 
-1. `What changed` (변경 사항 3~7줄)
-2. `Validation` (검증 명령/결과)
-3. `Risks` (남은 리스크)
-4. `Next 3 actions` (다음 액션 3개)
+- `orchestration/results/<timestamp>.L1-android-redirecting-phase12-update.md`
+
+Slow lane (필수):
+
+1. `schema-valid result.json`
+2. `schema-valid handoff.json`
+
+스키마:
+
+- `orchestration/contracts/result.schema.json`
+- `orchestration/contracts/handoff.schema.json`
+
+문장 보고만으로는 완료 판정되지 않는다.
 
 ---
 
-## 11) 문서 정책
+## 10) 독립 레포 작업 시 규칙
 
-이전의 분산 문서를 통합해 본 파일을 기준으로 운영한다.  
-도구별 실행 문서는 아래 3개를 사용한다.
+Android가 별도 레포에서 작업되더라도, CT 집계는 아래 2단계 흐름을 따른다.
 
-- `Antigravity_agent.md`
-- `Android_Studio_agent.md`
-- `Gemini-3.1-Pro_agent.md`
+1. Step A (Android local generation):
+   - `orchestration/results/*.json`
+   - `orchestration/handoff/*.json`
+2. Step B (CT mirror to canonical):
+   - 루트 `Narrative_Loop/orchestration/results/*.json`
+   - 루트 `Narrative_Loop/orchestration/handoff/*.json`
+
+외부 레포에서 작업한 경우:
+
+- 산출물/증빙 파일을 canonical 경로로 미러링하거나,
+- 미러링 불가 시 `blocked + root cause + mitigation`을 명시한다.
+
+CT 판정 규칙:
+
+- Step B 완료 전에는 Android lane PASS 판정이 불가하다.
+- narrative 보고만으로는 완료 판정되지 않는다.
+
+---
+
+## 11) 참조 문서
+
+1. `orchestration/docs/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md`
+2. `orchestration/docs/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md`
+3. `orchestration/docs/REDIRECTING_DATA_API_CONTRACT_2026-03-03.md`
+4. `orchestration/docs/REDIRECTING_PHASE2_EXECUTION_PLAN_2026-03-04.md`
+5. `orchestration/ANDROID_EXTERNAL_REPO_ARTIFACT_BRIDGE_2026-03-04.md`
+6. `orchestration/README_ANDROID_LOCAL_MIRROR.md`

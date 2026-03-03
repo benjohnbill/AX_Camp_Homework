@@ -1,0 +1,73 @@
+{
+  "trace_id": "trace-narrative_loop-20260303-redirecting-phase12",
+  "task_id": "T-narrative_loop-20260303-frontend-redirecting-phase12",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Implement frontend lane for redirecting demo: Phase 1 dual-entry Streamlit loop (Plan Start and Focus Now) with rerun-safe flow, then Phase 2 reflection evidence curation and 3-tier weekly replay UI within streamlit limits.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260303T120000Z.redirecting-phase12-kickoff.task.json",
+      "description": "Redirecting phase12 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 1 frontend acceptance."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 2 frontend acceptance."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/app_py_rerun_review.md",
+      "description": "Rerun-risk review baseline."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "universe_3d.py",
+      "tests/",
+      "orchestration/",
+      "redirecting/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Use st.form submission boundaries and minimize st.rerun churn. Do not re-enable Gap/Entropy UX in demo mode."
+  },
+  "acceptance": [
+    "Phase 1 provides a single demo-safe path: Focus start/end and Reflection save with dual-entry CTA visible at home.",
+    "Input loss and excessive rerun regression are mitigated with explicit state-key minimization and form-bound submits.",
+    "Phase 2 provides reflection evidence curation (1-2 images + meaning/skip) and 3-tier weekly replay representation.",
+    "Frontend lane publishes schema-valid result with reproducible demo scenario evidence."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Streamlit rerun pressure can degrade perceived quality; scope must stay on deterministic demo loops."
+  },
+  "next_actions": [
+    "Implement and demo-proof Phase 1 UX loop and buffering mitigation first.",
+    "Publish Phase 1 scenario evidence (focus-first and plan-first paths).",
+    "Implement constrained Phase 2 replay/curation UI and publish evidence."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-03T12:00:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md",
+    "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md"
+  ],
+  "metadata": {
+    "domain": "frontend_redirecting_demo",
+    "priority": "P0",
+    "deadline_utc": "2026-03-08T12:00:00Z"
+  }
+}

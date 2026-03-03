@@ -20,11 +20,19 @@ data class RefineRequest(val text: String)
 
 data class RefineResponse(val refined_text: String)
 
+/**
+ * VisionResponse aligned with agent.md Section 6
+ */
 data class VisionResponse(
     val request_id: String,
     val ocr_text_normalized: String,
-    val ai_response: String?,
-    val refined_text: String? // Legacy compatibility
+    val ocr_text_raw: String? = null,
+    val confidence: Double? = null,
+    val saved_log_id: String? = null,
+    val ai_response: String? = null,
+    val related_log_ids: List<String>? = null,
+    val warnings: List<String>? = null,
+    val refined_text: String? = null // Kept for legacy compatibility during transition
 )
 
 interface NarrativeApiService {

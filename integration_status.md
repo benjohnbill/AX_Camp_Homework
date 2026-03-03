@@ -1,6 +1,6 @@
 # Integration Status: Android <-> Backend
 
-Last updated: 2026-03-02 (Cycle7 Closed)
+Last updated: 2026-03-04 (Redirecting Phase2 Closed)
 Maintainer: Codex (integration coordinator)
 Projects:
 - Backend/Web: Narrative_Loop (Streamlit + Antigravity)
@@ -8,14 +8,14 @@ Projects:
 Documentation governance baseline: `Harness_Policy.md`
 
 ## 0) Adjutant Control Tower (ACT) Briefing
-- **Status**: 🟢 CYCLE7 CLOSED
+- **Status**: 🟢 REDIRECTING PHASE2 CLOSED (DEMO READY)
 - **Oversight Log**:
   - Backend pre-cycle4 audit: **PASS** (auth gateway contract, Korean rewrite, storage parity).
   - Frontend pre-cycle4 audit: **PASS** (mode routing, write/save/re-query, chronos, universe) with file-based evidence reinforcement.
   - Frontend one-shot manual UI check (loop-stop task): **PASS** (root/embed/diagnostics/OCR visual checklist evidence submitted and schema-validated).
   - Android pre-cycle4 audit: **PASS** (same-window emulator + physical full journey evidence attached and normalized into canonical result schema).
   - CT gate aggregation was refreshed with pass reconciliation and now marked **SUCCESS**.
-- **Current Objective**: Keep cycle07 close artifacts canonical and wait for explicit cycle08 kickoff.
+- **Current Objective**: Phase 2 closure artifacts and checklist verdict are published; carry one non-blocking hardening risk into Phase 3 backlog.
 
 ## 1) Overall Progress
 - Cycle03 baseline: completed and accepted.
@@ -32,9 +32,16 @@ Documentation governance baseline: `Harness_Policy.md`
 - **CT Gate Aggregation**: PASS decision published (`orchestration/results/20260302T061500Z.T-narrative_loop-20260225-precycle4-gate.result.json` and `orchestration/handoff/latest.handoff.json`).
 
 ## 3) In Progress
-- **Cycle07 Close Maintenance**: Preserve latest handoff pointer and evidence path stability.
-- **Regression Guarding**: Re-run Android 401/404 regression checks on auth/route changes.
-- **Cycle08 Intake**: Stand by for user-approved objective/scope before dispatch.
+- **Phase2 Demo Freeze**: active scope is locked to demo-ready closure baseline.
+- **Phase3 Hardening Prep**: backend async reflection warning isolation task preparation.
+- **Android Bridge Discipline**: separate-repo Step A/B artifact bridge protocol remains enforced until topology unification.
+
+## 3.1) Phase2 Closure Snapshot (2026-03-04)
+- **Closure task**: `orchestration/task.json` -> `T-narrative_loop-20260304-redirecting-phase2-close`
+- **Closure result**: `orchestration/results/20260304T180500Z.T-narrative_loop-20260304-redirecting-phase2-close.result.json`
+- **Closure handoff**: `orchestration/handoff/20260304T180500Z.T-narrative_loop-20260304-redirecting-phase2-close.handoff.json`
+- **Latest pointer**: `orchestration/handoff/latest.handoff.json` (Phase2 close)
+- **Residual risk**: backend reflection projection async warning is non-blocking for demo, queued for Phase3 hardening.
 
 ## 4) This Session Update (2026-03-02)
 - **Worker submissions ingested**:

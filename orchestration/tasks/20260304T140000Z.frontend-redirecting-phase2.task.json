@@ -1,0 +1,73 @@
+{
+  "trace_id": "trace-narrative_loop-20260304-redirecting-phase2",
+  "task_id": "T-narrative_loop-20260304-frontend-redirecting-phase2",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Deliver Phase 2 frontend lane: reflection evidence curation and 3-tier weekly replay UX under streamlit-safe non-blocking constraints.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260304T140000Z.redirecting-phase2-kickoff.task.json",
+      "description": "Phase 2 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 2 frontend acceptance contract."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_EXECUTION_PLAN_2026-03-04.md",
+      "description": "Phase 2 lane execution sequence."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260304T120000Z.T-narrative_loop-20260303-frontend-redirecting-phase12.result.json",
+      "description": "Frontend Phase 1 baseline artifact."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "universe_3d.py",
+      "tests/",
+      "orchestration/",
+      "integration_status.md",
+      "redirecting/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Maintain streamlit rerun stability. Keep 3D strictly read-only replay with single CTA and Skip."
+  },
+  "acceptance": [
+    "Reflection shows evidence curation (1~2 items) with meaning or skip action.",
+    "7-day replay with 3-tier hierarchy (session_completed/session_interrupted/supporting_evidence) is consistently rendered.",
+    "Plan-first/Focus-first/Journal paths remain demoable without core-loop blocking regressions.",
+    "Schema-valid result/handoff with reproducible demo runbook evidence is published."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Excessive rerun-triggering state mutations can degrade responsiveness and break demo continuity."
+  },
+  "next_actions": [
+    "Implement evidence curation interaction with minimal state churn.",
+    "Implement constrained 7-day 3-tier replay and CTA+Skip behavior.",
+    "Publish schema-valid frontend phase2 result/handoff artifacts with runbook evidence."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-04T14:00:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md",
+    "redirecting/REDIRECTING_PHASE2_EXECUTION_PLAN_2026-03-04.md"
+  ],
+  "metadata": {
+    "domain": "frontend_phase2_execution",
+    "priority": "P0",
+    "deadline_utc": "2026-03-10T12:00:00Z"
+  }
+}

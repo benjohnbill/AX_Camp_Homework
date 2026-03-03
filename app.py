@@ -12,6 +12,7 @@ import re
 import base64
 import os
 import uuid
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import narrative_logic as logic
 import icons
@@ -30,6 +31,15 @@ _MODE_CARD_CONFIG = (
     ("universe", "SOUL ANALYTICS", "분석과 3D 탐색", "orbit"),
     ("control", "CONTROL", "칸반 기반 통제", "layout-dashboard"),
 )
+
+_REPLAY_LOOKBACK_DAYS = 7
+_REPLAY_MAX_NODES = 100
+_REPLAY_META_TIER = {
+    "session_completed": 1,
+    "session_interrupted": 2,
+    "violation": 2,
+    "supporting_evidence": 3,
+}
 
 # ============================================================
 # Page Config & Initialization
@@ -67,6 +77,15 @@ def _query_param_value(name: str) -> str:
 
 def _is_universe_embed_request() -> bool:
     return _query_param_value("embed").strip().lower() == "universe_3d"
+
+
+def _is_demo_entropy_disabled() -> bool:
+    """
+    Demo-safe default: disable Entropy/Gap flow unless explicitly turned off.
+    Set REDIRECTING_DEMO_DISABLE_ENTROPY=false to re-enable legacy flow.
+    """
+    return os.getenv("REDIRECTING_DEMO_DISABLE_ENTROPY", "true").strip().lower() == "true"
+
 
 def _sanitize_mode(mode_value: str) -> str:
     mode = str(mode_value or "").strip().lower()
@@ -119,6 +138,70 @@ def _display_stream_title(raw_title: str) -> str:
     if lowered == "untitled stream":
         return "제목 없는 스트림"
     return title
+
+
+def _parse_log_timestamp(raw_value) -> Optional[datetime]:
+    if isinstance(raw_value, datetime):
+        ts = raw_value
+    elif isinstance(raw_value, str):
+        normalized = raw_value.strip()
+        if not normalized:
+            return None
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+        try:
+            ts = datetime.fromisoformat(normalized)
+        except ValueError:
+            return None
+    else:
+        return None
+
+    if ts.tzinfo is None:
+        return ts.replace(tzinfo=timezone.utc)
+    return ts.astimezone(timezone.utc)
+
+
+def _build_weekly_replay_payload(
+    logs: Iterable[dict],
+    now_utc: Optional[datetime] = None,
+    lookback_days: int = _REPLAY_LOOKBACK_DAYS,
+    limit: int = _REPLAY_MAX_NODES,
+) -> Tuple[List[dict], Dict[str, int]]:
+    now_ref = now_utc or datetime.now(timezone.utc)
+    cutoff = now_ref - timedelta(days=lookback_days)
+
+    tier_counts = {
+        "tier1_completed": 0,
+        "tier2_interrupted": 0,
+        "tier3_supporting_evidence": 0,
+    }
+    filtered: List[dict] = []
+
+    for row in logs or []:
+        if not isinstance(row, dict):
+            continue
+
+        meta_type = str(row.get("meta_type") or "").strip().lower()
+        tier = _REPLAY_META_TIER.get(meta_type)
+        if tier is None:
+            continue
+
+        ts = _parse_log_timestamp(row.get("created_at") or row.get("timestamp"))
+        if ts is None or ts < cutoff:
+            continue
+
+        filtered.append(row)
+        if tier == 1:
+            tier_counts["tier1_completed"] += 1
+        elif tier == 2:
+            tier_counts["tier2_interrupted"] += 1
+        else:
+            tier_counts["tier3_supporting_evidence"] += 1
+
+        if len(filtered) >= max(1, int(limit)):
+            break
+
+    return filtered, tier_counts
 
 
 def _parse_positive_int(raw: str, default: int) -> int:
@@ -279,7 +362,7 @@ def _run_universe_embed_route() -> bool:
         )
 
     try:
-        logs = logic.load_logs()
+        logs, _ = _build_weekly_replay_payload(logic.load_logs())
         cores = db.get_cores()
         render_3d_universe(logs, cores)
     except Exception as exc:
@@ -321,6 +404,16 @@ def init_session_state():
         st.session_state['mode'] = "stream"
     else:
         st.session_state['mode'] = _sanitize_mode(st.session_state['mode'])
+
+    # [REDIRECTING] Canonical Phase 1 State Keys
+    if "session_id" not in st.session_state:
+        st.session_state["session_id"] = str(uuid.uuid4())
+    if "flow_stage" not in st.session_state:
+        st.session_state["flow_stage"] = "idle"
+    if "entry_mode" not in st.session_state:
+        st.session_state["entry_mode"] = "none"
+    if "reflection_draft" not in st.session_state:
+        st.session_state["reflection_draft"] = ""
 
     if "active_stream_id" not in st.session_state:
         streams = logic.load_chat_streams(limit=1)
@@ -832,6 +925,10 @@ def render_stream_chat_messages() -> None:
 # MODES
 # ============================================================
 def render_stream_mode():
+    if _is_demo_entropy_disabled() and st.session_state.get("violation_pending"):
+        # Hard-disable path: clear stale gate state from old sessions/builds.
+        st.session_state["violation_pending"] = None
+
     if st.session_state.get('violation_pending'):
         v = st.session_state['violation_pending']
         st.warning(f"{icons.get_icon_text('shield-alert')} Alignment Error against Core: \"{v['core']['content'][:50]}...\"")
@@ -873,10 +970,24 @@ def render_stream_mode():
     )
 
     if not has_messages:
-        # 1. EMPTY STATE: Large Title + OCR + Workspace Cards (Row of 4)
+        # 1. EMPTY STATE: Large Title + Dual CTA + OCR
         st.markdown("<div class='stream-empty-center'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='stream-hero-title'>{icons.get_icon('sparkles', size=32)}<br>무엇을 기록하고 싶나요?</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='stream-hero-title'>{icons.get_icon('sparkles', size=32)}<br>성장을 위한 루프를 시작하세요</div>", unsafe_allow_html=True)
         
+        # Dual CTA
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button(f"{icons.get_icon_text('layout-dashboard')} **Plan Start**", key="home_plan_start", use_container_width=True, type="primary"):
+                st.session_state["mode"] = "control"
+                st.rerun()
+        with c2:
+            if st.button(f"{icons.get_icon_text('timer')} **Focus Now**", key="home_focus_now", use_container_width=True, type="primary"):
+                st.session_state["mode"] = "chronos"
+                st.session_state["flow_stage"] = "setup"
+                st.rerun()
+
+        st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
+
         # Action block starts
         st.markdown("<div class='empty-action-block'>", unsafe_allow_html=True)
         render_stream_ocr_entrypoint(expanded=False)
@@ -977,14 +1088,20 @@ def process_stream_input(user_input: str):
 def render_chronos_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('timer', size=40)} CHRONOS</h1><p>Time is the currency.</p></div>", unsafe_allow_html=True)
     
+    # Check if timer finished while away
     if st.session_state['chronos_running'] and st.session_state['chronos_end_time']:
         if (st.session_state['chronos_end_time'] - datetime.now(timezone.utc)).total_seconds() <= 0:
             st.session_state['chronos_running'] = False
             st.session_state['chronos_finished'] = True
+            st.session_state['flow_stage'] = "reflection"
 
-    if st.session_state['chronos_finished']: render_chronos_docking()
-    elif st.session_state['chronos_running']: render_chronos_timer()
-    else: render_chronos_setup()
+    # Sync flow_stage with legacy flags for compatibility
+    if st.session_state.get('chronos_finished') or st.session_state.get('flow_stage') == "reflection":
+        render_chronos_docking()
+    elif st.session_state.get('chronos_running') or st.session_state.get('flow_stage') == "timer":
+        render_chronos_timer()
+    else:
+        render_chronos_setup()
 
 def render_chronos_timer():
     rem = st.session_state['chronos_end_time'] - datetime.now(timezone.utc)
@@ -1025,45 +1142,106 @@ def render_chronos_timer():
     """, height=250)
     
     c1, c2 = st.columns(2)
-    if c1.button(f"{icons.get_icon_text('check-circle')} 완료", use_container_width=True):
+    if c1.button(f"{icons.get_icon_text('check-circle')} 완료", key="chronos_complete_btn", use_container_width=True):
         st.session_state['chronos_running'] = False
         st.session_state['chronos_finished'] = True
+        st.session_state['flow_stage'] = "reflection"
         db.clear_chronos_timer()
         st.rerun()
-    if c2.button(f"{icons.get_icon_text('shield-alert')} 취소", use_container_width=True):
+    if c2.button(f"{icons.get_icon_text('shield-alert')} 취소", key="chronos_cancel_btn", use_container_width=True):
         st.session_state['chronos_running'] = False
+        st.session_state['flow_stage'] = "setup"
         db.clear_chronos_timer()
         st.rerun()
 
 def render_chronos_setup():
     c1, c2, c3 = st.columns(3)
-    if c1.button(f"{icons.get_icon_text('flame')} 25분", use_container_width=True): start_timer(25)
-    if c2.button(f"{icons.get_icon_text('target')} 60분", use_container_width=True): start_timer(60)
-    mins = c3.number_input("분", 1, 180, 45)
-    if c3.button(f"{icons.get_icon_text('zap')} 시작", use_container_width=True): start_timer(mins)
+    if c1.button(f"{icons.get_icon_text('flame')} 25분", key="timer_25", use_container_width=True): start_timer(25)
+    if c2.button(f"{icons.get_icon_text('target')} 60분", key="timer_60", use_container_width=True): start_timer(60)
+    with c3:
+        mins = st.number_input("분", 1, 180, 45, key="timer_custom_mins")
+        if st.button(f"{icons.get_icon_text('zap')} 시작", key="timer_custom_start", use_container_width=True):
+            start_timer(mins)
 
 def start_timer(m: int):
     end_time = datetime.now(timezone.utc) + timedelta(minutes=m)
     st.session_state['chronos_duration'] = m
     st.session_state['chronos_end_time'] = end_time
     st.session_state['chronos_running'] = True
+    st.session_state['flow_stage'] = "timer"
     db.set_chronos_timer(end_time)  # [B-2] DB에 영속화
     st.rerun()
 
 def render_chronos_docking():
-    st.info(f"{icons.get_icon_text('anchor')} 이 시간은 어떤 헌법에 귀속됩니까?")
-    consts = db.get_constitutions()
-    options = {c['content'][:50]: c['id'] for c in consts}
+    st.info(f"{icons.get_icon_text('anchor')} 성취를 기록하고 핵심 가치(Core)에 연결하세요.")
     
-    if not options:
-        st.warning("헌법이 없습니다."); return
+    with st.form("chronos_reflection_form", clear_on_submit=False):
+        consts = db.get_cores()
+        options = {c['content'][:50]: c['id'] for c in consts}
+        
+        if not options:
+            st.warning("연결할 Core가 없습니다. 먼저 Control에서 Core를 생성하세요.")
+            if st.form_submit_button("돌아가기"):
+                st.session_state['flow_stage'] = "setup"
+                st.session_state['chronos_finished'] = False
+                st.rerun()
+            return
 
-    sel = st.multiselect("헌법 선택", list(options.keys()))
-    acc = st.text_area("성취 기록 (최소 10자)")
-    if st.button(f"{icons.get_icon_text('anchor')} Dock", use_container_width=True, type="primary", disabled=len(sel)==0 or len(acc)<10):
-        logic.save_chronos_log(acc, [options[n] for n in sel], st.session_state['chronos_duration'])
-        db.clear_chronos_timer()  # [B-2] Dock 완료 후 타이머 클리어
-        st.balloons(); st.session_state['chronos_finished'] = False; st.rerun()
+        sel = st.multiselect("Core 선택", list(options.keys()))
+        acc = st.text_area("성취 기록 (최소 10자)", placeholder="이 세션 동안 무엇을 해냈나요?", key="reflection_draft")
+        
+        # [PHASE 2] Evidence Curation 1~2 items
+        st.markdown(f"#### {icons.get_icon_text('image')} Evidence Curation (Optional)")
+        st.caption("이 세션을 증명하거나 기억하고 싶은 장면 1~2개를 선택하세요. 선택하지 않으면 Skip 처리됩니다.")
+        
+        # In a real app, these would come from the user's recent uploads or session snapshots.
+        # For the demo, we show a list of placeholder "Recent Evidence" to choose from.
+        # To minimize rerun churn, we keep the selection inside the form.
+        evidence_options = ["📷 Workspace Screenshot", "📝 Handwritten Note", "📈 Performance Graph", "🌟 Inspiration Image"]
+        selected_evidence = st.multiselect("증거 선택 (최대 2개)", evidence_options, max_selections=2)
+        
+        evidence_meaning = ""
+        if selected_evidence:
+            evidence_meaning = st.text_input("증거의 의미 (1줄)", placeholder="예: 오늘 가장 집중했던 순간의 기록")
+        else:
+            st.caption("선택된 증거가 없습니다. (Skip 가능)")
+
+        c1, c2 = st.columns(2)
+        with c1:
+            submitted = st.form_submit_button(f"{icons.get_icon_text('anchor')} 저장 및 종료", type="primary", use_container_width=True)
+        with c2:
+            skipped = st.form_submit_button("성취 없이 종료", use_container_width=True)
+
+        if submitted:
+            meaning_text = evidence_meaning.strip()
+            if not sel:
+                st.error("최소 하나 이상의 Core를 선택해야 합니다.")
+            elif len(acc) < 10:
+                st.error("기록이 너무 짧습니다. (최소 10자)")
+            elif selected_evidence and not meaning_text:
+                st.error("증거를 선택했다면 1줄 의미를 입력하거나 증거 선택을 해제해 Skip 하세요.")
+            else:
+                # Save primary log
+                logic.save_chronos_log(acc, [options[n] for n in sel], st.session_state['chronos_duration'])
+                
+                # Save curated evidence if any
+                if selected_evidence:
+                    for ev in selected_evidence:
+                        logic.save_log(f"Evidence: {ev} | Meaning: {meaning_text}", meta_type="supporting_evidence")
+
+                db.clear_chronos_timer()
+                st.session_state['chronos_finished'] = False
+                st.session_state['flow_stage'] = "setup"
+                st.session_state['mode'] = "stream" # Return to home
+                st.balloons()
+                st.rerun()
+        
+        if skipped:
+            db.clear_chronos_timer()
+            st.session_state['chronos_finished'] = False
+            st.session_state['flow_stage'] = "setup"
+            st.session_state['mode'] = "stream"
+            st.rerun()
 
 def render_universe_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('orbit', size=40)} SOUL ANALYTICS</h1></div>", unsafe_allow_html=True)
@@ -1111,11 +1289,28 @@ def render_universe_mode():
                 st.plotly_chart(fig, use_container_width=True)
 
     with t4:
-        st.markdown(f"### {icons.get_icon_text('orbit')} 1st Person Explorer")
+        st.markdown(f"### {icons.get_icon_text('orbit')} 1st Person Explorer (7-Day Replay)")
         try:
-            logs = logic.load_logs()
+            filtered_logs, tier_counts = _build_weekly_replay_payload(logic.load_logs())
             cores = db.get_cores()
-            render_3d_universe(logs, cores)
+            render_3d_universe(filtered_logs, cores)
+
+            st.caption(
+                "7-Day Read-Only Replay | "
+                f"T1 Completed: {tier_counts['tier1_completed']} | "
+                f"T2 Interrupted: {tier_counts['tier2_interrupted']} | "
+                f"T3 Evidence: {tier_counts['tier3_supporting_evidence']}"
+            )
+            st.caption("Press 'Close Replay' or 'Skip' to return home.")
+
+            c1, c2 = st.columns(2)
+            if c1.button("Close Replay (UI Fallback)", key="replay_close_fallback", use_container_width=True):
+                st.session_state['mode'] = "stream"
+                st.rerun()
+            if c2.button("Skip Replay (UI Fallback)", key="replay_skip_fallback", use_container_width=True):
+                st.session_state['mode'] = "stream"
+                st.rerun()
+
         except Exception as exc:
             st.error(f"{icons.get_icon_text('shield-alert')} **Deep Space 렌더링에 실패했습니다.**")
             st.caption("데이터 동기화 충돌이 발생했을 수 있습니다. (서버 측 JSON 직렬화 문제 등)")
@@ -1228,7 +1423,7 @@ def main():
         st.caption("Startup halted to prevent repeated runtime failures.")
         st.code(_safe_startup_error(exc))
         return
-    is_entropy = logic.is_entropy_mode()
+    is_entropy = False if _is_demo_entropy_disabled() else logic.is_entropy_mode()
     apply_atmosphere(is_entropy); render_sidebar(is_entropy)
     if not st.session_state.get("sidebar_open", True):
         st.markdown('<span id="nl-open-anchor"></span>', unsafe_allow_html=True)

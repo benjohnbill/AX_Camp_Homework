@@ -80,7 +80,7 @@ def render_3d_universe(logs, cores):
             body {{ margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace; user-select: none; }}
             #info-panel {{
                 position: absolute;
-                bottom: 20px;
+                bottom: 80px;
                 left: 20px;
                 right: 20px;
                 background: rgba(0, 30, 60, 0.85);
@@ -141,19 +141,69 @@ def render_3d_universe(logs, cores):
                 line-height: 1.6;
                 letter-spacing: 1px;
             }}
+            #cta-layer {{
+                position: absolute;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 15px;
+                pointer-events: auto;
+            }}
+            .btn-3d {{
+                padding: 10px 24px;
+                background: rgba(0, 255, 255, 0.15);
+                border: 1px solid #0ff;
+                color: #0ff;
+                cursor: pointer;
+                font-family: inherit;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                border-radius: 4px;
+                transition: all 0.2s;
+            }}
+            .btn-3d:hover {{
+                background: rgba(0, 255, 255, 0.3);
+                box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            }}
+            .btn-secondary {{
+                background: rgba(255, 255, 255, 0.05);
+                border-color: rgba(255, 255, 255, 0.3);
+                color: rgba(255, 255, 255, 0.6);
+            }}
+            #legend {{
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(0,0,0,0.5);
+                padding: 10px;
+                border: 1px solid rgba(0,255,255,0.2);
+                font-size: 10px;
+                color: #fff;
+            }}
+            .legend-item {{ display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }}
+            .dot {{ width: 8px; height: 8px; border-radius: 50%; }}
         </style>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     </head>
     <body>
         <div class="hud-text">
             S Y S T E M : A N T I G R A V I T Y<br>
-            A N O M A L Y   S C A N N E R   O N L I N E<br>
-            <span style="color:#e94560;">ENTROPY: NOMINAL</span>
+            W E E K L Y   R E P L A Y   O N L I N E<br>
+            <span style="color:#0ff;">SCOPE: LAST 7 DAYS</span>
+        </div>
+        <div id="legend">
+            <div class="legend-item"><div class="dot" style="background:#00ffff;"></div> Tier 1: Completed</div>
+            <div class="legend-item"><div class="dot" style="background:#ff3333;"></div> Tier 2: Interrupted</div>
+            <div class="legend-item"><div class="dot" style="background:#ffcc00;"></div> Tier 3: Evidence</div>
+        </div>
+        <div id="cta-layer">
+            <button class="btn-3d" onclick="window.parent.postMessage({{type:'REPLAY_CLOSE'}}, '*')">Close Replay</button>
+            <button class="btn-3d btn-secondary" onclick="window.parent.postMessage({{type:'REPLAY_SKIP'}}, '*')">Skip</button>
         </div>
         <div class="controls-hint">
             [W,A,S,D] NAVIGATE<br>
             [MOUSE DRAG] ROTATE<br>
-            [SHIFT + W] BOOST DIVE<br>
             (APPROACH NODE TO READ)
         </div>
         <div id="crosshair"></div>
@@ -167,7 +217,7 @@ def render_3d_universe(logs, cores):
             const coresData = {cores_json};
             
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x0a0a1a, 0.003); // Deep Space Fog
+            scene.fog = new THREE.FogExp2(0x0a0a1a, 0.003); 
             
             const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2000);
             const renderer = new THREE.WebGLRenderer({{ antialias: true, alpha: true }});
@@ -175,7 +225,6 @@ def render_3d_universe(logs, cores):
             renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
             
-            // Lighting
             const ambient = new THREE.AmbientLight(0x222233);
             scene.add(ambient);
             const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
@@ -183,7 +232,6 @@ def render_3d_universe(logs, cores):
 
             const interactables = [];
             
-            // Master Core
             if (coresData && coresData.length > 0) {{
                 const coreGeo = new THREE.SphereGeometry(25, 32, 32);
                 const coreMat = new THREE.MeshBasicMaterial({{ color: 0xe94560, wireframe: true, transparent: true, opacity: 0.8 }});
@@ -191,20 +239,15 @@ def render_3d_universe(logs, cores):
                 coreMesh.userData = {{ isCore: true, content: coresData[0].content, title: "CORE CONSTITUTION" }};
                 scene.add(coreMesh);
                 interactables.push(coreMesh);
-                
-                const innerGeo = new THREE.SphereGeometry(23, 32, 32);
-                const innerMat = new THREE.MeshBasicMaterial({{ color: 0xffaaaa, transparent: true, opacity: 0.3 }});
-                const innerMesh = new THREE.Mesh(innerGeo, innerMat);
-                scene.add(innerMesh);
             }}
 
-            const nodeGeo = new THREE.SphereGeometry(1.5, 16, 16);
+            const nodeGeo = new THREE.SphereGeometry(2, 16, 16);
             
-            // Randomly scatter logs in an orbit around the Core
             logsData.forEach((log) => {{
                 if (!log.content || log.content.length < 5) return;
+                const metaType = (log.meta_type || '').toLowerCase();
 
-                const radius = 50 + Math.random() * 450;
+                const radius = 60 + Math.random() * 400;
                 const theta = Math.random() * Math.PI * 2;
                 const phi = Math.acos((Math.random() * 2) - 1);
                 
@@ -212,37 +255,54 @@ def render_3d_universe(logs, cores):
                 const y = radius * Math.sin(phi) * Math.sin(theta);
                 const z = radius * Math.cos(phi);
                 
-                const isViolation = log.meta_type && log.meta_type.toLowerCase().includes('violation');
-                const color = isViolation ? 0xff3333 : (Math.random() > 0.5 ? 0x00ffff : 0x0088ff);
-                
-                const mat = new THREE.MeshBasicMaterial({{ color: color, transparent: true, opacity: 0.7 }});
+                // Tier Logic
+                let tier = 3; 
+                let color = 0xffcc00; // Tier 3: Supporting Evidence / Default
+                let typeText = "SUPPORTING EVIDENCE";
+
+                if (metaType === 'session_completed') {{
+                    tier = 1; color = 0x00ffff; typeText = "COMPLETED SESSION";
+                }} else if (metaType === 'session_interrupted' || metaType === 'violation') {{
+                    tier = 2; color = 0xff3333; typeText = "INTERRUPTED / VOID";
+                }} else if (metaType === 'supporting_evidence') {{
+                    tier = 3; color = 0xffcc00; typeText = "CURATED EVIDENCE";
+                }}
+
+                const sizeScale = tier === 1 ? 1.5 : (tier === 2 ? 1.2 : 0.8);
+                const mat = new THREE.MeshPhongMaterial({{ 
+                    color: color, 
+                    emissive: color,
+                    emissiveIntensity: 0.5,
+                    transparent: true, 
+                    opacity: 0.9 
+                }});
                 const mesh = new THREE.Mesh(nodeGeo, mat);
+                mesh.scale.set(sizeScale, sizeScale, sizeScale);
                 mesh.position.set(x, y, z);
                 
                 mesh.userData = {{ 
                     content: log.content, 
-                    title: isViolation ? `[SABOTEUR LOG] - ${{log.created_at ? log.created_at.substring(0,10) : ''}}` : `[OBSERVATION] - ${{log.created_at ? log.created_at.substring(0,10) : ''}}`
+                    title: `[${{typeText}}] - ${{log.created_at ? log.created_at.substring(0,10) : ''}}`
                 }};
                 scene.add(mesh);
                 interactables.push(mesh);
             }});
 
             const pGeo = new THREE.BufferGeometry();
-            const pCount = 3000;
+            const pCount = 2000;
             const posArray = new Float32Array(pCount * 3);
             for(let i=0; i<pCount*3; i++) {{
-                posArray[i] = (Math.random() - 0.5) * 1200;
+                posArray[i] = (Math.random() - 0.5) * 1500;
             }}
             pGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const pMat = new THREE.PointsMaterial({{ size: 0.4, color: 0xffffff, transparent: true, opacity: 0.4 }});
+            const pMat = new THREE.PointsMaterial({{ size: 0.5, color: 0x44aaff, transparent: true, opacity: 0.3 }});
             const particles = new THREE.Points(pGeo, pMat);
             scene.add(particles);
 
-            camera.position.z = 250;
-            camera.position.y = 80;
+            camera.position.z = 350;
             camera.lookAt(0,0,0);
 
-            const keyState = {{ w:false, a:false, s:false, d:false, shift:false }};
+            const keyState = {{ w:false, a:false, s:false, d:false }};
             window.addEventListener('keydown', (e) => {{
                 if(keyState[e.key.toLowerCase()] !== undefined) keyState[e.key.toLowerCase()] = true;
             }});
@@ -261,7 +321,6 @@ def render_3d_universe(logs, cores):
                     const dx = e.clientX - prevX;
                     const dy = e.clientY - prevY;
                     prevX = e.clientX; prevY = e.clientY;
-                    
                     euler.setFromQuaternion(camera.quaternion);
                     euler.y -= dx * 0.003; euler.x -= dy * 0.003;
                     euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
@@ -269,34 +328,6 @@ def render_3d_universe(logs, cores):
                 }}
             }});
             
-            // Touch control for mobile panning
-            renderer.domElement.addEventListener('touchstart', (e) => {{
-                if(e.touches.length > 0) {{
-                    isDragging = true;
-                    prevX = e.touches[0].clientX;
-                    prevY = e.touches[0].clientY;
-                }}
-            }}, {{passive: false}});
-            renderer.domElement.addEventListener('touchend', () => isDragging = false);
-            renderer.domElement.addEventListener('touchmove', (e) => {{
-                if(isDragging && e.touches.length > 0) {{
-                    e.preventDefault();
-                    const dx = e.touches[0].clientX - prevX;
-                    const dy = e.touches[0].clientY - prevY;
-                    prevX = e.touches[0].clientX;
-                    prevY = e.touches[0].clientY;
-                    
-                    euler.setFromQuaternion(camera.quaternion);
-                    euler.y -= dx * 0.005; euler.x -= dy * 0.005;
-                    euler.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x));
-                    camera.quaternion.setFromEuler(euler);
-                    
-                    // Auto forward on double touch or just slow forward on mobile dragging
-                    keyState.w = true; // Auto move forward while dragging screen
-                    setTimeout(() => {{ keyState.w = false; }}, 500);
-                }}
-            }}, {{passive: false}});
-
             const infoPanel = document.getElementById('info-panel');
             const infoTitle = document.getElementById('info-title');
             const infoDesc = document.getElementById('info-desc');
@@ -318,32 +349,19 @@ def render_3d_universe(logs, cores):
                 requestAnimationFrame(animate);
                 const delta = clock.getDelta();
                 
-                scene.children.forEach(c => {{
-                    if(c.geometry && c.geometry.type === 'SphereGeometry') {{
-                        c.rotation.y += 0.005;
-                    }}
-                }});
-                particles.rotation.y += 0.0002;
-
-                const speed = keyState.shift ? 150.0 : 40.0;
-                
+                const speed = 60.0;
                 velocity.x -= velocity.x * 5.0 * delta;
                 velocity.z -= velocity.z * 5.0 * delta;
-                
                 direction.z = Number(keyState.w) - Number(keyState.s);
                 direction.x = Number(keyState.d) - Number(keyState.a);
                 direction.normalize();
-
                 if (keyState.w || keyState.s) velocity.z -= direction.z * speed * delta;
                 if (keyState.a || keyState.d) velocity.x -= direction.x * speed * delta;
-
                 camera.translateX(velocity.x);
                 camera.translateZ(velocity.z);
 
-                // Proximity check
                 let closeNode = null;
-                let min_d = 25; 
-                
+                let min_d = 30; 
                 for(let i=0; i<interactables.length; i++) {{
                     const d = camera.position.distanceTo(interactables[i].position);
                     if(d < min_d) {{ min_d = d; closeNode = interactables[i]; }}
@@ -356,13 +374,11 @@ def render_3d_universe(logs, cores):
                         infoDesc.innerText = closeNode.userData.content || '';
                         infoPanel.style.display = 'block';
                         infoPanel.style.opacity = '1';
-                        closeNode.scale.set(1.5, 1.5, 1.5);
                         crosshair.style.transform = 'translate(-50%, -50%) scale(1.5)';
                         crosshair.style.borderColor = '#fff';
                     }}
                 }} else {{
                     if(lastHovered) {{
-                        lastHovered.scale.set(1, 1, 1);
                         lastHovered = null;
                         infoPanel.style.opacity = '0';
                         setTimeout(() => {{ if(!lastHovered) infoPanel.style.display = 'none'; }}, 300);
@@ -370,10 +386,8 @@ def render_3d_universe(logs, cores):
                         crosshair.style.borderColor = 'rgba(0, 255, 255, 0.3)';
                     }}
                 }}
-
                 renderer.render(scene, camera);
             }}
-
             animate();
         </script>
     </body>

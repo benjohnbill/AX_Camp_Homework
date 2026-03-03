@@ -19,6 +19,7 @@ sunset_condition: Replace when async worker architecture is production-ready.
 - UI 요청 경로에서 무거운 AI 작업을 분리한다.
 - Streamlit rerun 경로를 가볍게 유지한다.
 - `계획 확정/포커스 종료/회고 저장` 이벤트에서 비동기 분석 결과를 안정적으로 적재한다.
+- `OCR evidence 업로드`와 `journal 승격 보조정규화`도 비동기로 처리한다.
 
 ## 1) 현재 상태 (사실)
 1. `save_log`는 동기 경로다.
@@ -49,6 +50,8 @@ sunset_condition: Replace when async worker architecture is production-ready.
 - `similar_session_linking`
 - `weekly_insight_summary`
 - `next_action_recommendation`
+- `ocr_parse_and_summary`
+- `journal_auto_tagging`
 
 ### 4.2 상태
 - `queued`
@@ -81,6 +84,10 @@ sunset_condition: Replace when async worker architecture is production-ready.
    - `next_action_recommendation`
 3. `reflection_saved` 완료 시:
    - `weekly_insight_summary` (하루 1회 제한)
+4. `evidence_uploaded` 완료 시:
+   - `ocr_parse_and_summary`
+5. `journal_saved` 완료 시:
+   - `journal_auto_tagging`
 
 ## 6) 안정성 설계
 
@@ -110,6 +117,7 @@ sunset_condition: Replace when async worker architecture is production-ready.
 3. 조회 엔드포인트:
    - `GET /v1/jobs/{job_id}`
    - `GET /v1/execution/session/{id}/insights`
+4. OCR 실패/지연이어도 evidence upload API는 성공으로 반환한다.
 
 ## 9) 파일 단위 변경 계획 (백엔드)
 1. `gateway_fastapi.py`
@@ -141,10 +149,14 @@ sunset_condition: Replace when async worker architecture is production-ready.
 3. queue 적체:
    - insight generation 주기 축소.
    - low-priority job 일시 중단.
+4. OCR provider 장애:
+   - image event는 `uploaded/inbox` 유지.
+   - reflection 큐레이션은 원본/썸네일만으로 동작.
 
 ## 12) Acceptance (워커)
 1. 핵심 사용자 플로우에서 AI 응답 대기 없이 단계 전환이 가능해야 한다.
 2. 동일 이벤트 중복 전송 시 분석 결과가 중복 생성되지 않아야 한다.
 3. worker 장애 상황에서도 세션 저장/타이머/회고는 정상 동작해야 한다.
 4. job 처리 결과가 session insight 조회에 반영되어야 한다.
+5. OCR 지연/실패가 세션 진행/회고 완료를 막지 않아야 한다.
 

@@ -1,0 +1,55 @@
+{
+  "trace_id": "trace-narrative_loop-20260304-redirecting-phase2",
+  "task_id": "T-narrative_loop-20260304-backend-redirecting-phase2",
+  "worker": "backend_cli",
+  "what_changed": [
+    "Hardened ai_jobs enqueue semantics so identical idempotency keys return deterministic existing jobs unless explicit terminal retry is requested.",
+    "Extended week insight path to return bounded 7-day metrics with immediate rule fallback and AI-derived next action only when already available.",
+    "Preserved non-blocking behavior by keeping reflection projection persistence off the request-critical path via background submission.",
+    "Added Phase2 stabilization tests for lifecycle determinism, delay/failure fallback, week insight behavior, and Phase1 regression safety."
+  ],
+  "validation": [
+    {
+      "name": "phase2_async_fallback_and_lifecycle_pytest",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py -k \"phase2_ai_job_lifecycle_and_polling or phase2_insight_fallback_when_ai_jobs_fail or phase2_ai_job_idempotency_is_deterministic or phase2_core_loop_non_blocking_under_ai_delay_and_failure or phase2_week_insight_uses_ai_when_available\"",
+      "outcome": "pass",
+      "evidence_path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_async_pytest.log"
+    },
+    {
+      "name": "phase1_non_blocking_regression_pytest",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py -k \"phase1_ or ocr_ingest\"",
+      "outcome": "pass",
+      "evidence_path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_phase1_regression_pytest.log"
+    },
+    {
+      "name": "full_gateway_regression_pytest",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py",
+      "outcome": "pass",
+      "evidence_path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_full_pytest.log"
+    },
+    {
+      "name": "result_contract_schema",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260303T180044Z.T-narrative_loop-20260304-backend-redirecting-phase2.result.json --schema orchestration/contracts/result.schema.json",
+      "outcome": "pass",
+      "evidence_path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_result_schema.log"
+    },
+    {
+      "name": "handoff_contract_schema",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py --file orchestration/handoff/20260303T180044Z.T-narrative_loop-20260304-backend-redirecting-phase2.handoff.json --schema orchestration/contracts/handoff.schema.json",
+      "outcome": "pass",
+      "evidence_path": "data/evidence/20260303T180044Z_backend_redirecting_phase2_handoff_schema.log"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Legacy reflection projection still depends on narrative logic internals that can emit Streamlit context warnings in bare background threads."
+    }
+  ],
+  "next_3_actions": [
+    "Merge this backend evidence with frontend/android phase2 iteration artifacts for CT pass/partial/block verdict.",
+    "Observe AI failure/delay rehearsal with identical commands to confirm fallback behavior remains deterministic.",
+    "Schedule optional cleanup to decouple reflection projection from Streamlit session context."
+  ],
+  "timestamp": "2026-03-03T18:00:44Z"
+}

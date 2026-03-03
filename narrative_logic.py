@@ -586,10 +586,21 @@ def get_current_echo(reference_text: str = None) -> dict:
 # ============================================================
 # Entropy Alert (prev. Red Protocol): Debt Logic
 # ============================================================
+def _is_entropy_hard_disabled() -> bool:
+    """
+    Demo-safe default: hard-disable entropy/gap runtime paths.
+    Set REDIRECTING_DEMO_DISABLE_ENTROPY=false to restore legacy behavior.
+    """
+    return os.getenv("REDIRECTING_DEMO_DISABLE_ENTROPY", "true").strip().lower() == "true"
+
+
 def is_entropy_mode() -> bool:
     """Check if Entropy Mode should be active (debt_count > 0).
     Cycle 03: Controlled by ENABLE_ENTROPY feature flag.
     """
+    if _is_entropy_hard_disabled():
+        return False
+
     flag = os.getenv("ENABLE_ENTROPY", "false").lower() == "true"
     if not flag:
         return False
@@ -998,6 +1009,9 @@ def run_active_intervention() -> list[str]:
     사용자 활동 패턴을 분석하여 개입(Intervention) 메시지를 생성합니다.
     [변경 이유] 중복 정의되었던 함수를 통합하고, 로직을 PolicyEngine으로 위임하여 응집도를 높임.
     """
+    if _is_entropy_hard_disabled():
+        return []
+
     last_log_timestamp = db.get_last_log_time()
     if not last_log_timestamp:
         return []
@@ -1569,6 +1583,9 @@ def evaluate_input_integrity(text: str) -> tuple[str, dict]:
     Returns: (status, core_ref)
     Status: "SAFE", "VIOLATION"
     """
+    if _is_entropy_hard_disabled():
+        return "SAFE", None
+
     cores = db.get_cores()
     if not cores:
         return "SAFE", None

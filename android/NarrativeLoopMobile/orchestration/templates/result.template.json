@@ -1,0 +1,35 @@
+{
+  "trace_id": "trace-narrative_loop-YYYYMMDD-phaseX",
+  "task_id": "T-narrative_loop-YYYYMMDD-android-redirecting-phaseX",
+  "worker": "android_ide",
+  "status": "success",
+  "summary": "One paragraph summary of what was implemented and verified.",
+  "outputs": [
+    {
+      "kind": "file",
+      "path": "app/src/main/java/...",
+      "description": "Primary code changes."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "device continuity scenario",
+      "status": "pass",
+      "note": "Token persisted across app restart; authorized OCR ingest returned 200."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Known gap or deferred work.",
+      "mitigation": "How it will be handled in next phase."
+    }
+  ],
+  "next_actions": [
+    "Action 1",
+    "Action 2",
+    "Action 3"
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-03-04T00:00:00Z"
+}

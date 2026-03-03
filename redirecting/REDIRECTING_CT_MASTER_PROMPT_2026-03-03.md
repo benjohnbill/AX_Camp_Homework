@@ -36,10 +36,12 @@ Read first (mandatory):
 5) redirecting/REDIRECTING_DATA_API_CONTRACT_2026-03-03.md
 6) redirecting/REDIRECTING_ROLLOUT_MIGRATION_PLAN_2026-03-03.md
 7) redirecting/REDIRECTING_KEEP_KILL_DECISION_2026-03-03.md
-8) docs/CT_BASELINE_2026-03-02.md
-9) docs/SESSION_BOOTSTRAP_PROTOCOL.md
-10) orchestration/handoff/latest.handoff.json
-11) orchestration/task.json
+8) redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md
+9) redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md
+10) docs/CT_BASELINE_2026-03-03_REDIRECTING_DEMO.md
+11) docs/SESSION_BOOTSTRAP_PROTOCOL.md
+12) orchestration/handoff/latest.handoff.json
+13) orchestration/task.json
 
 Source-of-truth priority (must follow):
 1. orchestration/handoff/latest.handoff.json
@@ -55,10 +57,17 @@ Common guardrails:
 - Keep existing governance/MCP policy unchanged unless approved in canonical handoff.
 
 Product direction lock (must preserve):
-- Core loop: Frog -> Time-Box -> Focus -> Reflection.
+- Core loop convergence: Plan-first(Frog -> Time-Box -> Focus) and Focus-first(Focus -> Retro Time-Box) both end at Reflection.
 - Stream is Assist-secondary, not default home entry.
 - Dashboard is guidance-oriented, not coercive.
 - Async AI is non-blocking; core loop must work even if AI jobs are delayed/failed.
+- Journal free-writing is allowed, but must be tracked separately and included in core metrics only after promotion.
+- OCR evidence must be optional, auto-anchored by session context, and curation-first at Reflection.
+- Core promotion in v1 must be manual-only (explicit user action). No AI auto-promotion.
+- 3D/insight hierarchy must be completion-first:
+  - Tier 1: session_completed (Focus+Reflection)
+  - Tier 2: session_interrupted (incomplete/stopped)
+  - Tier 3: supporting_evidence (OCR/support)
 
 Dashboard UX/business contract (non-coercive):
 - Never force "next action" completion.
@@ -74,6 +83,7 @@ Async worker contract:
 - Worker failure must not block Frog/Time-Box/Focus/Reflection.
 - Queue backlog and failure handling must degrade gracefully.
 - Use feature flags for safe rollout and rollback.
+- OCR failure/delay must not block evidence save or reflection completion.
 
 Execution scope (v1):
 - Implement and verify redirecting docs as canonical plan.
@@ -83,6 +93,11 @@ Execution scope (v1):
   - Keep+Demote: 3D Universe weekly replay
   - Stream assist-secondary
   - MCP integration later
+- Add dual entry parity:
+  - Plan Start and Focus Now are equal CTA at home.
+- Add evidence/journal policy:
+  - Evidence saved first, narrative linking later.
+  - Journal allowed, promotion-based inclusion to core loop KPIs.
 
 Out-of-scope (v1):
 - Forcing behavior completion or hard coercion UX
@@ -91,7 +106,7 @@ Out-of-scope (v1):
 
 Required outputs for this bootstrap run:
 1) Current state summary (facts only, with file paths)
-2) Gap matrix against redirecting docs
+2) Coverage matrix against redirecting docs
    - status: 충족 / 부분충족 / 미흡 / 심각
    - include evidence path per item
 3) Decision-complete implementation order

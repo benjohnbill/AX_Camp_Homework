@@ -1,0 +1,38 @@
+{
+  "trace_id": "trace-narrative_loop-20260303-redirecting-phase12",
+  "task_id": "T-narrative_loop-20260303-frontend-redirecting-phase12",
+  "worker": "frontend_ide",
+  "what_changed": [
+    "Home UI empty state now prompts users with Plan Start or Focus Now buttons.",
+    "Chronos mode refactored into setup, timer, and reflection stages via flow_stage.",
+    "st.form added to render_chronos_docking to stabilize input and minimize reruns.",
+    "Standardized session state to canonical keys: session_id, flow_stage, entry_mode, reflection_draft.",
+    "Gap/Entropy UX flow deactivated for redirected demo loop stability."
+  ],
+  "validation": [
+    {
+      "name": "Phase 1 Home Dual CTA Check",
+      "command": "grep 'home_plan_start' app.py && grep 'home_focus_now' app.py",
+      "outcome": "success",
+      "evidence_path": "app.py"
+    },
+    {
+      "name": "Chronos Flow Transition Verification",
+      "command": "grep 'flow_stage' app.py",
+      "outcome": "success",
+      "evidence_path": "app.py"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "low",
+      "description": "Dual-CTA state transition from Home directly to Modes (Control/Chronos) bypassing Stream messages might require further session cleanup."
+    }
+  ],
+  "next_3_actions": [
+    "Implement Reflection evidence curation (UI for selecting/skipping 1-2 images).",
+    "Develop 3-tier weekly replay representation (Summary, Chronos details, 3D context).",
+    "Integrate Weekly Reflection summary with backend retrieval pipeline."
+  ],
+  "timestamp": "2026-03-04T12:00:00Z"
+}

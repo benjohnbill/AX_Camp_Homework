@@ -1,0 +1,71 @@
+{
+  "trace_id": "trace-narrative_loop-20260303-redirecting-phase12",
+  "task_id": "T-narrative_loop-20260303-android-redirecting-phase12",
+  "worker": "android_ide",
+  "status": "success",
+  "summary": "Android Phase 1 OCR ingest/auth alignment was bridged from external repo artifacts into canonical orchestration format. Endpoint alignment, auth header path, and OCR success evidence were validated for redirecting demo scope.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/orchestration/results/20260303T120000Z.T-narrative_loop-20260303-android-redirecting-phase12.result.json",
+      "description": "External-repo original Android result artifact (source)."
+    },
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/orchestration/handoff/20260303T120000Z.T-narrative_loop-20260303-android-redirecting-phase12.handoff.json",
+      "description": "External-repo original Android handoff artifact (source)."
+    },
+    {
+      "kind": "file",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeApiService.kt",
+      "description": "OCR endpoint and VisionResponse contract alignment implementation."
+    },
+    {
+      "kind": "file",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/AuthInterceptor.kt",
+      "description": "Authorization Bearer header injection logic."
+    },
+    {
+      "kind": "log",
+      "path": "android/NarrativeLoopMobile/evidence/camera_fix_success_log.txt",
+      "description": "Staging OCR ingest success evidence (HTTP 200)."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "ocr_endpoint_alignment",
+      "status": "pass",
+      "note": "POST /v1/ocr/ingest path verified in NarrativeApiService.kt for multipart and JSON call paths."
+    },
+    {
+      "name": "auth_header_path",
+      "status": "pass",
+      "note": "Authorization: Bearer <token> injection verified in AuthInterceptor.kt."
+    },
+    {
+      "name": "ocr_success_log",
+      "status": "pass",
+      "note": "camera_fix_success_log.txt includes 200 OK response for staging /v1/ocr/ingest."
+    },
+    {
+      "name": "external_repo_bridge_step_b",
+      "status": "info",
+      "note": "Canonical artifact created by CT bridge normalization from android/NarrativeLoopMobile/orchestration/* source artifacts."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Android slow-lane artifacts were originally schema-incompatible and required CT normalization in bridge Step B.",
+      "mitigation": "Keep using external-repo bridge protocol and require schema-valid template at source in subsequent runs."
+    }
+  ],
+  "next_actions": [
+    "Maintain Android separate-repo artifact bridge process for upcoming iterations.",
+    "Keep Phase 2 scope deferred until CT publishes Phase 1 gate verdict.",
+    "Adopt schema-valid Android result/handoff templates directly in external repo to reduce CT normalization overhead."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-04T13:00:00Z"
+}

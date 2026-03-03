@@ -1,0 +1,86 @@
+{
+  "trace_id": "trace-narrative_loop-20260304-redirecting-phase2",
+  "task_id": "T-narrative_loop-20260304-android-redirecting-phase2",
+  "worker": "android_ide",
+  "status": "partial",
+  "summary": "Android Phase 2 Step A report was bridge-normalized into canonical format. Token persistence and interceptor wiring code exist, OCR path baseline remains available, but source artifacts were schema-incompatible and Phase 2 runtime continuity evidence is not fully same-window.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/orchestration/results/20260304T150000Z.T-narrative_loop-20260304-android-redirecting-phase2.result.json",
+      "description": "External-repo Step A source result artifact."
+    },
+    {
+      "kind": "artifact",
+      "path": "android/NarrativeLoopMobile/orchestration/handoff/20260304T150000Z.T-narrative_loop-20260304-android-redirecting-phase2.handoff.json",
+      "description": "External-repo Step A source handoff artifact."
+    },
+    {
+      "kind": "file",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/TokenStore.kt",
+      "description": "SharedPreferences token persistence implementation."
+    },
+    {
+      "kind": "file",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/HomeFragment.kt",
+      "description": "Manual/debug token set/clear and interceptor sync path."
+    },
+    {
+      "kind": "file",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/AuthInterceptor.kt",
+      "description": "Authorization Bearer header injection."
+    },
+    {
+      "kind": "log",
+      "path": "android/NarrativeLoopMobile/evidence/camera_fix_success_log.txt",
+      "description": "Baseline OCR ingest success evidence."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "tokenstore_present",
+      "status": "pass",
+      "note": "TokenStore.kt includes save/get/clear via SharedPreferences."
+    },
+    {
+      "name": "homefragment_token_sync",
+      "status": "pass",
+      "note": "HomeFragment sets ApiClient auth token on save/issue/refresh path."
+    },
+    {
+      "name": "auth_interceptor_header",
+      "status": "pass",
+      "note": "AuthInterceptor attaches Authorization: Bearer <token> when token exists."
+    },
+    {
+      "name": "stepa_schema_mismatch",
+      "status": "info",
+      "note": "Source Step A result/handoff used non-canonical keys/status and failed schema validation before normalization."
+    },
+    {
+      "name": "phase2_runtime_continuity_evidence",
+      "status": "info",
+      "note": "Universe/auth runtime evidence exists mostly from earlier cycle artifacts; same-window Phase 2-specific runtime bundle not fully provided."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "If HomeFragment token sync path is not exercised first, persisted token may not be pushed to ApiClient interceptor for non-Home entry flows.",
+      "mitigation": "Add app-start token bootstrap or enforce token sync on app launch and verify with phase2 runtime scenario evidence."
+    },
+    {
+      "severity": "medium",
+      "description": "External-repo Step A artifacts still drift from canonical schema.",
+      "mitigation": "Adopt schema-native templates in Android external repo and keep bridge protocol."
+    }
+  ],
+  "next_actions": [
+    "Submit schema-native Step A templates from Android external repo for future cycles.",
+    "Provide Phase 2 same-window runtime evidence for universe/auth continuity in emulator and/or physical run.",
+    "Re-run CT lane verdict after continuity evidence bundle is refreshed."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-04T15:35:00Z"
+}

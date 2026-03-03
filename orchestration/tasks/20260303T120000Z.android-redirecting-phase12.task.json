@@ -1,0 +1,71 @@
+{
+  "trace_id": "trace-narrative_loop-20260303-redirecting-phase12",
+  "task_id": "T-narrative_loop-20260303-android-redirecting-phase12",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Implement android lane for redirecting demo: Phase 1 OCR ingest contract alignment and stable auxiliary capture flow, then Phase 2 support for replay entry/auth continuity with clear demo-role boundaries.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260303T120000Z.redirecting-phase12-kickoff.task.json",
+      "description": "Redirecting phase12 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 1 android acceptance."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 2 android acceptance."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeApiService.kt",
+      "description": "Primary API contract implementation point."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "data/evidence/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "If full Focus/Reflection native flow is not implemented in phase window, explicitly position Android as auxiliary evidence input channel in demo artifacts."
+  },
+  "acceptance": [
+    "Phase 1 confirms OCR ingest contract compatibility with backend endpoint/body requirements and auth headers.",
+    "Android demo path is stable for capture/upload and does not misrepresent unsupported native flow.",
+    "Phase 2 confirms replay entry/auth continuity or publishes clear blocked evidence with mitigation.",
+    "Android lane publishes schema-valid result with emulator/physical evidence traceability when feasible."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Contract drift between Android Retrofit body and backend FastAPI ingress can silently break demo reliability."
+  },
+  "next_actions": [
+    "Align ingest endpoint/body contract and verify with real request evidence.",
+    "Capture Phase 1 auxiliary-flow evidence in emulator and at least one physical device when possible.",
+    "Execute limited Phase 2 continuity checks and publish schema-valid result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-03T12:00:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md",
+    "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md"
+  ],
+  "metadata": {
+    "domain": "android_redirecting_demo",
+    "priority": "P1",
+    "deadline_utc": "2026-03-08T12:00:00Z"
+  }
+}

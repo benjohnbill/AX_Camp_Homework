@@ -86,17 +86,18 @@ sunset_condition: Replace when v1 scope is frozen and implementation starts.
 3. **OCR 이벤트 표시 방식 고정**:
    - OCR/이미지 이벤트는 결과 레인에서 `마커 + 썸네일`로 표시한다.
    - 클릭 시 원본/AI 요약/사용자 1줄 의미를 동시에 보여준다.
-4. **실패-회복 지점(v1 라이트 규칙)**:
-   - 실패 이벤트: Focus 미완료 또는 Reflection의 blocker 명시.
-   - 회복 이벤트: 72시간 이내 유사 태그 세션에서 완료/개선 기록.
-   - 3D에서는 실패->회복 연결선을 강조 표시한다.
+4. **완결 우선 규칙(v1 라이트 규칙)**:
+   - Plan-first와 Focus-first 모두 Reflection까지 도달한 세션을 최우선으로 강조한다.
+   - 동일 기간 내에서는 세션 완결 이벤트가 미완결 이벤트보다 상위에 렌더링된다.
+   - 미완결/중단 이벤트는 보조 경고로 표시하되, 주 시각 중심은 완결 세션에 둔다.
 5. **태그 클러스터 범위 제한**:
    - v1은 Top 10 태그만 노출한다.
    - 동시출현(co-occurrence) 강도에 따라 연결선 두께/투명도를 조절한다.
 6. **데이터 우선순위**:
-   - 1순위: Time-Box/Focus/Reflection/OCR 이벤트 시간축.
-   - 2순위: 태그 클러스터와 실패-회복 링크.
-   - 즉, `시간 리플레이`가 3D의 본 기능이고 클러스터는 보조 분석이다.
+   - 1순위: `세션 완결 이벤트` (Focus 완료 + Reflection 제출).
+   - 2순위: Time-Box/Focus/OCR 시간축.
+   - 3순위: 태그 클러스터.
+   - 즉, 3D의 주 기능은 `완결된 실행 세션 리플레이`이고 나머지는 보조 분석이다.
 
 ### 4.6 구현 참고용 이벤트 스키마 (v1)
 1. 공통 필드:
@@ -110,8 +111,8 @@ sunset_condition: Replace when v1 scope is frozen and implementation starts.
    - `focus_end`
    - `reflection_submitted`
    - `image_evidence_added`
-   - `failure_marker`
-   - `recovery_marker`
+   - `session_completed_marker`
+   - `session_interrupted_marker`
 4. OCR 전용 필드:
    - `image_uri`, `thumbnail_uri`, `intent_label`, `ai_summary`, `user_meaning`
 
@@ -119,14 +120,14 @@ sunset_condition: Replace when v1 scope is frozen and implementation starts.
 1. 목적:
    - 구현 난이도를 낮추고, 짧은 기간 내 동작 가능한 3D 회고 리플레이를 확보한다.
 2. 우선순위 레벨:
-   - **Level 1**: 미완료/중단 이벤트
-   - **Level 2**: 완료 + Reflection 제출 이벤트
+   - **Level 1**: 완료 + Reflection 제출 이벤트
+   - **Level 2**: 미완료/중단 이벤트
    - **Level 3**: OCR/기타 보조 이벤트
 3. 배치 규칙:
    - 레인 A(계획): Time-Box 블록을 시간순으로 배치
    - 레인 B(결과): 동일 시간 충돌 시 `L1 > L2 > L3` 순서로 상단 배치
 4. 시각 규칙:
-   - L1 = 빨강, L2 = 초록, L3 = 회색
+   - L1 = 초록, L2 = 주황, L3 = 회색
    - v1에서는 가중치/점수 계산을 사용하지 않는다.
 5. v1 제외:
    - 동적 랭킹 점수
@@ -143,23 +144,21 @@ sunset_condition: Replace when v1 scope is frozen and implementation starts.
 1. OCR의 핵심 목적은 `글쓰기 대체`가 아니라 `행동/맥락 증거 수집`이다.
 2. 이미지는 먼저 원본으로 저장하고, 텍스트화(OCR/요약)는 보조 처리로 수행한다.
 3. 의미 결정의 최종 권한은 사용자에게 둔다.
-4. 운영 원칙:
+4. 업로드 시 의도 라벨 강제 대신, 세션 자동 연결 + Reflection 시점 의미 확정을 기본으로 한다.
+5. 운영 원칙:
    - 이미지는 사실(Fact)
    - 사용자 1줄은 의미(Meaning)
    - AI는 연결 보조(Assist)
 
 ### 5.2 처리 파이프라인
 1. Android에서 이미지 업로드
-2. 사용자가 의도 라벨 1개 선택:
-   - 계획 근거
-   - 진행 증거
-   - 결과 증거
-   - 감정/상태
+2. 시스템이 자동 연결 시도:
+   - 우선순위: `active focus session -> today latest session -> inbox`
 3. 백그라운드 AI가 보조 해석:
    - 텍스트가 있으면 OCR 추출
    - 텍스트가 약하면 장면 요약/키워드 생성
-4. 이미지 이벤트를 현재 세션(Frog/Time-Box/Reflection)에 연결
-5. 사용자가 "이 이미지가 오늘 목표와 어떤 관련인지" 1줄 기록
+4. Reflection에서 세션 관련 이미지 1~2장만 큐레이션 제시
+5. 사용자가 "이 이미지가 오늘 목표와 어떤 관련인지" 1줄 기록 또는 Skip
 
 ### 5.3 루프 편입 규칙
 1. 작업 전 이미지:
@@ -170,23 +169,39 @@ sunset_condition: Replace when v1 scope is frozen and implementation starts.
    - Reflection 근거 데이터로 연결
 
 ### 5.4 v1 범위 제한
-1. 이미지 자체 저장 + 세션 연결 + 라벨 + 1줄 의미까지를 v1에 포함
+1. 이미지 자체 저장 + 세션 연결 + 1줄 의미까지를 v1에 포함
 2. 고급 비전 추론(복잡한 장면 이해, 자동 의도 판정)은 v1 제외
 3. OCR이 실패해도 이미지 이벤트 저장/연결은 반드시 성공해야 함
+4. 대량 이미지 탐색 UI는 v1 제외, Reflection 큐레이션 우선
+
+## 5.5 자유 감상 정책 (확정)
+1. 타이머 없이 자유 감상 작성을 허용한다.
+2. 자유 감상은 우선 journal로 저장하고 코어 루프 지표에서 분리 집계한다.
+3. 사용자가 원할 때 execution session으로 승격할 수 있다.
+4. 승격 시 `next_action` 필드를 기준으로 추천/분석 루프에 포함한다.
+
+## 5.6 Core 승격 정책 (확정)
+1. v1에서 Core 승격은 사용자 수동 확정만 허용한다.
+2. AI는 Core 자동 승격/자동 확정을 수행하지 않는다.
+3. AI는 요약/태그 정리와 같은 보조 역할만 수행한다.
+4. 승격 출처는 `execution_session` 또는 `journal`로 제한한다.
 
 ## 6) v1 Scope 컷
 
 ### 6.1 포함
-1. Frog + Time-Box + Focus + Reflection
+1. Plan-first + Focus-first + Reflection 합류
 2. Android OCR -> Frog 후보 연결
-3. Universe 2D 행동 추천 카드
-4. 3D Universe 주간 리플레이(7일 고정, 2레인 UI)
-5. Stream Assist 보조 모드
+3. 자유 감상(Journal) + 세션 승격
+4. Core 수동 승격(사용자 직접 확정)
+5. Universe 2D 행동 추천 카드
+6. 3D Universe 주간 리플레이(7일 고정, 2레인 UI)
+7. Stream Assist 보조 모드
 
 ### 6.2 제외
 1. MBTI류 성격 추론
 2. Notion/Obsidian 실시간 양방향 동기화
 3. 3D 메인화
+4. AI 자동 Core 승격/자동 후보 큐
 
 ## 7) KPI (결정 검증용)
 1. OCR 캡처 -> 세션 시작 전환율
@@ -194,7 +209,7 @@ sunset_condition: Replace when v1 scope is frozen and implementation starts.
 3. 대시보드 진입 후 추천 CTA 실행률
 4. 주간 회고(3D) 진입률과 회고 후 계획 생성률
 5. 3D 종료 CTA(다음 블록 생성) 실행률
-6. 실패->회복 링크가 생성된 세션 비율
+6. Reflection까지 도달한 세션 비율(주간)
 
 ## 8) 리스크와 대응
 1. 3D 집착 리스크:
@@ -205,11 +220,12 @@ sunset_condition: Replace when v1 scope is frozen and implementation starts.
    - 대응: export/deep-link부터 단계 도입.
 
 ## 9) 실행 우선순위
-1. 메인 루프 전환(Frog -> Time-Box -> Focus -> Reflection)
-2. OCR 연결
-3. Universe 2D 행동 추천화
-4. 3D 회고 전용화
-5. MCP 검토는 v1 이후
+1. 메인 루프 전환(Plan-first + Focus-first -> Reflection 합류)
+2. OCR 자동 연결 + reflection 큐레이션
+3. Journal 허용 + 승격 파이프라인
+4. Universe 2D 행동 추천화
+5. 3D 회고 전용화
+6. MCP 검토는 v1 이후
 
 ## 10) 리뷰 방식
 - 이 문서를 기준으로 사용자 피드백을 반영해 keep/kill 결정을 반복 업데이트한다.

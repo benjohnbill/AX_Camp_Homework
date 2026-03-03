@@ -1,0 +1,74 @@
+{
+  "trace_id": "trace-narrative_loop-20260303-redirecting-phase12",
+  "task_id": "T-narrative_loop-20260303-backend-redirecting-phase12",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Implement backend lane for redirecting demo: Phase 1 minimal execution-session APIs and non-blocking OCR/log compatibility, then Phase 2 minimal ai_jobs lifecycle and insight fallback without blocking core loop.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260303T120000Z.redirecting-phase12-kickoff.task.json",
+      "description": "Redirecting phase12 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_DATA_API_CONTRACT_2026-03-03.md",
+      "description": "Target API and model contract."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE1_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 1 backend acceptance."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE2_DEMO_CHECKLIST_2026-03-03.md",
+      "description": "Phase 2 backend acceptance."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "gateway_fastapi.py",
+      "narrative_logic.py",
+      "db_manager_postgres.py",
+      "sql/",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Keep /v1/narrative and /v1/ocr/ingest compatibility. No hard dependency on external worker for Phase 1 completion."
+  },
+  "acceptance": [
+    "Phase 1 APIs are available with demo-safe minimum path: session start/focus end/reflect/today or equivalent compatibility path.",
+    "OCR ingest save path remains non-blocking and reflection completion is not blocked by OCR/AI delay or failure.",
+    "Phase 2 ai_jobs minimum states (queued/running/succeeded/failed) and insight fallback behavior are demonstrable without blocking core loop.",
+    "Backend lane publishes schema-valid result with commands/evidence paths."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Introducing full async architecture too early can destabilize demo; implement only checklist-scoped minimal lifecycle."
+  },
+  "next_actions": [
+    "Implement and verify Phase 1 minimal API path first with compatibility checks.",
+    "Publish Phase 1 evidence and gate outcome before touching Phase 2 ai_jobs logic.",
+    "Implement Phase 2 minimal async lifecycle with rule-based fallback and publish schema-valid result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-03T12:00:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_DATA_API_CONTRACT_2026-03-03.md",
+    "integration_status.md"
+  ],
+  "metadata": {
+    "domain": "backend_redirecting_demo",
+    "priority": "P0",
+    "deadline_utc": "2026-03-08T12:00:00Z"
+  }
+}

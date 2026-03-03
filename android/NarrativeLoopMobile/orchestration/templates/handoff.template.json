@@ -1,0 +1,27 @@
+{
+  "trace_id": "trace-narrative_loop-YYYYMMDD-phaseX",
+  "task_id": "T-narrative_loop-YYYYMMDD-android-redirecting-phaseX",
+  "worker": "android_ide",
+  "what_changed": [
+    "Change 1"
+  ],
+  "validation": [
+    {
+      "name": "validation name",
+      "outcome": "pass",
+      "evidence_path": "evidence/..."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Risk description"
+    }
+  ],
+  "next_3_actions": [
+    "Action 1",
+    "Action 2",
+    "Action 3"
+  ],
+  "timestamp": "2026-03-04T00:00:00Z"
+}

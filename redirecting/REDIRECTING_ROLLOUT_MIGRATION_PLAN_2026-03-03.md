@@ -25,9 +25,12 @@ sunset_condition: Replace after redirecting rollout is completed or cancelled.
 
 ## 2) Feature flags
 - `FF_EXECUTION_HOME_ENABLED`
+- `FF_DUAL_ENTRY_ENABLED`
 - `FF_TIMEBOX_COMPONENT_ENABLED`
 - `FF_ASYNC_WORKER_ENABLED`
 - `FF_REFLECTION_REQUIRED`
+- `FF_OCR_AUTO_ANCHOR_ENABLED`
+- `FF_JOURNAL_PROMOTION_ENABLED`
 - `FF_ASSIST_SECONDARY_MODE`
 
 ## 3) 단계별 계획
@@ -40,13 +43,17 @@ sunset_condition: Replace after redirecting rollout is completed or cancelled.
 ### Phase 1: 백엔드 선행
 1. execution session API 추가.
 2. ai_jobs enqueue 로직 추가.
-3. worker 프로세스 배포 (flag off).
+3. OCR evidence 업로드 + image_events + async OCR 경로 추가.
+4. journal entry + promote API 추가.
+5. worker 프로세스 배포 (flag off).
 
 ### Phase 2: UI 병행
-1. 홈에서 새 플로우 진입 버튼만 추가.
+1. 홈에서 `Plan Start` / `Focus Now` 동등 진입 버튼 추가.
 2. 구 Stream을 기본 유지한 채 새 플로우 내부 QA.
 3. Time-Box 컴포넌트 장애 시 폴백 검증.
-4. 이 단계에서는 "채팅 기본 비노출"을 요구하지 않는다 (최종 Acceptance 대상 아님).
+4. Focus 중 evidence 업로드 및 Reflection 큐레이션 QA.
+5. Journal 입력 + 승격 UX QA.
+6. 이 단계에서는 "채팅 기본 비노출"을 요구하지 않는다 (최종 Acceptance 대상 아님).
 
 ### Phase 3: 제한 공개
 1. 내부 사용자 + 소수 베타(10%).
@@ -64,14 +71,20 @@ sunset_condition: Replace after redirecting rollout is completed or cancelled.
 2. 포커스 종료 후 job enqueue 정상.
 3. worker down 상황에서 코어 플로우 유지.
 4. Time-Box 컴포넌트 오류 시 폴백 동작.
-5. 기존 `/v1/narrative` 경로 비회귀.
+5. OCR 실패/지연과 무관하게 evidence 저장 및 Reflection 진행 가능.
+6. Journal 저장과 승격이 코어 루프와 충돌 없이 동작.
+7. Core 승격은 사용자 수동 액션에서만 생성됨(자동 생성 없음).
+8. 기존 `/v1/narrative` 경로 비회귀.
 
 ## 5) 성공 지표 (초기 2주)
 1. 새 플로우 시작률 >= 60%.
 2. Focus 완료율 >= 45%.
 3. Reflection 작성률 >= 70%.
 4. D1 재방문률 +10%p 개선.
-5. Stream 진입 비율은 줄어도 세션 완료율은 상승.
+5. OCR evidence 업로드 후 reflection 링크율 >= 50%.
+6. Journal -> 세션 승격률 추이(주간) 측정.
+7. Core 수동 승격률(세션/저널 대비) 추이 측정.
+8. Stream 진입 비율은 줄어도 세션 완료율은 상승.
 
 ## 6) 롤백 조건
 1. 새 플로우 오류율 급증.
