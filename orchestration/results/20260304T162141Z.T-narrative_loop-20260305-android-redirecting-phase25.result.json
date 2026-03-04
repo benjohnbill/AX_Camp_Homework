@@ -1,0 +1,74 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-android-redirecting-phase25",
+  "worker": "android_ide",
+  "status": "blocked",
+  "summary": "Android OCR upload payload now includes session-link fields (`session_id` + `session-link`) and resolves an active session before upload. Build compile and explicit backend contract probe passed, while same-window physical+emulator runtime verification is blocked in this window due zero connected ADB devices.",
+  "outputs": [
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeApiService.kt",
+      "description": "Added session lookup/start APIs and multipart OCR session-link parts."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeRepository.kt",
+      "description": "Resolved session_id via today/start flow and attached session link fields in OCR multipart upload."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/CreateNarrativeFragment.kt",
+      "description": "Logged OCR session link response fields and added OCR text fallback handling."
+    },
+    {
+      "kind": "log",
+      "path": "android/NarrativeLoopMobile/evidence/20260304T162141Z_android_phase25_ocr_session_link.log",
+      "description": "OCR session-link contract probe and build/device evidence log."
+    },
+    {
+      "kind": "report",
+      "path": "android/NarrativeLoopMobile/evidence/20260304T162141Z_android_phase25_dual_device.md",
+      "description": "Same-window physical+emulator check result."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "android compileDebugKotlin",
+      "command": "$env:GRADLE_USER_HOME='D:\\\\dev\\\\Narrative_Loop\\\\android\\\\NarrativeLoopMobile\\\\.gradle-user'; ./gradlew.bat :app:compileDebugKotlin --console=plain",
+      "status": "pass",
+      "note": "BUILD SUCCESSFUL with compileDebugKotlin UP-TO-DATE."
+    },
+    {
+      "name": "ocr explicit session-link contract probe",
+      "command": "python(TestClient) POST /v1/execution/session/start + POST /v1/ocr/ingest(data.session_id)",
+      "status": "pass",
+      "note": "Response returned status=accepted, session_id matched request, link_rule=explicit."
+    },
+    {
+      "name": "android payload field presence",
+      "command": "rg -n \"session-link|session_id|uploadImageForVision\" android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/...",
+      "status": "pass",
+      "note": "NarrativeApiService multipart includes both session_id and session-link parts."
+    },
+    {
+      "name": "same-window dual-device availability",
+      "command": "adb devices -l",
+      "status": "fail",
+      "note": "No physical or emulator device detected in current UTC window."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "AC requirement for physical+emulator same-window runtime verification is not met in this execution window.",
+      "mitigation": "Reconnect one physical device and one emulator, then rerun OCR+Universe continuity and update mirrored artifacts in same window."
+    }
+  ],
+  "next_actions": [
+    "Attach one physical device and one emulator, then rerun same-window OCR upload verification.",
+    "Capture token continuity and Universe regression logs from both devices in one window.",
+    "Update Step A and mirrored Step B result with PASS evidence once dual-device run succeeds."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-03-04T16:21:41Z"
+}

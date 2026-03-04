@@ -1,0 +1,64 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/tasks/20260305T020500Z.redirecting-phase25-it2-kickoff.task.json",
+  "deadline_utc": "2026-03-12T12:00:00Z",
+  "deadline_note": "Close Android E2E gaps and complete Phase2.5 close eligibility.",
+  "common_guard": "stabilization-only. no Phase3 expansion. evidence-first and schema-valid artifacts are mandatory.",
+  "common_rules": [
+    "No secrets exposure or destructive commands.",
+    "No deploy/schema migration without explicit user approval.",
+    "Narrative-only status claims are invalid without reproducible evidence paths.",
+    "Android Step A/B bridge protocol is mandatory.",
+    "Phase2.5 close is forbidden until Android lane status is success."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260305T020500Z.backend-rp25-it2.task.json",
+      "scope_in": [
+        "contract drift guard",
+        "non-blocking guard rerun",
+        "Android payload contract clarity support"
+      ],
+      "scope_out": [
+        "new feature expansion",
+        "schema redesign",
+        "infra/deploy changes"
+      ],
+      "prompt": "You are backend_cli for rp25-it2. Keep phase2.5 backend baseline green, verify contract consistency needed by Android E2E, and publish schema-valid support evidence."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260305T020500Z.frontend-rp25-it2.task.json",
+      "scope_in": [
+        "stage-flow regression guard",
+        "session-linked reflection evidence path stability"
+      ],
+      "scope_out": [
+        "phase3 architecture work",
+        "UI expansion unrelated to gap closure"
+      ],
+      "prompt": "You are frontend_ide for rp25-it2. Hold staged flow baseline and provide quick regression evidence while Android E2E gaps are closed."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260305T020500Z.android-rp25-it2.task.json",
+      "scope_in": [
+        "save/refine runtime implementation",
+        "plan/focus stage API chain integration",
+        "desk read path",
+        "dual-device same-window E2E proof"
+      ],
+      "scope_out": [
+        "backend API redesign",
+        "phase3 native expansion",
+        "narrative-only completion claims"
+      ],
+      "prompt": "You are android_ide for rp25-it2. Close all documented E2E gaps and submit schema-valid mirrored artifacts proving SC-A/SC-B/SC-C/SC-D pass."
+    }
+  ],
+  "ct_acceptance_rule": "CT proceeds to phase2.5 close only when Android lane is success with full E2E evidence and backend/frontend remain non-regressed."
+}
+

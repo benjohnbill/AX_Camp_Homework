@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-agg",
+  "worker": "docs_worker",
+  "status": "success",
+  "summary": "RP25 iteration-2 aggregation passed. Backend/frontend support lanes stayed non-regressed and Android lane moved from partial to success with SC-A/B/C/D evidence and schema-valid mirrored artifacts.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T165028Z.T-narrative_loop-20260305-backend-rp25-it2.result.json",
+      "description": "Backend rp25-it2 support result."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T165127Z.T-nl-20260305-rp25-it2-frontend.result.json",
+      "description": "Frontend rp25-it2 support result."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T182632Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json",
+      "description": "Android rp25-it2 success result."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/20260305T023000Z.T-nl-20260305-rp25-it2-aggregate.handoff.json",
+      "description": "RP25 iteration-2 aggregate handoff."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "backend_support_lane_non_regressed",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260304T165028Z.T-narrative_loop-20260305-backend-rp25-it2.result.json"
+    },
+    {
+      "name": "frontend_support_lane_non_regressed",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260304T165127Z.T-nl-20260305-rp25-it2-frontend.result.json"
+    },
+    {
+      "name": "android_lane_partial_to_success",
+      "status": "pass",
+      "note": "evidence_paths=android/NarrativeLoopMobile/evidence/20260304T182632Z_android_phase25_e2e_walkthrough.md,android/NarrativeLoopMobile/evidence/20260304T182632Z_android_phase25_e2e_logcat.log,orchestration/results/20260304T182632Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json"
+    },
+    {
+      "name": "ac_gate_sc_a_b_c_d",
+      "status": "pass",
+      "note": "SC-A/SC-B/SC-C/SC-D all marked pass in android walkthrough and lane result."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Android runtime verification used debug local bridge due staging gateway unresponsiveness during this run.",
+      "mitigation": "Run one staging replay when gateway responsiveness is restored and attach delta evidence."
+    }
+  ],
+  "next_actions": [
+    "Publish phase2.5 close package with current aggregate as canonical basis.",
+    "Track staging replay as post-close verification task (non-blocking).",
+    "Keep Phase3 expansion blocked until explicit go decision."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-05T02:30:00Z"
+}
+

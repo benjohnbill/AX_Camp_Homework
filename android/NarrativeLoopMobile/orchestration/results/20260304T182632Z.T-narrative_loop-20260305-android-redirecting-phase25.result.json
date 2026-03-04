@@ -1,0 +1,104 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-android",
+  "worker": "android_ide",
+  "status": "success",
+  "summary": "Android Phase2.5 lane moved to success under stabilization-only scope. CreateNarrative refine/save runtime handlers, stage API chains, OCR image_event_id reflection linking, desk read path, and dual-device same-window verification are complete with SC-A/B/C/D pass evidence.",
+  "outputs": [
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/CreateNarrativeFragment.kt",
+      "description": "Implemented AI refine, save runtime, retry UX, stage chain wiring, and OCR evidence link propagation."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeApiService.kt",
+      "description": "Added execution/session endpoints and OCR multipart contract fields including session-link."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeRepository.kt",
+      "description": "Wired plan/focus API chain calls, reflect evidence_links with image_event_id, and desk/session read helpers."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/ui/desk/DeskFragment.kt",
+      "description": "Added today session + insights read path for persisted result visibility."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/res/layout/fragment_create_narrative.xml",
+      "description": "Added mode selector and stage/status/evidence UI state fields."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/ApiClient.kt",
+      "description": "Enabled debug API base URL override to support local gateway stabilization bridge."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/build.gradle.kts",
+      "description": "Added debug BuildConfig API_BASE_URL and DEBUG_TOKEN_BASE_URL property overrides with staging defaults."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/debug/AndroidManifest.xml",
+      "description": "Enabled cleartext traffic for debug-only localhost bridge validation."
+    },
+    {
+      "kind": "file",
+      "path": "android/NarrativeLoopMobile/orchestration/scripts/run_phase25_dual_device_e2e.ps1",
+      "description": "Automated dual-device UI run, SC gate checks, and evidence generation script."
+    },
+    {
+      "kind": "report",
+      "path": "android/NarrativeLoopMobile/evidence/20260304T182632Z_android_phase25_e2e_walkthrough.md",
+      "description": "SC-A/B/C/D walkthrough with pass verdict and same-window snippets."
+    },
+    {
+      "kind": "log",
+      "path": "android/NarrativeLoopMobile/evidence/20260304T182632Z_android_phase25_e2e_logcat.log",
+      "description": "CreateNarrativeFragment stage/action/evidence logs including OCR session-link metadata."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "dual_device_e2e_script_run",
+      "command": "pwsh -File android/NarrativeLoopMobile/orchestration/scripts/run_phase25_dual_device_e2e.ps1",
+      "status": "pass",
+      "note": "timestamp=20260304T182632Z; sc_a=true; sc_b=true; sc_c=true; sc_d=true; success_gate=true"
+    },
+    {
+      "name": "android_install_debug_local_bridge",
+      "command": "gradlew.bat :app:installDebug -PNL_API_BASE_URL=http://127.0.0.1:8790/",
+      "status": "pass",
+      "note": "Installed app-debug.apk on both R3CR80HR90W and emulator-5554."
+    },
+    {
+      "name": "local_gateway_contract_probe",
+      "command": "Invoke-RestMethod POST http://127.0.0.1:8790/v1/execution/session/start; POST /v1/ocr/ingest",
+      "status": "pass",
+      "note": "session/start returned 200 and ocr/ingest returned status=accepted with non-empty image_event_id."
+    },
+    {
+      "name": "result_schema_validation",
+      "command": "pwsh -File tools/project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260304T182632Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json --schema orchestration/contracts/result.schema.json",
+      "status": "pass",
+      "note": "PASS 20260304T182632Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Staging gateway endpoint remained unresponsive during this run, so runtime validation used local gateway bridge.",
+      "mitigation": "Kept staging as default API base URL and limited localhost routing to debug build override for stabilization-only verification."
+    }
+  ],
+  "next_actions": [
+    "Re-run the same dual-device script against staging URL when gateway responsiveness is restored.",
+    "Keep the generated walkthrough/logcat artifacts attached to CT iteration-2 closure packet.",
+    "Optionally add instrumentation tests for image_event_id propagation into reflect evidence_links."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-03-04T18:26:32Z"
+}

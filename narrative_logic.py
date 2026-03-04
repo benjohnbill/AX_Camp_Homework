@@ -532,8 +532,8 @@ def extract_metadata(text: str) -> dict:
 # ============================================================
 # Core Log Operations
 # ============================================================
-def save_log(text: str) -> dict:
-    """Save a new Log (Fragment)"""
+def save_log(text: str, meta_type: str = "Log") -> dict:
+    """Save a new log entry with optional meta_type for compatibility flows."""
     # [Safety] Sanitize input
     text = gateway.sanitize_input(text)
     if not text:
@@ -542,9 +542,11 @@ def save_log(text: str) -> dict:
     embedding = get_embedding(text)
     metadata = extract_metadata(text)
     
+    resolved_meta_type = str(meta_type or "Log")
+
     log = db.create_log(
         content=text,
-        meta_type="Log", # [Refactor]
+        meta_type=resolved_meta_type,
         embedding=embedding,
         emotion=metadata["emotion"],
         dimension=metadata["dimension"],

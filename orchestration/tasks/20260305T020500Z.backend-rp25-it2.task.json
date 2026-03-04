@@ -1,0 +1,52 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-backend",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Hold backend phase2.5 baseline and provide E2E support contracts/log checks for Android iteration-2 without schema/API drift.",
+  "inputs": [
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260304T160727Z.T-narrative_loop-20260305-backend-redirecting-phase25.result.json",
+      "description": "Backend baseline to preserve."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/dispatch/20260304T163934Z-android-phase25-e2e-implementation-prompt.md",
+      "description": "Android E2E implementation needs for contract alignment."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "gateway_fastapi.py",
+      "tests/",
+      "orchestration/",
+      "data/evidence/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No API/schema expansion. Support Android E2E with contract clarity and quick guard reruns only."
+  },
+  "acceptance": [
+    "No regression in phase2.5 contract transition and non-blocking tests.",
+    "Android-required endpoints and fields remain consistent and documented.",
+    "Schema-valid backend iteration-2 support result is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Uncoordinated endpoint/field changes can re-break Android E2E while backend tests stay green."
+  },
+  "next_actions": [
+    "Run backend guard bundle for drift check.",
+    "Confirm evidence-link/reflect payload contract for Android.",
+    "Publish schema-valid backend support result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T02:05:00Z"
+}
+

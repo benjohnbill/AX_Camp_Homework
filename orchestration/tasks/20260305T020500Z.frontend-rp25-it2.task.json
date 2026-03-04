@@ -1,0 +1,52 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-frontend",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Keep frontend phase2.5 staged-flow baseline stable and provide targeted regression evidence while Android iteration-2 E2E gaps are closed.",
+  "inputs": [
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260304T161031Z.T-narrative_loop-20260305-frontend-redirecting-phase25.result.json",
+      "description": "Frontend baseline to preserve."
+    },
+    {
+      "kind": "file",
+      "value": "data/evidence/20260304T161031Z_frontend_phase25_flow_walkthrough.md",
+      "description": "Current flow proof baseline."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "tests/",
+      "orchestration/",
+      "data/evidence/"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No scope expansion; only regression guard and Android-linked data path sanity checks."
+  },
+  "acceptance": [
+    "Plan-first and Focus-first stage transitions remain green.",
+    "Reflection evidence curation path remains session-linked and non-placeholder.",
+    "Schema-valid frontend iteration-2 support result is published."
+  ],
+  "risk": {
+    "level": "medium",
+    "note": "Rapid Android support edits can accidentally re-introduce frontend placeholder paths."
+  },
+  "next_actions": [
+    "Run phase2.5 frontend helper/replay tests.",
+    "Capture updated walkthrough note if any UI path changed.",
+    "Publish schema-valid frontend support result."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T02:05:00Z"
+}
+

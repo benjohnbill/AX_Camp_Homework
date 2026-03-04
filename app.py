@@ -41,6 +41,21 @@ _REPLAY_META_TIER = {
     "supporting_evidence": 3,
 }
 
+_FLOW_STAGE_START_CHOICE = "start_choice"
+_FLOW_STAGE_FROG = "frog"
+_FLOW_STAGE_TIMEBOX_EDIT = "timebox_edit"
+_FLOW_STAGE_TIMEBOX_COMMIT = "timebox_commit"
+_FLOW_STAGE_FOCUS_RUNNING = "focus_running"
+_FLOW_STAGE_RETRO_TIMEBOX = "retro_timebox"
+_FLOW_STAGE_REFLECTION = "reflection"
+_FLOW_STAGE_DONE = "done"
+
+_FOCUS_PRESETS = {
+    "25/5": 25,
+    "50/10": 50,
+    "90/20": 90,
+}
+
 # ============================================================
 # Page Config & Initialization
 # ============================================================
@@ -202,6 +217,116 @@ def _build_weekly_replay_payload(
             break
 
     return filtered, tier_counts
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _utc_now_iso() -> str:
+    return _utc_now().isoformat()
+
+
+def _resolve_chronos_stage(raw_stage: str) -> str:
+    stage = str(raw_stage or "").strip().lower()
+    if stage in {"", "idle", "setup"}:
+        return _FLOW_STAGE_START_CHOICE
+    if stage == "timer":
+        return _FLOW_STAGE_FOCUS_RUNNING
+    if stage not in {
+        _FLOW_STAGE_START_CHOICE,
+        _FLOW_STAGE_FROG,
+        _FLOW_STAGE_TIMEBOX_EDIT,
+        _FLOW_STAGE_TIMEBOX_COMMIT,
+        _FLOW_STAGE_FOCUS_RUNNING,
+        _FLOW_STAGE_RETRO_TIMEBOX,
+        _FLOW_STAGE_REFLECTION,
+        _FLOW_STAGE_DONE,
+    }:
+        return _FLOW_STAGE_START_CHOICE
+    return stage
+
+
+def _next_stage_after_focus(entry_mode: str) -> str:
+    return _FLOW_STAGE_RETRO_TIMEBOX if str(entry_mode or "").strip() == "focus_now" else _FLOW_STAGE_REFLECTION
+
+
+def _reset_execution_flow(entry_mode: str, initial_stage: str) -> None:
+    st.session_state["session_id"] = str(uuid.uuid4())
+    st.session_state["entry_mode"] = entry_mode
+    st.session_state["flow_stage"] = initial_stage
+    st.session_state["execution_started_at"] = _utc_now_iso()
+    st.session_state["focus_started_at"] = None
+    st.session_state["focus_finished_at"] = None
+    st.session_state["chronos_running"] = False
+    st.session_state["chronos_end_time"] = None
+    st.session_state["chronos_finished"] = False
+    st.session_state["plan_frog_title"] = ""
+    st.session_state["plan_frog_why"] = ""
+    st.session_state["plan_timebox_title"] = ""
+    st.session_state["plan_timebox_goal"] = ""
+    st.session_state["plan_timebox_why"] = ""
+    st.session_state["plan_timebox_minutes"] = int(st.session_state.get("chronos_duration", 25) or 25)
+    st.session_state["retro_timebox_note"] = ""
+    st.session_state["reflection_good"] = ""
+    st.session_state["reflection_hard"] = ""
+    st.session_state["reflection_next_action"] = ""
+    st.session_state["reflection_free_text"] = ""
+
+
+def _collect_session_evidence_candidates(
+    logs: Iterable[dict],
+    session_start_raw: Optional[str],
+    limit: int = 24,
+) -> List[dict]:
+    start_at = _parse_log_timestamp(session_start_raw) or (_utc_now() - timedelta(days=1))
+    candidates: List[dict] = []
+    seen_ids: set[str] = set()
+    for row in reversed(list(logs or [])):
+        if not isinstance(row, dict):
+            continue
+        row_id = str(row.get("id") or "").strip()
+        if not row_id or row_id in seen_ids:
+            continue
+
+        ts = _parse_log_timestamp(row.get("created_at") or row.get("timestamp"))
+        if ts is None or ts < start_at:
+            continue
+
+        content = str(row.get("content") or "").strip()
+        if not content:
+            continue
+
+        meta_type = str(row.get("meta_type") or "Log").strip()
+        label = f"[{meta_type}] {content[:55]} ({ts.strftime('%m-%d %H:%M')})"
+        candidates.append(
+            {
+                "id": row_id,
+                "meta_type": meta_type,
+                "content": content,
+                "created_at": ts.isoformat(),
+                "label": label,
+            }
+        )
+        seen_ids.add(row_id)
+        if len(candidates) >= max(1, int(limit)):
+            break
+    return candidates
+
+
+def _finish_focus_session(mark_interrupted: bool = False) -> None:
+    st.session_state["chronos_running"] = False
+    st.session_state["chronos_finished"] = True
+    st.session_state["focus_finished_at"] = _utc_now_iso()
+    db.clear_chronos_timer()
+    if mark_interrupted:
+        st.session_state["flow_stage"] = _FLOW_STAGE_START_CHOICE
+        logic.save_log(
+            f"Session interrupted | session_id={st.session_state.get('session_id')}",
+            meta_type="session_interrupted",
+        )
+    else:
+        st.session_state["flow_stage"] = _next_stage_after_focus(st.session_state.get("entry_mode", "plan"))
 
 
 def _parse_positive_int(raw: str, default: int) -> int:
@@ -409,7 +534,7 @@ def init_session_state():
     if "session_id" not in st.session_state:
         st.session_state["session_id"] = str(uuid.uuid4())
     if "flow_stage" not in st.session_state:
-        st.session_state["flow_stage"] = "idle"
+        st.session_state["flow_stage"] = _FLOW_STAGE_START_CHOICE
     if "entry_mode" not in st.session_state:
         st.session_state["entry_mode"] = "none"
     if "reflection_draft" not in st.session_state:
@@ -435,6 +560,7 @@ def init_session_state():
             st.session_state['chronos_end_time'] = saved_end
             st.session_state['chronos_running'] = True
             st.session_state['chronos_finished'] = False
+            st.session_state["flow_stage"] = _FLOW_STAGE_FOCUS_RUNNING
 
     defaults = {
         'gatekeeper_dismissed': False,
@@ -452,6 +578,20 @@ def init_session_state():
         'workspace_dock_open': False,
         'profile_settings_open': False,
         'sidebar_open': True,
+        'execution_started_at': "",
+        'focus_started_at': None,
+        'focus_finished_at': None,
+        'plan_frog_title': "",
+        'plan_frog_why': "",
+        'plan_timebox_title': "",
+        'plan_timebox_goal': "",
+        'plan_timebox_why': "",
+        'plan_timebox_minutes': 25,
+        'retro_timebox_note': "",
+        'reflection_good': "",
+        'reflection_hard': "",
+        'reflection_next_action': "",
+        'reflection_free_text': "",
     }
     for key, val in defaults.items():
         if key not in st.session_state:
@@ -978,12 +1118,14 @@ def render_stream_mode():
         c1, c2 = st.columns(2)
         with c1:
             if st.button(f"{icons.get_icon_text('layout-dashboard')} **Plan Start**", key="home_plan_start", use_container_width=True, type="primary"):
-                st.session_state["mode"] = "control"
+                _reset_execution_flow(entry_mode="plan", initial_stage=_FLOW_STAGE_FROG)
+                st.session_state["mode"] = "chronos"
                 st.rerun()
         with c2:
             if st.button(f"{icons.get_icon_text('timer')} **Focus Now**", key="home_focus_now", use_container_width=True, type="primary"):
+                _reset_execution_flow(entry_mode="focus_now", initial_stage=_FLOW_STAGE_FOCUS_RUNNING)
                 st.session_state["mode"] = "chronos"
-                st.session_state["flow_stage"] = "setup"
+                start_timer(25, flow_stage=_FLOW_STAGE_FOCUS_RUNNING, rerun=False)
                 st.rerun()
 
         st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
@@ -1087,21 +1229,135 @@ def process_stream_input(user_input: str):
 
 def render_chronos_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('timer', size=40)} CHRONOS</h1><p>Time is the currency.</p></div>", unsafe_allow_html=True)
-    
-    # Check if timer finished while away
-    if st.session_state['chronos_running'] and st.session_state['chronos_end_time']:
-        if (st.session_state['chronos_end_time'] - datetime.now(timezone.utc)).total_seconds() <= 0:
-            st.session_state['chronos_running'] = False
-            st.session_state['chronos_finished'] = True
-            st.session_state['flow_stage'] = "reflection"
 
-    # Sync flow_stage with legacy flags for compatibility
-    if st.session_state.get('chronos_finished') or st.session_state.get('flow_stage') == "reflection":
-        render_chronos_docking()
-    elif st.session_state.get('chronos_running') or st.session_state.get('flow_stage') == "timer":
-        render_chronos_timer()
-    else:
+    stage = _resolve_chronos_stage(st.session_state.get("flow_stage"))
+    st.session_state["flow_stage"] = stage
+
+    # Finish transition for tab refresh/browser reload when timer already ended.
+    if st.session_state.get("chronos_running") and st.session_state.get("chronos_end_time"):
+        remain = st.session_state["chronos_end_time"] - _utc_now()
+        if remain.total_seconds() <= 0:
+            _finish_focus_session(mark_interrupted=False)
+            stage = _resolve_chronos_stage(st.session_state.get("flow_stage"))
+            st.session_state["flow_stage"] = stage
+
+    if stage == _FLOW_STAGE_START_CHOICE:
         render_chronos_setup()
+    elif stage == _FLOW_STAGE_FROG:
+        _render_chronos_frog_stage()
+    elif stage == _FLOW_STAGE_TIMEBOX_EDIT:
+        _render_chronos_timebox_edit_stage()
+    elif stage == _FLOW_STAGE_TIMEBOX_COMMIT:
+        _render_chronos_timebox_commit_stage()
+    elif stage == _FLOW_STAGE_FOCUS_RUNNING:
+        render_chronos_timer()
+    elif stage == _FLOW_STAGE_RETRO_TIMEBOX:
+        _render_chronos_retro_timebox_stage()
+    elif stage == _FLOW_STAGE_REFLECTION:
+        render_chronos_docking()
+    else:
+        _render_chronos_done_stage()
+
+
+def render_chronos_setup():
+    st.caption("Start Choice")
+    c1, c2 = st.columns(2)
+    if c1.button(f"{icons.get_icon_text('layout-dashboard')} Plan-first 시작", key="chronos_plan_start", use_container_width=True, type="primary"):
+        _reset_execution_flow(entry_mode="plan", initial_stage=_FLOW_STAGE_FROG)
+        st.rerun()
+    if c2.button(f"{icons.get_icon_text('timer')} Focus-first 시작", key="chronos_focus_start", use_container_width=True, type="primary"):
+        _reset_execution_flow(entry_mode="focus_now", initial_stage=_FLOW_STAGE_FOCUS_RUNNING)
+        start_timer(25, flow_stage=_FLOW_STAGE_FOCUS_RUNNING, rerun=False)
+        st.rerun()
+
+
+def _render_chronos_frog_stage():
+    st.markdown(f"### {icons.get_icon_text('sparkles')} Frog 단계")
+    with st.form("chronos_frog_form", clear_on_submit=False):
+        frog_title = st.text_input(
+            "오늘 반드시 해야 할 일 1개",
+            key="plan_frog_title",
+            placeholder="예: 발표 슬라이드 1차 완성",
+        )
+        frog_why = st.text_area(
+            "왜 이 일이 중요한가요? (선택)",
+            key="plan_frog_why",
+            placeholder="예: 금주 데모 핵심 리스크를 선제 차단하기 위해",
+        )
+        submitted = st.form_submit_button("다음: Time-Box 설계", type="primary", use_container_width=True)
+        if submitted:
+            if len(frog_title.strip()) < 3:
+                st.error("Frog 항목을 3자 이상 입력해 주세요.")
+            else:
+                if not st.session_state.get("execution_started_at"):
+                    st.session_state["execution_started_at"] = _utc_now_iso()
+                if not st.session_state.get("plan_timebox_title"):
+                    st.session_state["plan_timebox_title"] = frog_title.strip()
+                st.session_state["flow_stage"] = _FLOW_STAGE_TIMEBOX_EDIT
+                st.rerun()
+
+
+def _render_chronos_timebox_edit_stage():
+    st.markdown(f"### {icons.get_icon_text('calendar')} Time-Box 설계")
+    with st.form("chronos_timebox_form", clear_on_submit=False):
+        st.text_input("블록 제목", key="plan_timebox_title", placeholder="예: 발표 슬라이드 핵심 메시지 정리")
+        st.text_input("블록 목표", key="plan_timebox_goal", placeholder="예: 5장 구조 + 핵심 메시지 1줄씩")
+        st.text_area("왜 이 블록을 지금 하나요?", key="plan_timebox_why")
+        minutes = st.selectbox(
+            "Focus 프리셋",
+            options=list(_FOCUS_PRESETS.keys()),
+            index=0,
+            key="plan_focus_preset_label",
+        )
+        st.session_state["plan_timebox_minutes"] = _FOCUS_PRESETS.get(minutes, 25)
+
+        c1, c2 = st.columns(2)
+        with c1:
+            back = st.form_submit_button("이전: Frog", use_container_width=True)
+        with c2:
+            submitted = st.form_submit_button("다음: Commit", type="primary", use_container_width=True)
+
+        if back:
+            st.session_state["flow_stage"] = _FLOW_STAGE_FROG
+            st.rerun()
+
+        if submitted:
+            if len(str(st.session_state.get("plan_timebox_title", "")).strip()) < 3:
+                st.error("Time-Box 제목을 3자 이상 입력해 주세요.")
+            elif len(str(st.session_state.get("plan_timebox_goal", "")).strip()) < 3:
+                st.error("Time-Box 목표를 3자 이상 입력해 주세요.")
+            else:
+                st.session_state["flow_stage"] = _FLOW_STAGE_TIMEBOX_COMMIT
+                st.rerun()
+
+
+def _render_chronos_timebox_commit_stage():
+    st.markdown(f"### {icons.get_icon_text('check-circle')} Commit 단계")
+    st.info(
+        f"Frog: {st.session_state.get('plan_frog_title', '')}\n\n"
+        f"Time-Box: {st.session_state.get('plan_timebox_title', '')}\n\n"
+        f"Goal: {st.session_state.get('plan_timebox_goal', '')}\n\n"
+        f"Preset: {int(st.session_state.get('plan_timebox_minutes') or 25)}분"
+    )
+
+    c1, c2 = st.columns(2)
+    if c1.button("Commit 후 Focus 시작", key="chronos_commit_start_focus", use_container_width=True, type="primary"):
+        st.session_state["entry_mode"] = "plan"
+        st.session_state["flow_stage"] = _FLOW_STAGE_FOCUS_RUNNING
+        logic.save_log(
+            (
+                f"Plan committed | session_id={st.session_state.get('session_id')} | "
+                f"frog={st.session_state.get('plan_frog_title','')} | "
+                f"timebox={st.session_state.get('plan_timebox_title','')} | "
+                f"goal={st.session_state.get('plan_timebox_goal','')}"
+            ),
+            meta_type="session_plan_committed",
+        )
+        start_timer(int(st.session_state.get("plan_timebox_minutes") or 25), flow_stage=_FLOW_STAGE_FOCUS_RUNNING, rerun=False)
+        st.rerun()
+    if c2.button("Time-Box 수정", key="chronos_commit_back_to_edit", use_container_width=True):
+        st.session_state["flow_stage"] = _FLOW_STAGE_TIMEBOX_EDIT
+        st.rerun()
 
 def render_chronos_timer():
     rem = st.session_state['chronos_end_time'] - datetime.now(timezone.utc)
@@ -1143,66 +1399,86 @@ def render_chronos_timer():
     
     c1, c2 = st.columns(2)
     if c1.button(f"{icons.get_icon_text('check-circle')} 완료", key="chronos_complete_btn", use_container_width=True):
-        st.session_state['chronos_running'] = False
-        st.session_state['chronos_finished'] = True
-        st.session_state['flow_stage'] = "reflection"
-        db.clear_chronos_timer()
+        _finish_focus_session(mark_interrupted=False)
         st.rerun()
     if c2.button(f"{icons.get_icon_text('shield-alert')} 취소", key="chronos_cancel_btn", use_container_width=True):
-        st.session_state['chronos_running'] = False
-        st.session_state['flow_stage'] = "setup"
-        db.clear_chronos_timer()
+        _finish_focus_session(mark_interrupted=True)
         st.rerun()
 
-def render_chronos_setup():
-    c1, c2, c3 = st.columns(3)
-    if c1.button(f"{icons.get_icon_text('flame')} 25분", key="timer_25", use_container_width=True): start_timer(25)
-    if c2.button(f"{icons.get_icon_text('target')} 60분", key="timer_60", use_container_width=True): start_timer(60)
-    with c3:
-        mins = st.number_input("분", 1, 180, 45, key="timer_custom_mins")
-        if st.button(f"{icons.get_icon_text('zap')} 시작", key="timer_custom_start", use_container_width=True):
-            start_timer(mins)
-
-def start_timer(m: int):
+def start_timer(m: int, flow_stage: str = _FLOW_STAGE_FOCUS_RUNNING, rerun: bool = True):
     end_time = datetime.now(timezone.utc) + timedelta(minutes=m)
     st.session_state['chronos_duration'] = m
     st.session_state['chronos_end_time'] = end_time
     st.session_state['chronos_running'] = True
-    st.session_state['flow_stage'] = "timer"
+    st.session_state['flow_stage'] = flow_stage
+    st.session_state['focus_started_at'] = _utc_now_iso()
     db.set_chronos_timer(end_time)  # [B-2] DB에 영속화
-    st.rerun()
+    if rerun:
+        st.rerun()
+
+
+def _render_chronos_retro_timebox_stage():
+    st.markdown(f"### {icons.get_icon_text('book-open')} Retro Time-Box")
+    st.caption("Focus-first 경로: 종료한 집중 블록의 의미를 사후 정리합니다. (Skip 가능)")
+    with st.form("chronos_retro_form", clear_on_submit=False):
+        retro_note = st.text_area(
+            "방금 완료한 블록을 한 줄로 정리",
+            key="retro_timebox_note",
+            placeholder="예: 알림 방해가 있었지만 핵심 2장을 완성했다.",
+        )
+        c1, c2 = st.columns(2)
+        with c1:
+            submitted = st.form_submit_button("Retro 저장 후 Reflection", type="primary", use_container_width=True)
+        with c2:
+            skipped = st.form_submit_button("Retro Skip", use_container_width=True)
+
+        if submitted:
+            if len(retro_note.strip()) < 5:
+                st.error("Retro 내용을 5자 이상 입력하거나 Skip을 선택해 주세요.")
+            else:
+                logic.save_log(
+                    f"Retro TimeBox | session_id={st.session_state.get('session_id')} | note={retro_note.strip()}",
+                    meta_type="session_retro_timebox",
+                )
+                st.session_state["flow_stage"] = _FLOW_STAGE_REFLECTION
+                st.rerun()
+        if skipped:
+            st.session_state["flow_stage"] = _FLOW_STAGE_REFLECTION
+            st.rerun()
 
 def render_chronos_docking():
-    st.info(f"{icons.get_icon_text('anchor')} 성취를 기록하고 핵심 가치(Core)에 연결하세요.")
-    
-    with st.form("chronos_reflection_form", clear_on_submit=False):
-        consts = db.get_cores()
-        options = {c['content'][:50]: c['id'] for c in consts}
-        
-        if not options:
-            st.warning("연결할 Core가 없습니다. 먼저 Control에서 Core를 생성하세요.")
-            if st.form_submit_button("돌아가기"):
-                st.session_state['flow_stage'] = "setup"
-                st.session_state['chronos_finished'] = False
-                st.rerun()
-            return
+    st.info(f"{icons.get_icon_text('anchor')} Reflection: 잘된 점/막힌 점/다음 행동을 기록하고 evidence를 큐레이션하세요.")
 
-        sel = st.multiselect("Core 선택", list(options.keys()))
-        acc = st.text_area("성취 기록 (최소 10자)", placeholder="이 세션 동안 무엇을 해냈나요?", key="reflection_draft")
-        
-        # [PHASE 2] Evidence Curation 1~2 items
-        st.markdown(f"#### {icons.get_icon_text('image')} Evidence Curation (Optional)")
-        st.caption("이 세션을 증명하거나 기억하고 싶은 장면 1~2개를 선택하세요. 선택하지 않으면 Skip 처리됩니다.")
-        
-        # In a real app, these would come from the user's recent uploads or session snapshots.
-        # For the demo, we show a list of placeholder "Recent Evidence" to choose from.
-        # To minimize rerun churn, we keep the selection inside the form.
-        evidence_options = ["📷 Workspace Screenshot", "📝 Handwritten Note", "📈 Performance Graph", "🌟 Inspiration Image"]
-        selected_evidence = st.multiselect("증거 선택 (최대 2개)", evidence_options, max_selections=2)
-        
+    with st.form("chronos_reflection_form", clear_on_submit=False):
+        cores = db.get_cores()
+        core_options = {c["content"][:50]: c["id"] for c in cores}
+        selected_core_names = st.multiselect("Core 선택 (선택)", list(core_options.keys()))
+
+        reflection_good = st.text_area("1) 무엇이 잘 됐나", key="reflection_good")
+        reflection_hard = st.text_area("2) 무엇이 막혔나", key="reflection_hard")
+        reflection_next_action = st.text_input("3) 다음 행동 1개", key="reflection_next_action")
+        reflection_free_text = st.text_area("자유 회고 (선택)", key="reflection_free_text")
+
+        st.markdown(f"#### {icons.get_icon_text('image')} Evidence Curation (Session-linked)")
+        candidates = _collect_session_evidence_candidates(
+            logic.load_logs(),
+            session_start_raw=str(st.session_state.get("execution_started_at") or ""),
+        )
+        candidate_by_label = {row["label"]: row for row in candidates}
+        selected_labels: List[str] = []
+        if candidate_by_label:
+            selected_labels = st.multiselect(
+                "실제 세션 evidence 선택 (최대 2개)",
+                list(candidate_by_label.keys()),
+                max_selections=2,
+            )
+            st.caption("OCR/Stream/기록 로그 중 현재 세션 시각 이후 데이터만 노출합니다.")
+        else:
+            st.caption("현재 세션에 연결 가능한 evidence가 없습니다. (Skip 가능)")
+
         evidence_meaning = ""
-        if selected_evidence:
-            evidence_meaning = st.text_input("증거의 의미 (1줄)", placeholder="예: 오늘 가장 집중했던 순간의 기록")
+        if selected_labels:
+            evidence_meaning = st.text_input("선택 evidence의 의미 (1줄)", placeholder="예: 알림 차단 후 실제 집중이 시작된 순간")
         else:
             st.caption("선택된 증거가 없습니다. (Skip 가능)")
 
@@ -1210,38 +1486,81 @@ def render_chronos_docking():
         with c1:
             submitted = st.form_submit_button(f"{icons.get_icon_text('anchor')} 저장 및 종료", type="primary", use_container_width=True)
         with c2:
-            skipped = st.form_submit_button("성취 없이 종료", use_container_width=True)
+            skipped = st.form_submit_button("회고 건너뛰기 (Interrupted)", use_container_width=True)
 
         if submitted:
             meaning_text = evidence_meaning.strip()
-            if not sel:
-                st.error("최소 하나 이상의 Core를 선택해야 합니다.")
-            elif len(acc) < 10:
-                st.error("기록이 너무 짧습니다. (최소 10자)")
-            elif selected_evidence and not meaning_text:
+            good_text = str(reflection_good or "").strip()
+            hard_text = str(reflection_hard or "").strip()
+            next_text = str(reflection_next_action or "").strip()
+            free_text = str(reflection_free_text or "").strip()
+
+            if not good_text or not hard_text or not next_text:
+                st.error("Reflection 3개 필드(잘됨/막힘/다음행동)는 필수입니다.")
+            elif selected_labels and not meaning_text:
                 st.error("증거를 선택했다면 1줄 의미를 입력하거나 증거 선택을 해제해 Skip 하세요.")
             else:
-                # Save primary log
-                logic.save_chronos_log(acc, [options[n] for n in sel], st.session_state['chronos_duration'])
-                
-                # Save curated evidence if any
-                if selected_evidence:
-                    for ev in selected_evidence:
-                        logic.save_log(f"Evidence: {ev} | Meaning: {meaning_text}", meta_type="supporting_evidence")
+                core_ids = [core_options[name] for name in selected_core_names]
+                summary = (
+                    f"[Reflection] good={good_text} | hard={hard_text} | "
+                    f"next_action={next_text} | free={free_text}"
+                )
+                if core_ids:
+                    logic.save_chronos_log(summary, core_ids, int(st.session_state.get("chronos_duration") or 0))
+                else:
+                    logic.save_log(summary, meta_type="Log")
 
-                db.clear_chronos_timer()
-                st.session_state['chronos_finished'] = False
-                st.session_state['flow_stage'] = "setup"
-                st.session_state['mode'] = "stream" # Return to home
+                logic.save_log(
+                    f"Session completed | session_id={st.session_state.get('session_id')} | next_action={next_text}",
+                    meta_type="session_completed",
+                )
+
+                if selected_labels:
+                    for label in selected_labels:
+                        linked = candidate_by_label[label]
+                        logic.save_log(
+                            (
+                                f"Evidence link | session_id={st.session_state.get('session_id')} | "
+                                f"source_log_id={linked['id']} | meaning={meaning_text}"
+                            ),
+                            meta_type="supporting_evidence",
+                        )
+
+                st.session_state["flow_stage"] = _FLOW_STAGE_DONE
+                st.session_state["chronos_finished"] = False
+                st.session_state["chronos_running"] = False
                 st.balloons()
                 st.rerun()
-        
+
         if skipped:
-            db.clear_chronos_timer()
-            st.session_state['chronos_finished'] = False
-            st.session_state['flow_stage'] = "setup"
-            st.session_state['mode'] = "stream"
+            logic.save_log(
+                f"Session interrupted at reflection | session_id={st.session_state.get('session_id')}",
+                meta_type="session_interrupted",
+            )
+            st.session_state["flow_stage"] = _FLOW_STAGE_DONE
+            st.session_state["chronos_finished"] = False
+            st.session_state["chronos_running"] = False
             st.rerun()
+
+
+def _render_chronos_done_stage():
+    st.success("세션이 종료되었습니다. 다음 루프를 선택하세요.")
+    st.caption(
+        f"entry_mode={st.session_state.get('entry_mode')} | "
+        f"session_id={st.session_state.get('session_id')}"
+    )
+    c1, c2, c3 = st.columns(3)
+    if c1.button("새 Plan 세션", key="chronos_done_new_plan", use_container_width=True):
+        _reset_execution_flow(entry_mode="plan", initial_stage=_FLOW_STAGE_FROG)
+        st.rerun()
+    if c2.button("새 Focus 세션", key="chronos_done_new_focus", use_container_width=True):
+        _reset_execution_flow(entry_mode="focus_now", initial_stage=_FLOW_STAGE_FOCUS_RUNNING)
+        start_timer(25, flow_stage=_FLOW_STAGE_FOCUS_RUNNING, rerun=False)
+        st.rerun()
+    if c3.button("Stream으로 이동", key="chronos_done_stream", use_container_width=True):
+        st.session_state["mode"] = "stream"
+        st.session_state["flow_stage"] = _FLOW_STAGE_START_CHOICE
+        st.rerun()
 
 def render_universe_mode():
     st.markdown(f"<div style='text-align:center;'><h1>{icons.get_icon('orbit', size=40)} SOUL ANALYTICS</h1></div>", unsafe_allow_html=True)

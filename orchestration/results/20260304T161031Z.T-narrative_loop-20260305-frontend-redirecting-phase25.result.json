@@ -1,0 +1,80 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-frontend-redirecting-phase25",
+  "worker": "frontend_ide",
+  "status": "success",
+  "summary": "Restored full frontend staged flow within Phase 2.5 scope: Plan Start now enters frog stage (not control bypass), Plan-first path implements frog/timebox/commit/focus/reflection, Focus-first path implements focus->retro_timebox->reflection, and reflection evidence curation now uses real session-linked logs instead of placeholders.",
+  "outputs": [
+    {
+      "kind": "patch",
+      "path": "app.py",
+      "description": "Implemented full staged Chronos flow state machine and session-linked evidence curation."
+    },
+    {
+      "kind": "patch",
+      "path": "tests/test_phase25_frontend_flow_helpers.py",
+      "description": "Added helper-level regression tests for stage resolution, focus branching, and session evidence filtering."
+    },
+    {
+      "kind": "artifact",
+      "path": "data/evidence/20260304T161031Z_frontend_phase25_flow_walkthrough.md",
+      "description": "Timestamped flow walkthrough evidence for Plan-first / Focus-first / Reflection evidence paths."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "plan_start_to_frog_rewire",
+      "command": "rg -n 'home_plan_start|_reset_execution_flow\\(entry_mode=\"plan\"|_render_chronos_frog_stage|_render_chronos_timebox_edit_stage|_render_chronos_timebox_commit_stage' app.py",
+      "status": "pass",
+      "note": "Plan Start now enters Chronos Frog stage and Plan-first staged forms are present."
+    },
+    {
+      "name": "focus_first_retro_path",
+      "command": "rg -n 'home_focus_now|_reset_execution_flow\\(entry_mode=\"focus_now\"|_next_stage_after_focus|_FLOW_STAGE_RETRO_TIMEBOX|_render_chronos_retro_timebox_stage' app.py",
+      "status": "pass",
+      "note": "Focus-first now routes to retro_timebox before reflection."
+    },
+    {
+      "name": "reflection_session_linked_evidence",
+      "command": "rg -n 'Evidence Curation \\(Session-linked\\)|_collect_session_evidence_candidates|실제 세션 evidence 선택|meta_type=\"supporting_evidence\"' app.py",
+      "status": "pass",
+      "note": "Placeholder evidence list was replaced by session-linked candidate query + curated persistence."
+    },
+    {
+      "name": "compileall_guard",
+      "command": "python -m compileall -q app.py tests/test_phase25_frontend_flow_helpers.py tests/test_phase2_replay_filtering.py universe_3d.py",
+      "status": "pass",
+      "note": "Syntax/build guard passed in current shell."
+    },
+    {
+      "name": "result_schema_validation",
+      "command": "python tools/validate_contracts.py --file orchestration/results/20260304T161031Z.T-narrative_loop-20260305-frontend-redirecting-phase25.result.json --schema orchestration/contracts/result.schema.json",
+      "status": "pass",
+      "note": "Contract validation passed (fallback validator mode; jsonschema module not installed in this shell)."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "UI stage flow is session_state-driven; if backend phase2.5 endpoint contracts diverge, server-side traceability can lag behind UI path restoration.",
+      "mitigation": "Keep frontend flow evidence and backend transition tests aligned in CT aggregate."
+    },
+    {
+      "severity": "low",
+      "description": "Current environment lacks pytest module, so runtime test execution could not be performed here."
+    }
+  ],
+  "next_actions": [
+    "Run pytest-based frontend tests in a pytest-enabled environment and attach logs.",
+    "Capture UI screenshot artifact for reflection evidence curation if CT requires image proof.",
+    "Cross-check with backend lane for end-to-end API-backed session stage parity."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-04T16:10:31Z",
+  "metrics": {
+    "duration_sec": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

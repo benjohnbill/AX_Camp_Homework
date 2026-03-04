@@ -1,0 +1,57 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-kickoff",
+  "worker": "docs_worker",
+  "status": "success",
+  "summary": "Phase2.5 iteration-2 kickoff activated to close Android E2E implementation gaps while preserving backend/frontend pass baselines.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/task.json",
+      "description": "Active rp25-it2 kickoff task."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/dispatch/20260305-rp25-it2-kickoff.worker-prompts.json",
+      "description": "Iteration-2 worker prompt package."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/dispatch/20260305-rp25-it2-l2-directives.md",
+      "description": "Copy/paste L2 directives."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/tasks/20260305T020500Z.android-rp25-it2.task.json",
+      "description": "Android iteration-2 gap-closure task."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "android_partial_gap_report",
+      "status": "pass",
+      "note": "evidence_path=android/NarrativeLoopMobile/evidence/20260304T163934Z_android_phase25_e2e_self_validation.md"
+    },
+    {
+      "name": "backend_frontend_baselines_available",
+      "status": "pass",
+      "note": "evidence_paths=orchestration/results/20260304T160727Z.T-narrative_loop-20260305-backend-redirecting-phase25.result.json,orchestration/results/20260304T161031Z.T-narrative_loop-20260305-frontend-redirecting-phase25.result.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Phase2.5 close can be invalid if Android E2E implementation remains partial.",
+      "mitigation": "Require SC-A/SC-B/SC-C/SC-D runtime evidence and schema-valid success result from Android."
+    }
+  ],
+  "next_actions": [
+    "Dispatch rp25-it2 directives immediately.",
+    "Collect Android implementation evidence and support lane guard reruns.",
+    "Aggregate and decide phase2.5 close only after Android success."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-05T02:05:00Z"
+}
+

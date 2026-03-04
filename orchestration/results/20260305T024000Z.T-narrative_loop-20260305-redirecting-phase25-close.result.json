@@ -1,0 +1,62 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-close",
+  "task_id": "T-nl-20260305-rp25-close",
+  "worker": "docs_worker",
+  "status": "success",
+  "summary": "Redirecting Phase2.5 close is published. Full workflow restoration gate is accepted with backend/frontend/android evidence, while staging replay remains tracked as non-blocking post-close verification.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/task.json",
+      "description": "Phase2.5 close task baseline."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260305T023000Z.T-nl-20260305-rp25-it2-aggregate.result.json",
+      "description": "RP25 iteration-2 aggregate result."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/20260305T024000Z.T-narrative_loop-20260305-redirecting-phase25-close.handoff.json",
+      "description": "Phase2.5 close handoff."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/latest.handoff.json",
+      "description": "Latest pointer switched to phase2.5 close."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "rp25_it2_aggregate_pass",
+      "status": "pass",
+      "note": "evidence_path=orchestration/results/20260305T023000Z.T-nl-20260305-rp25-it2-aggregate.result.json"
+    },
+    {
+      "name": "android_gap_closure_confirmed",
+      "status": "pass",
+      "note": "evidence_paths=android/NarrativeLoopMobile/evidence/20260304T182632Z_android_phase25_e2e_walkthrough.md,orchestration/results/20260304T182632Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json"
+    },
+    {
+      "name": "schema_contracts_close_package",
+      "status": "pass",
+      "note": "task/result/handoff validations passed for close package."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Staging runtime replay for Android E2E is pending; current runtime proof used debug local bridge.",
+      "mitigation": "Execute one staging replay verification when gateway responsiveness is restored and append evidence."
+    }
+  ],
+  "next_actions": [
+    "Run one staging replay verification for Android E2E when gateway is healthy.",
+    "Keep phase2.5 scope frozen and block Phase3 until explicit go.",
+    "Archive phase2.5 close package in integration tracking."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-05T02:40:00Z"
+}
+

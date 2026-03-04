@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-backend-redirecting-phase25",
+  "owner": "control_tower",
+  "assigned_worker": "backend_cli",
+  "goal": "Implement backend contracts required for full workflow restoration in Phase 2.5: frog/timebox/retro/evidence-link paths and deterministic state transitions with non-blocking AI fallback.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260305T003000Z.redirecting-phase25-kickoff.task.json",
+      "description": "Phase 2.5 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+      "description": "Phase 2.5 backend scope and acceptance."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+      "description": "Backend checklist rows."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "gateway_fastapi.py",
+      "narrative_logic.py",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "No schema-breaking API redesign. Preserve backward compatibility while adding Phase 2.5 contracts."
+  },
+  "acceptance": [
+    "session frog/timebox draft/timebox retro/evidence-link contracts are implemented or mapped via equivalent endpoint contract.",
+    "state transitions for start/commit/focus/reflect/journal/promote/core are deterministic and tested.",
+    "AI delay/failure does not block core completion flow.",
+    "Schema-valid result artifact with reproducible evidence is published."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Incorrect transition semantics can invalidate full-flow claims while tests appear partially green."
+  },
+  "next_actions": [
+    "Implement contracts and fallback guards first.",
+    "Add or update regression tests for full-flow transitions.",
+    "Publish schema-valid backend phase2.5 result for CT aggregation."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T00:30:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+    "redirecting/MVP_TIMEBOX_EXECUTION_REFLECTION_DESIGN_2026-03-03.md"
+  ],
+  "metadata": {
+    "domain": "backend_phase25_full_flow",
+    "priority": "P0"
+  }
+}
+

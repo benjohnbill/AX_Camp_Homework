@@ -1,0 +1,45 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-agg",
+  "worker": "control_tower",
+  "what_changed": [
+    "Ingested backend/frontend rp25-it2 support results and Android rp25-it2 success result.",
+    "Validated schema compliance and evidence linkage for SC-A/B/C/D closure.",
+    "Published rp25-it2 aggregate PASS and moved to close publication step."
+  ],
+  "validation": [
+    {
+      "name": "backend_rp25_it2_result",
+      "outcome": "pass",
+      "evidence_path": "orchestration/results/20260304T165028Z.T-narrative_loop-20260305-backend-rp25-it2.result.json"
+    },
+    {
+      "name": "frontend_rp25_it2_result",
+      "outcome": "pass",
+      "evidence_path": "orchestration/results/20260304T165127Z.T-nl-20260305-rp25-it2-frontend.result.json"
+    },
+    {
+      "name": "android_rp25_it2_result",
+      "outcome": "pass",
+      "evidence_path": "orchestration/results/20260304T182632Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json"
+    },
+    {
+      "name": "rp25_it2_aggregate",
+      "outcome": "pass",
+      "evidence_path": "orchestration/results/20260305T023000Z.T-nl-20260305-rp25-it2-aggregate.result.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Staging gateway replay is pending; current Android E2E runtime proof is based on debug local bridge."
+    }
+  ],
+  "next_3_actions": [
+    "Publish phase2.5 close result/handoff.",
+    "Set latest handoff pointer to phase2.5 close.",
+    "Keep staging replay as post-close non-blocking verification."
+  ],
+  "timestamp": "2026-03-05T02:30:00Z"
+}
+

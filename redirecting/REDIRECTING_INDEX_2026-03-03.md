@@ -2,7 +2,7 @@
 doc_type: redirecting_index
 owner: product
 authority_level: planning
-last_updated: 2026-03-04
+last_updated: 2026-03-05
 sync_with:
   - redirecting/MVP_TIMEBOX_EXECUTION_REFLECTION_DESIGN_2026-03-03.md
   - app.py
@@ -36,6 +36,8 @@ sunset_condition: Replace when redirecting plan is frozen into implementation ti
 12. [REDIRECTING_PHASE3_DEMO_CHECKLIST_2026-03-03.md](./REDIRECTING_PHASE3_DEMO_CHECKLIST_2026-03-03.md)
 13. [REDIRECTING_PHASE2_EXECUTION_PLAN_2026-03-04.md](./REDIRECTING_PHASE2_EXECUTION_PLAN_2026-03-04.md)
 14. [REDIRECTING_PHASE2_CLOSURE_2026-03-04.md](./REDIRECTING_PHASE2_CLOSURE_2026-03-04.md)
+15. [REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md](./REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md)
+16. [REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md](./REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md)
 
 ## 구현 순서 (권장)
 1. 데이터/API 계약 확정.
@@ -44,7 +46,8 @@ sunset_condition: Replace when redirecting plan is frozen into implementation ti
 4. 롤아웃/플래그/검증 절차로 점진 전환.
 5. Phase 1 Fast MVP 기준으로 우선 출시.
 6. Phase 2 Mid MVP에서 3D 회고/비동기 최소 고도화.
-7. Phase 3 Complete에서 아키텍처 승격.
+7. Phase 2.5 Full Flow에서 핵심 사용자 흐름 복원.
+8. Phase 3 Complete에서 아키텍처 승격.
 
 ## 범위 명시
 - 본 redirecting 패키지는 "설계 문서"이며, 코드 변경은 별도 실행 단계에서 진행한다.

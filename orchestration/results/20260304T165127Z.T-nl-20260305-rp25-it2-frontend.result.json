@@ -1,0 +1,76 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-frontend",
+  "worker": "frontend_ide",
+  "status": "success",
+  "summary": "Completed RP25 iteration-2 frontend support regression guard: Plan-first/Focus-first staged flow remains intact, reflection evidence path remains session-linked (non-placeholder), and helper/replay pytest bundle was re-run with passing evidence.",
+  "outputs": [
+    {
+      "kind": "report",
+      "path": "data/evidence/20260304T165127Z_frontend_rp25_it2_support_walkthrough.md",
+      "description": "Timestamped support walkthrough proving stage-flow and session-linked evidence non-regression."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260304T165008Z_frontend_rp25_it2_helper_replay_pytest.log",
+      "description": "Pytest re-run log for phase2.5 helper flow and replay filtering tests."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T165127Z.T-nl-20260305-rp25-it2-frontend.result.json",
+      "description": "Schema-valid frontend RP25 iteration-2 support result artifact."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "stage_flow_non_regression",
+      "command": "rg -n 'home_plan_start|_FLOW_STAGE_FROG|_render_chronos_frog_stage|_render_chronos_timebox_edit_stage|_render_chronos_timebox_commit_stage|_FLOW_STAGE_RETRO_TIMEBOX|_render_chronos_retro_timebox_stage|_next_stage_after_focus' app.py",
+      "status": "pass",
+      "note": "Plan-first and Focus-first stage dispatcher/handlers are present and wired."
+    },
+    {
+      "name": "session_linked_evidence_non_regression",
+      "command": "rg -n 'Evidence Curation \\(Session-linked\\)|_collect_session_evidence_candidates|실제 세션 evidence 선택|supporting_evidence' app.py",
+      "status": "pass",
+      "note": "Reflection curation uses session-linked helper and supporting_evidence persistence path."
+    },
+    {
+      "name": "placeholder_removal_guard",
+      "command": "rg -n 'Workspace Screenshot|Handwritten Note|Performance Graph|Inspiration Image' app.py",
+      "status": "pass",
+      "note": "Command returned no matches (exit code 1), confirming placeholder evidence tokens remain removed."
+    },
+    {
+      "name": "helper_replay_pytest_rerun",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_phase25_frontend_flow_helpers.py tests/test_phase2_replay_filtering.py",
+      "status": "pass",
+      "note": "6 passed in 3.94s. log_path=data/evidence/20260304T165008Z_frontend_rp25_it2_helper_replay_pytest.log"
+    },
+    {
+      "name": "result_schema_validation",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260304T165127Z.T-nl-20260305-rp25-it2-frontend.result.json --schema orchestration/contracts/result.schema.json",
+      "status": "pass",
+      "note": "Contract validation passed."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "low",
+      "description": "Frontend staged flow is stable in current code; remaining full E2E closure risk is primarily Android-side runtime chaining.",
+      "mitigation": "Keep this frontend support artifact paired with Android it2 runtime evidence before aggregate close verdict."
+    }
+  ],
+  "next_actions": [
+    "Hand off this support result to CT aggregate for rp25-it2 frontend guard lane.",
+    "Re-run same pytest bundle after any further frontend touch in this iteration.",
+    "Cross-check Android lane evidence for SC-C linkage parity before close decision."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-04T16:51:27Z",
+  "metrics": {
+    "duration_sec": 0,
+    "input_tokens": 0,
+    "output_tokens": 0
+  }
+}

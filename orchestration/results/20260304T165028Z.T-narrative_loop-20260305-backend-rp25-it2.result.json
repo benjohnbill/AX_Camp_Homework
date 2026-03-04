@@ -1,0 +1,64 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-backend",
+  "worker": "backend_cli",
+  "status": "success",
+  "summary": "RP25 iteration-2 backend support completed in stabilization-only scope. Save/refine/reflect/evidence-link payload contracts were revalidated for Android E2E alignment, and phase2.5 transition/non-blocking guards were rerun without regression.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T165028Z.T-narrative_loop-20260305-backend-rp25-it2.result.json",
+      "description": "Backend rp25 iteration-2 support result artifact."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260304T165028Z_backend_rp25_it2_guard.log",
+      "description": "Guard rerun log for payload contract checks and transition/non-blocking checks."
+    },
+    {
+      "kind": "report",
+      "path": "data/evidence/20260304T165028Z_backend_rp25_it2_contract_note.md",
+      "description": "Android E2E support payload contract note for save/refine/reflect/evidence-link."
+    },
+    {
+      "kind": "log",
+      "path": "data/evidence/20260304T165028Z_backend_rp25_it2_result_schema.log",
+      "description": "Result schema validation log."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "payload_contract_recheck",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py -k \"contract_refine_payload_text_required or contract_refine_payload_success or contract_save_payload_text_required or contract_save_payload_success or phase25_ocr_session_link_and_reflection_curation\"",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260304T165028Z_backend_rp25_it2_guard.log; result=5 passed, 21 deselected."
+    },
+    {
+      "name": "phase25_transition_nonblocking_guard",
+      "command": ".\\tools\\project_python.ps1 -m pytest -q tests/test_gateway_fastapi.py -k \"phase25_plan_first_flow_frog_timebox_commit_focus_reflect or phase25_focus_first_retro_flow or phase25_state_transition_bundle_start_commit_focus_reflect_journal_promote_core or phase2_core_loop_non_blocking_under_ai_delay_and_failure\"",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260304T165028Z_backend_rp25_it2_guard.log; result=4 passed, 22 deselected."
+    },
+    {
+      "name": "result_schema_validation",
+      "command": ".\\tools\\project_python.ps1 tools/validate_contracts.py --file orchestration/results/20260304T165028Z.T-narrative_loop-20260305-backend-rp25-it2.result.json --schema orchestration/contracts/result.schema.json",
+      "status": "pass",
+      "note": "log_path=data/evidence/20260304T165028Z_backend_rp25_it2_result_schema.log; schema validation passed."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Background AI/OCR helper threads still emit Streamlit-context warnings in bare test runtime though core flow remains non-blocking.",
+      "mitigation": "Treat as non-blocking technical debt; maintain current baseline behavior for Android E2E iteration and avoid scope expansion."
+    }
+  ],
+  "next_actions": [
+    "Share contract note with Android lane and verify request payload fields exactly match app-side request builders.",
+    "Use the same guard commands after Android endpoint wiring changes to prevent baseline drift.",
+    "Proceed only with rp25-it2 close aggregation; do not expand into Phase 3 scope."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-04T16:50:28Z"
+}

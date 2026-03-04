@@ -118,6 +118,28 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
             "entry_mode": session["entry_mode"],
         }
 
+    def _latest_today_session_id() -> str | None:
+        today_key = date.today().isoformat()
+        with runtime_lock:
+            for session_id in reversed(execution_session_ids):
+                session = execution_sessions.get(session_id)
+                if session and session.get("session_date") == today_key:
+                    return str(session_id)
+        return None
+
+    def _resolve_evidence_session_link(explicit_session_id: str | None) -> tuple[str | None, str]:
+        explicit = _safe_text(explicit_session_id)
+        if explicit:
+            with runtime_lock:
+                if explicit in execution_sessions:
+                    return explicit, "explicit"
+            return None, "invalid_explicit"
+
+        today_latest = _latest_today_session_id()
+        if today_latest:
+            return today_latest, "today_latest"
+        return None, "unlinked"
+
     def _build_reflection_projection(session: dict[str, Any]) -> str:
         return (
             f"[ExecutionSession] good={session.get('reflection_good', '')} | "
@@ -366,6 +388,13 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
             "entry_mode": entry_mode,
             "flow_stage": "frog" if entry_mode == "plan" else "focus_running",
             "plan_status": "draft",
+            "frog_title": "",
+            "frog_why": "",
+            "manual_tags": [],
+            "timebox_blocks": [],
+            "retro_blocks": [],
+            "retro_saved": False,
+            "evidence_links": [],
             "focus_started_at": None,
             "focus_ended_at": None,
             "focus_total_minutes": 0,
@@ -385,6 +414,119 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
                 "session_id": session_id,
                 "flow_stage": session["flow_stage"],
                 "entry_mode": entry_mode,
+            }
+        )
+
+    @app.post("/v1/execution/session/{session_id}/frog")
+    async def execution_save_frog(session_id: str, body: dict = Body(default={})) -> JSONResponse:
+        frog_title = _safe_text(body.get("frog_title"))
+        frog_why = _safe_text(body.get("frog_why"))
+        if not frog_title:
+            return JSONResponse({"error": "frog_title is required"}, status_code=400)
+
+        with runtime_lock:
+            session = execution_sessions.get(session_id)
+            if not session:
+                return JSONResponse({"error": "session_not_found"}, status_code=404)
+            session["frog_title"] = frog_title
+            session["frog_why"] = frog_why
+            if session.get("entry_mode") == "plan":
+                session["flow_stage"] = "timebox_edit"
+            session["updated_at"] = _utc_now_iso()
+            stage = str(session.get("flow_stage") or "timebox_edit")
+        return JSONResponse({"status": "ok", "session_id": session_id, "flow_stage": stage})
+
+    @app.post("/v1/execution/session/{session_id}/timebox/draft")
+    async def execution_timebox_draft(session_id: str, body: dict = Body(default={})) -> JSONResponse:
+        blocks_raw = body.get("blocks")
+        blocks = blocks_raw if isinstance(blocks_raw, list) else []
+        normalized_blocks: list[dict[str, Any]] = []
+        for idx, raw in enumerate(blocks):
+            item = raw if isinstance(raw, dict) else {}
+            starts_at = _safe_text(item.get("starts_at"))
+            ends_at = _safe_text(item.get("ends_at"))
+            starts_dt = _parse_iso8601(starts_at)
+            ends_dt = _parse_iso8601(ends_at)
+            if starts_dt is not None and ends_dt is not None and starts_dt >= ends_dt:
+                return JSONResponse({"error": f"invalid_timebox_range_at_index_{idx}"}, status_code=400)
+            normalized_blocks.append(
+                {
+                    "id": _safe_text(item.get("id")) or _new_id("blk"),
+                    "title": _safe_text(item.get("title")),
+                    "goal": _safe_text(item.get("goal")),
+                    "why": _safe_text(item.get("why")),
+                    "inbox_note": _safe_text(item.get("inbox_note")),
+                    "starts_at": starts_at,
+                    "ends_at": ends_at,
+                    "order_index": int(item.get("order_index") or idx),
+                }
+            )
+
+        manual_tags_raw = body.get("manual_tags")
+        manual_tags = [str(x).strip() for x in manual_tags_raw] if isinstance(manual_tags_raw, list) else []
+
+        with runtime_lock:
+            session = execution_sessions.get(session_id)
+            if not session:
+                return JSONResponse({"error": "session_not_found"}, status_code=404)
+            session["timebox_blocks"] = normalized_blocks
+            session["manual_tags"] = [x for x in manual_tags if x]
+            if session.get("entry_mode") == "plan":
+                session["flow_stage"] = "timebox_edit"
+            session["updated_at"] = _utc_now_iso()
+            stage = str(session.get("flow_stage") or "timebox_edit")
+        return JSONResponse(
+            {
+                "status": "ok",
+                "session_id": session_id,
+                "flow_stage": stage,
+                "blocks_count": len(normalized_blocks),
+            }
+        )
+
+    @app.post("/v1/execution/session/{session_id}/timebox/retro")
+    async def execution_timebox_retro(session_id: str, body: dict = Body(default={})) -> JSONResponse:
+        skip = bool(body.get("skip"))
+        blocks_raw = body.get("blocks")
+        blocks = blocks_raw if isinstance(blocks_raw, list) else []
+        normalized_blocks: list[dict[str, Any]] = []
+        if not skip:
+            for idx, raw in enumerate(blocks):
+                item = raw if isinstance(raw, dict) else {}
+                starts_at = _safe_text(item.get("starts_at"))
+                ends_at = _safe_text(item.get("ends_at"))
+                starts_dt = _parse_iso8601(starts_at)
+                ends_dt = _parse_iso8601(ends_at)
+                if starts_dt is not None and ends_dt is not None and starts_dt >= ends_dt:
+                    return JSONResponse({"error": f"invalid_retro_timebox_range_at_index_{idx}"}, status_code=400)
+                normalized_blocks.append(
+                    {
+                        "id": _safe_text(item.get("id")) or _new_id("rblk"),
+                        "title": _safe_text(item.get("title")),
+                        "goal": _safe_text(item.get("goal")),
+                        "why": _safe_text(item.get("why")),
+                        "inbox_note": _safe_text(item.get("inbox_note")),
+                        "starts_at": starts_at,
+                        "ends_at": ends_at,
+                        "order_index": int(item.get("order_index") or idx),
+                    }
+                )
+
+        with runtime_lock:
+            session = execution_sessions.get(session_id)
+            if not session:
+                return JSONResponse({"error": "session_not_found"}, status_code=404)
+            session["retro_blocks"] = normalized_blocks
+            session["retro_saved"] = True
+            session["flow_stage"] = "reflect_pending"
+            session["updated_at"] = _utc_now_iso()
+        return JSONResponse(
+            {
+                "status": "ok",
+                "session_id": session_id,
+                "flow_stage": "reflect_pending",
+                "skip": skip,
+                "blocks_count": len(normalized_blocks),
             }
         )
 
@@ -412,7 +554,8 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
                 minutes = max(0, int((ended_at - started_at).total_seconds() // 60))
             session["focus_ended_at"] = ended_at.isoformat()
             session["focus_total_minutes"] = minutes
-            session["flow_stage"] = "reflect_pending"
+            next_stage = "retro_timebox" if session.get("entry_mode") == "focus_now" else "reflect_pending"
+            session["flow_stage"] = next_stage
             session["updated_at"] = _utc_now_iso()
         similar_job = _enqueue_ai_job(
             job_type="similar_session_linking",
@@ -430,7 +573,7 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
             {
                 "status": "ok",
                 "session_id": session_id,
-                "flow_stage": "reflect_pending",
+                "flow_stage": next_stage,
                 "focus_total_minutes": minutes,
                 "queued_jobs": [similar_job["id"], next_action_job["id"]],
             }
@@ -467,26 +610,125 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
         reflection_hard = _safe_text(body.get("reflection_hard"))
         reflection_next_action = _safe_text(body.get("reflection_next_action"))
         reflection_free_text = _safe_text(body.get("reflection_free_text"))
+        evidence_links_raw = body.get("evidence_links")
+        evidence_links = evidence_links_raw if isinstance(evidence_links_raw, list) else []
         if not reflection_good or not reflection_hard or not reflection_next_action:
             return JSONResponse(
                 {"error": "reflection_good/reflection_hard/reflection_next_action are required"},
                 status_code=400,
             )
 
+        linked_count = 0
+        skipped_count = 0
+        missing_count = 0
+        normalized_links: list[dict[str, Any]] = []
         with runtime_lock:
             session = execution_sessions.get(session_id)
             if not session:
                 return JSONResponse({"error": "session_not_found"}, status_code=404)
+            for raw in evidence_links:
+                item = raw if isinstance(raw, dict) else {}
+                image_event_id = _safe_text(item.get("image_event_id"))
+                decision = _safe_text(item.get("decision")).lower() or "linked"
+                user_meaning = _safe_text(item.get("user_meaning"))
+                if not image_event_id:
+                    continue
+                event = image_events.get(image_event_id)
+                if not event:
+                    missing_count += 1
+                    normalized_links.append(
+                        {
+                            "image_event_id": image_event_id,
+                            "decision": decision,
+                            "status": "missing",
+                            "user_meaning": user_meaning,
+                        }
+                    )
+                    continue
+                event["session_id"] = session_id
+                if decision == "skipped":
+                    event["link_status"] = "skipped"
+                    skipped_count += 1
+                else:
+                    event["link_status"] = "linked"
+                    linked_count += 1
+                if user_meaning:
+                    event["user_meaning"] = user_meaning
+                event["updated_at"] = _utc_now_iso()
+                normalized_links.append(
+                    {
+                        "image_event_id": image_event_id,
+                        "decision": "skipped" if decision == "skipped" else "linked",
+                        "status": "ok",
+                        "user_meaning": user_meaning,
+                    }
+                )
+
             session["reflection_good"] = reflection_good
             session["reflection_hard"] = reflection_hard
             session["reflection_next_action"] = reflection_next_action
             session["reflection_free_text"] = reflection_free_text
+            session["evidence_links"] = normalized_links
             session["flow_stage"] = "done"
             session["updated_at"] = _utc_now_iso()
             session_copy = dict(session)
 
         _persist_reflection_projection(session_copy)
-        return JSONResponse({"status": "ok", "session_id": session_id, "flow_stage": "done"})
+        return JSONResponse(
+            {
+                "status": "ok",
+                "session_id": session_id,
+                "flow_stage": "done",
+                "evidence_link_summary": {
+                    "linked": linked_count,
+                    "skipped": skipped_count,
+                    "missing": missing_count,
+                },
+            }
+        )
+
+    @app.post("/v1/execution/session/{session_id}/evidence/link")
+    async def execution_evidence_link(session_id: str, body: dict = Body(default={})) -> JSONResponse:
+        links_raw = body.get("links")
+        links = links_raw if isinstance(links_raw, list) else []
+        if not links:
+            return JSONResponse({"error": "links is required"}, status_code=400)
+
+        linked_count = 0
+        skipped_count = 0
+        missing_count = 0
+        with runtime_lock:
+            session = execution_sessions.get(session_id)
+            if not session:
+                return JSONResponse({"error": "session_not_found"}, status_code=404)
+            for raw in links:
+                item = raw if isinstance(raw, dict) else {}
+                image_event_id = _safe_text(item.get("image_event_id"))
+                decision = _safe_text(item.get("decision")).lower() or "linked"
+                user_meaning = _safe_text(item.get("user_meaning"))
+                if not image_event_id:
+                    continue
+                event = image_events.get(image_event_id)
+                if not event:
+                    missing_count += 1
+                    continue
+                event["session_id"] = session_id
+                event["link_status"] = "skipped" if decision == "skipped" else "linked"
+                if user_meaning:
+                    event["user_meaning"] = user_meaning
+                event["updated_at"] = _utc_now_iso()
+                if decision == "skipped":
+                    skipped_count += 1
+                else:
+                    linked_count += 1
+            session["updated_at"] = _utc_now_iso()
+        return JSONResponse(
+            {
+                "status": "ok",
+                "session_id": session_id,
+                "summary": {"linked": linked_count, "skipped": skipped_count, "missing": missing_count},
+            }
+        )
 
     @app.get("/v1/execution/session/today")
     async def execution_today() -> JSONResponse:
@@ -675,6 +917,13 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
                 "entry_mode": "plan",
                 "flow_stage": "reflect_pending",
                 "plan_status": "draft",
+                "frog_title": "",
+                "frog_why": "",
+                "manual_tags": [],
+                "timebox_blocks": [],
+                "retro_blocks": [],
+                "retro_saved": False,
+                "evidence_links": [],
                 "focus_started_at": None,
                 "focus_ended_at": None,
                 "focus_total_minutes": 0,
@@ -759,19 +1008,36 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
         event_id = _new_id("img")
         mime_type = _safe_text(upload.content_type) or "image/jpeg"
         now_iso = _utc_now_iso()
+        resolved_session_id, link_rule = _resolve_evidence_session_link(session_id)
         with runtime_lock:
             image_events[event_id] = {
                 "id": event_id,
-                "session_id": _safe_text(session_id) or None,
+                "session_id": resolved_session_id,
                 "storage_uri": f"memory://upload/{event_id}",
                 "capture_source": "api",
                 "ocr_status": "queued",
                 "ocr_text": "",
                 "ai_summary": "",
-                "link_status": "inbox",
+                "link_status": "linked" if resolved_session_id else "inbox",
+                "link_rule": link_rule,
                 "created_at": now_iso,
                 "updated_at": now_iso,
             }
+            if resolved_session_id and resolved_session_id in execution_sessions:
+                session = execution_sessions[resolved_session_id]
+                evidence_links = session.get("evidence_links")
+                if not isinstance(evidence_links, list):
+                    evidence_links = []
+                evidence_links.append(
+                    {
+                        "image_event_id": event_id,
+                        "decision": "linked",
+                        "status": "ok",
+                        "user_meaning": "",
+                    }
+                )
+                session["evidence_links"] = evidence_links
+                session["updated_at"] = _utc_now_iso()
 
         future = runtime_executor.submit(_ocr_background_refine, event_id, content, mime_type)
         refined_text = ""
@@ -793,6 +1059,8 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
                 "status": "accepted",
                 "image_event_id": event_id,
                 "ocr_status": event.get("ocr_status", "queued"),
+                "session_id": event.get("session_id"),
+                "link_rule": event.get("link_rule"),
                 "refined_text": refined_text,
             }
         )
@@ -802,6 +1070,14 @@ def create_app(environ: Mapping[str, Any] | None = None) -> FastAPI:
         image: UploadFile | None = File(default=None),
         file: UploadFile | None = File(default=None),
         session_id: str | None = Form(default=None),
+    ) -> JSONResponse:
+        return await _handle_ocr_ingest(image=image, file=file, session_id=session_id)
+
+    @app.post("/v1/execution/session/{session_id}/evidence/upload")
+    async def execution_evidence_upload(
+        session_id: str,
+        image: UploadFile | None = File(default=None),
+        file: UploadFile | None = File(default=None),
     ) -> JSONResponse:
         return await _handle_ocr_ingest(image=image, file=file, session_id=session_id)
 

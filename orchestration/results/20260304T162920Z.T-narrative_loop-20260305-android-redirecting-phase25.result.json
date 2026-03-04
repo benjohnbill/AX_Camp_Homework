@@ -1,0 +1,74 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-android-redirecting-phase25",
+  "worker": "android_ide",
+  "status": "success",
+  "summary": "Phase2.5 Android runtime re-validation passed in same window. OCR upload path now sends both session link fields (`session_id` and `session-link`), explicit session-link backend probe passed, gateway auth/universe regression guard tests passed, and app runtime was confirmed on both physical and emulator devices.",
+  "outputs": [
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeApiService.kt",
+      "description": "Added OCR session-link multipart fields and session lifecycle API bindings."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/network/NarrativeRepository.kt",
+      "description": "Resolved active session id and attached session_id + session-link in OCR upload payload."
+    },
+    {
+      "kind": "patch",
+      "path": "android/NarrativeLoopMobile/app/src/main/java/com/example/narrativeloopmobile/CreateNarrativeFragment.kt",
+      "description": "Added OCR link response logging and normalized text fallback."
+    },
+    {
+      "kind": "log",
+      "path": "android/NarrativeLoopMobile/evidence/20260304T162920Z_android_phase25_ocr_session_link.log",
+      "description": "OCR session-link runtime and regression evidence log."
+    },
+    {
+      "kind": "report",
+      "path": "android/NarrativeLoopMobile/evidence/20260304T162920Z_android_phase25_dual_device.md",
+      "description": "Same-window physical + emulator runtime verification report."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "android compileDebugKotlin",
+      "command": "$env:GRADLE_USER_HOME='D:\\dev\\Narrative_Loop\\android\\NarrativeLoopMobile\\.gradle-user'; ./gradlew.bat :app:compileDebugKotlin --console=plain",
+      "status": "pass",
+      "note": "BUILD SUCCESSFUL."
+    },
+    {
+      "name": "explicit session-link contract probe",
+      "command": "python(TestClient) POST /v1/execution/session/start + POST /v1/ocr/ingest(data.session_id)",
+      "status": "pass",
+      "note": "status=accepted, response_session_id matched, link_rule=explicit."
+    },
+    {
+      "name": "gateway auth and universe regression guard",
+      "command": "pytest -q tests/test_gateway_fastapi.py::test_first_request_bearer_sets_httponly_cookie_and_redirects tests/test_gateway_fastapi.py::test_subsequent_request_cookie_only_is_accepted tests/test_gateway_fastapi.py::test_phase25_ocr_session_link_and_reflection_curation",
+      "status": "pass",
+      "note": "3 passed."
+    },
+    {
+      "name": "same-window dual-device runtime",
+      "command": "adb devices -l; adb -s <serial> shell pm list packages com.example.narrativeloopmobile; adb -s <serial> shell am start -n com.example.narrativeloopmobile/.MainActivity",
+      "status": "pass",
+      "note": "Both R3CR80HR90W and emulator-5554 were online and launched MainActivity in same window."
+    }
+  ],
+  "risks": [
+    {
+      "severity": "low",
+      "description": "Device-side OCR camera capture flow itself was not fully automated in this CLI run.",
+      "mitigation": "Keep manual capture/retry script in next QA pass and append logcat snippets when camera capture is exercised."
+    }
+  ],
+  "next_actions": [
+    "Run one manual OCR capture on each device and append logcat lines containing ocr_upload fields.",
+    "Add Android instrumentation coverage for session-link payload generation path.",
+    "Publish CT close aggregation after backend/frontend AC-01~AC-06 join verdict."
+  ],
+  "human_approval_needed": false,
+  "timestamp": "2026-03-04T16:29:20Z"
+}

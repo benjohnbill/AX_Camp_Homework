@@ -1,0 +1,66 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-android",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Close Android phase2.5 E2E gaps and move lane status from partial to success by implementing save/refine runtime, stage-chain UI/API integration, and desk read path with dual-device proof.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/evidence/20260304T163934Z_android_phase25_e2e_self_validation.md",
+      "description": "Gap report and partial verdict details."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/dispatch/20260304T163934Z-android-phase25-e2e-implementation-prompt.md",
+      "description": "CT implementation directives from Android lane."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260304T162920Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json",
+      "description": "Current Android pass-partial baseline."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Step A/B bridge is mandatory. Narrative-only completion is forbidden."
+  },
+  "acceptance": [
+    "CreateNarrative refine/save buttons are implemented with real API calls and retry/error UX.",
+    "Plan-first and Focus-first stage API chains are wired and visible in Android UI state.",
+    "OCR image_event_id is linked into reflect evidence_links with real IDs.",
+    "Desk read path shows persisted session/log outcomes to users.",
+    "Same-window physical+emulator evidence is attached with schema-valid canonical result."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Without runtime E2E proof, Android lane can remain partial while upstream lanes are pass."
+  },
+  "next_actions": [
+    "Implement missing runtime handlers and stage-chain wiring.",
+    "Run SC-A/SC-B/SC-C/SC-D scenario evidence capture on dual devices.",
+    "Publish schema-valid Android iteration-2 result and mirrored artifacts."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T02:05:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+    "orchestration/ANDROID_EXTERNAL_REPO_ARTIFACT_BRIDGE_2026-03-04.md"
+  ],
+  "metadata": {
+    "priority": "P0",
+    "gate": "AC-03/AC-06 finalization"
+  }
+}
+

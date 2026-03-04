@@ -180,6 +180,50 @@ def test_ocr_ingest_rejects_missing_multipart_file():
     assert "file" in res.json()["error"]
 
 
+def test_contract_refine_payload_text_required():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    res = client.post("/v1/narrative/refine", json={"text": ""})
+
+    assert res.status_code == 400
+    assert "Empty text" in res.json()["error"]
+
+
+def test_contract_refine_payload_success(monkeypatch):
+    app = gw.create_app(_env())
+    client = _client(app)
+    monkeypatch.setattr(gw.logic, "refine_narrative_with_ai", lambda text: f"refined::{text}")
+
+    res = client.post("/v1/narrative/refine", json={"text": "raw memo"})
+
+    assert res.status_code == 200
+    assert res.json()["refined_text"] == "refined::raw memo"
+
+
+def test_contract_save_payload_text_required():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    res = client.post("/v1/narrative", json={"text": ""})
+
+    assert res.status_code == 400
+    assert "Empty text" in res.json()["error"]
+
+
+def test_contract_save_payload_success(monkeypatch):
+    app = gw.create_app(_env())
+    client = _client(app)
+    monkeypatch.setattr(gw.logic, "save_log", lambda text, **kwargs: {"id": "log_1"})
+
+    res = client.post("/v1/narrative", json={"text": "hello"})
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["status"] == "ok"
+    assert payload["log_id"] == "log_1"
+
+
 def test_phase1_execution_core_loop_and_today():
     app = gw.create_app(_env())
     client = _client(app)
@@ -427,3 +471,197 @@ def test_phase2_week_insight_uses_ai_when_available():
     assert payload["status"] == "ok"
     assert payload["insight_source"] in {"rule", "ai"}
     assert payload["metrics"]["sessions_started"] >= 1
+
+
+def test_phase25_plan_first_flow_frog_timebox_commit_focus_reflect():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "plan"})
+    assert start.status_code == 200
+    session_id = start.json()["session_id"]
+    assert start.json()["flow_stage"] == "frog"
+
+    frog = client.post(
+        f"/v1/execution/session/{session_id}/frog",
+        json={"frog_title": "핵심 제안서 초안", "frog_why": "마감 리스크 완화"},
+    )
+    assert frog.status_code == 200
+    assert frog.json()["flow_stage"] == "timebox_edit"
+
+    draft = client.post(
+        f"/v1/execution/session/{session_id}/timebox/draft",
+        json={
+            "blocks": [
+                {
+                    "id": "blk_1",
+                    "title": "초안 작성",
+                    "goal": "서론/본론 구조 완성",
+                    "starts_at": "2026-03-05T09:00:00Z",
+                    "ends_at": "2026-03-05T10:00:00Z",
+                }
+            ],
+            "manual_tags": ["proposal", "deadline"],
+        },
+    )
+    assert draft.status_code == 200
+    assert draft.json()["blocks_count"] == 1
+    assert draft.json()["flow_stage"] == "timebox_edit"
+
+    commit = client.post(f"/v1/execution/session/{session_id}/commit")
+    assert commit.status_code == 200
+    assert commit.json()["flow_stage"] == "focus_running"
+    assert commit.json()["plan_status"] == "committed"
+    assert len(commit.json()["queued_jobs"]) == 1
+
+    focus_end = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    assert focus_end.status_code == 200
+    assert focus_end.json()["flow_stage"] == "reflect_pending"
+    assert len(focus_end.json()["queued_jobs"]) == 2
+
+    reflect = client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={
+            "reflection_good": "집중 블록을 예정대로 마쳤다.",
+            "reflection_hard": "중간 알림으로 흐름이 끊겼다.",
+            "reflection_next_action": "다음엔 시작 전 알림 차단.",
+        },
+    )
+    assert reflect.status_code == 200
+    assert reflect.json()["flow_stage"] == "done"
+
+
+def test_phase25_focus_first_retro_flow():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "focus_now"})
+    session_id = start.json()["session_id"]
+    assert start.json()["flow_stage"] == "focus_running"
+
+    focus_end = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    assert focus_end.status_code == 200
+    assert focus_end.json()["flow_stage"] == "retro_timebox"
+
+    retro = client.post(
+        f"/v1/execution/session/{session_id}/timebox/retro",
+        json={
+            "blocks": [
+                {
+                    "title": "집중 회고 블록",
+                    "goal": "중단 원인 기록",
+                    "starts_at": "2026-03-05T10:00:00Z",
+                    "ends_at": "2026-03-05T10:20:00Z",
+                }
+            ]
+        },
+    )
+    assert retro.status_code == 200
+    assert retro.json()["flow_stage"] == "reflect_pending"
+    assert retro.json()["blocks_count"] == 1
+
+    reflect = client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={
+            "reflection_good": "빠르게 몰입했다.",
+            "reflection_hard": "초반에 컨텍스트 스위칭이 있었다.",
+            "reflection_next_action": "첫 5분 계획 메모 후 시작한다.",
+        },
+    )
+    assert reflect.status_code == 200
+    assert reflect.json()["flow_stage"] == "done"
+
+
+def test_phase25_ocr_session_link_and_reflection_curation():
+    app = gw.create_app(_env())
+    client = _client(app)
+
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "plan"})
+    session_id = start.json()["session_id"]
+
+    upload = client.post(
+        f"/v1/execution/session/{session_id}/evidence/upload",
+        files={"image": ("ev.png", b"evidence", "image/png")},
+    )
+    assert upload.status_code == 200
+    upload_payload = upload.json()
+    assert upload_payload["status"] == "accepted"
+    assert upload_payload["session_id"] == session_id
+    image_event_id = upload_payload["image_event_id"]
+
+    link = client.post(
+        f"/v1/execution/session/{session_id}/evidence/link",
+        json={"links": [{"image_event_id": image_event_id, "decision": "linked", "user_meaning": "핵심 도표"}]},
+    )
+    assert link.status_code == 200
+    assert link.json()["summary"]["linked"] == 1
+
+    reflect = client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={
+            "reflection_good": "증거를 연결해 회고가 쉬웠다.",
+            "reflection_hard": "해석은 일부 지연됐다.",
+            "reflection_next_action": "증거 캡처 즉시 1줄 의미를 남긴다.",
+            "evidence_links": [
+                {"image_event_id": image_event_id, "decision": "linked", "user_meaning": "핵심 도표 완성 시점"}
+            ],
+        },
+    )
+    assert reflect.status_code == 200
+    summary = reflect.json()["evidence_link_summary"]
+    assert summary["linked"] == 1
+    assert summary["missing"] == 0
+
+
+def test_phase25_state_transition_bundle_start_commit_focus_reflect_journal_promote_core():
+    app = gw.create_app(_env(REDIRECTING_AI_DELAY_MS="500", REDIRECTING_AI_FAIL_JOB_TYPES="auto_tag_extraction"))
+    client = _client(app)
+
+    t0 = time.perf_counter()
+    start = client.post("/v1/execution/session/start", json={"entry_mode": "plan"})
+    session_id = start.json()["session_id"]
+    client.post(f"/v1/execution/session/{session_id}/frog", json={"frog_title": "오늘 핵심", "frog_why": "우선순위 고정"})
+    client.post(
+        f"/v1/execution/session/{session_id}/timebox/draft",
+        json={"blocks": [{"title": "핵심 블록", "starts_at": "2026-03-05T09:00:00Z", "ends_at": "2026-03-05T09:20:00Z"}]},
+    )
+    commit = client.post(f"/v1/execution/session/{session_id}/commit")
+    focus_end = client.post(f"/v1/execution/session/{session_id}/focus/end")
+    reflect = client.post(
+        f"/v1/execution/session/{session_id}/reflect",
+        json={
+            "reflection_good": "핵심 단계를 모두 실행했다.",
+            "reflection_hard": "중간 알림 방해가 있었다.",
+            "reflection_next_action": "알림 차단 규칙을 계속 적용한다.",
+        },
+    )
+    elapsed = time.perf_counter() - t0
+    assert start.status_code == 200
+    assert commit.status_code == 200
+    assert focus_end.status_code == 200
+    assert reflect.status_code == 200
+    assert reflect.json()["flow_stage"] == "done"
+    assert elapsed < 2.5
+
+    journal = client.post(
+        "/v1/journal/entry",
+        json={"entry_text": "세션 회고 기록", "next_action": "내일 같은 시간 재시도", "manual_tags": ["retry"]},
+    )
+    assert journal.status_code == 200
+    entry_id = journal.json()["entry_id"]
+    promote = client.post(f"/v1/journal/{entry_id}/promote")
+    assert promote.status_code == 200
+    promoted_session_id = promote.json()["session_id"]
+
+    core = client.post(
+        "/v1/core/promote",
+        json={
+            "source_type": "execution_session",
+            "source_id": promoted_session_id,
+            "title": "아침 첫 집중 규칙",
+            "body": "짧은 계획 이후 바로 집중 시작이 유효했다.",
+            "promoted_by": "tester",
+        },
+    )
+    assert core.status_code == 200
+    assert core.json()["core_entry_id"].startswith("core_")

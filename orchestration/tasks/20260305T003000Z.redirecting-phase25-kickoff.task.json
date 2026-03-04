@@ -1,0 +1,71 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-redirecting-phase25-kickoff",
+  "owner": "control_tower",
+  "assigned_worker": "generic_worker",
+  "goal": "Kick off Redirecting Phase 2.5 to implement full core workflow restoration: Plan-first and Focus-first completion paths, OCR-session link, and reflection curation based on real evidence.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+      "description": "Phase 2.5 master scope and acceptance contract."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+      "description": "Phase 2.5 lane checklist and closure criteria."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/handoff/latest.handoff.json",
+      "description": "Current canonical state pointer (Phase2 close baseline)."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "redirecting/",
+      "orchestration/",
+      "app.py",
+      "gateway_fastapi.py",
+      "android/NarrativeLoopMobile/",
+      "tests/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Stabilization + workflow completion only. Do not start Phase 3 architecture migration during Phase 2.5."
+  },
+  "acceptance": [
+    "Phase 2.5 scope lock is explicit: full workflow restoration, no Phase 3 scope expansion.",
+    "Backend/frontend/android lane tasks are defined with evidence and schema-valid artifact obligations.",
+    "Core acceptance criteria AC-01~AC-06 are traceable to worker outputs.",
+    "Kickoff package is ready for immediate worker dispatch."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "Workflow/UI drift can persist if placeholder paths remain while docs claim full-flow completion."
+  },
+  "next_actions": [
+    "Dispatch lane-specific tasks to backend_cli/frontend_ide/android_ide.",
+    "Collect iteration-1 outputs and run schema contract validation.",
+    "Aggregate AC-01~AC-06 verdict and decide iteration-2 vs close."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T00:30:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+    "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+    "redirecting/MVP_TIMEBOX_EXECUTION_REFLECTION_DESIGN_2026-03-03.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "phase": "redirecting_phase25",
+    "priority": "P0"
+  }
+}
+

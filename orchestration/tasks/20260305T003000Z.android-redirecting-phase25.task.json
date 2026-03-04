@@ -1,0 +1,65 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-android-redirecting-phase25",
+  "owner": "control_tower",
+  "assigned_worker": "android_ide",
+  "goal": "Validate and harden Android OCR-to-session link flow for Phase 2.5, ensuring auth continuity and bridge-compliant artifact delivery to canonical orchestration paths.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260305T003000Z.redirecting-phase25-kickoff.task.json",
+      "description": "Phase 2.5 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+      "description": "Phase 2.5 Android scope and acceptance."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+      "description": "Android checklist rows."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Maintain Android Step A/B bridge rule. No unapproved backend contract changes from Android lane."
+  },
+  "acceptance": [
+    "OCR upload payload carries session link field as agreed contract.",
+    "Token/auth continuity remains stable while OCR-session link is validated.",
+    "Physical + emulator same-window evidence is captured for phase2.5 critical paths.",
+    "Step A outputs are mirrored to canonical Step B paths with schema-valid result artifact."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "If bridge synchronization is incomplete, CT aggregation can report false PASS despite local Android success."
+  },
+  "next_actions": [
+    "Implement or validate OCR session-link payload and runtime behavior.",
+    "Run dual-device same-window verification for OCR and universe continuity.",
+    "Publish mirrored schema-valid Android phase2.5 artifacts."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T00:30:00Z",
+  "context_docs": [
+    "orchestration/ANDROID_EXTERNAL_REPO_ARTIFACT_BRIDGE_2026-03-04.md",
+    "redirecting/REDIRECTING_DATA_API_CONTRACT_2026-03-03.md"
+  ],
+  "metadata": {
+    "domain": "android_phase25_full_flow",
+    "priority": "P1"
+  }
+}
+

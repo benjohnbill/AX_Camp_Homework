@@ -3,6 +3,13 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val debugApiBaseUrl =
+    (project.findProperty("NL_API_BASE_URL") as String?)
+        ?: "https://ax-camp-universe-gateway-staging.onrender.com/"
+val debugTokenBaseUrl =
+    (project.findProperty("NL_DEBUG_TOKEN_BASE_URL") as String?)
+        ?: "https://ax-camp-debug-token-staging.onrender.com/"
+
 android {
     namespace = "com.example.narrativeloopmobile"
     compileSdk = 36
@@ -19,8 +26,9 @@ android {
 
     buildTypes {
         debug {
+            buildConfigField("String", "API_BASE_URL", "\"$debugApiBaseUrl\"")
             buildConfigField("String", "UNIVERSE_URL", "\"https://ax-camp-universe-gateway-staging.onrender.com/gateway/universe_3d\"")
-            buildConfigField("String", "DEBUG_TOKEN_BASE_URL", "\"https://ax-camp-debug-token-staging.onrender.com/\"")
+            buildConfigField("String", "DEBUG_TOKEN_BASE_URL", "\"$debugTokenBaseUrl\"")
         }
         release {
             isMinifyEnabled = false
@@ -28,6 +36,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            buildConfigField("String", "API_BASE_URL", "\"https://ax-camp-universe-gateway-staging.onrender.com/\"")
             buildConfigField("String", "UNIVERSE_URL", "\"\"")
             buildConfigField("String", "DEBUG_TOKEN_BASE_URL", "\"\"")
         }

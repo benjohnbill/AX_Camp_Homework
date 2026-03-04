@@ -1,0 +1,65 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-redirecting-phase25-kickoff",
+  "version": "1.0",
+  "source_task": "orchestration/tasks/20260305T003000Z.redirecting-phase25-kickoff.task.json",
+  "deadline_utc": "2026-03-12T12:00:00Z",
+  "deadline_note": "Restore full workflow contract in Phase 2.5 before any Phase 3 kickoff.",
+  "common_guard": "stabilization-only + full-flow restoration. no Phase 3 scope expansion. evidence-first, schema-valid artifacts required.",
+  "common_rules": [
+    "Do not expose secrets, API keys, or DB credentials in plain text.",
+    "No deploy/schema migration/permission elevation/destructive command without explicit user approval.",
+    "All task/result/handoff JSON outputs must pass local contract validation.",
+    "No narrative-only completion claim without reproducible evidence paths.",
+    "Phase 2.5 must focus on full user workflow restoration, not architecture migration."
+  ],
+  "workers": [
+    {
+      "worker": "backend_cli",
+      "task_file": "orchestration/tasks/20260305T003000Z.backend-redirecting-phase25.task.json",
+      "scope_in": [
+        "frog/timebox/retro/evidence-link backend contracts",
+        "deterministic session state transitions",
+        "non-blocking fallback under AI delay/failure"
+      ],
+      "scope_out": [
+        "Phase 3 distributed architecture rollout",
+        "unapproved API contract breakage",
+        "infrastructure/deploy change"
+      ],
+      "prompt": "You are backend_cli for Redirecting Phase 2.5. Implement full-flow backend contracts and transition tests so Plan-first/Focus-first/OCR-link paths are production-consistent and non-blocking."
+    },
+    {
+      "worker": "frontend_ide",
+      "task_file": "orchestration/tasks/20260305T003000Z.frontend-redirecting-phase25.task.json",
+      "scope_in": [
+        "Plan-first explicit stage flow",
+        "Focus-first retro_timebox flow",
+        "real session evidence curation in reflection"
+      ],
+      "scope_out": [
+        "frontend stack migration",
+        "high-complexity drag editor rollout",
+        "backend ownership changes"
+      ],
+      "prompt": "You are frontend_ide for Redirecting Phase 2.5. Convert current demo-style flow into true staged workflow UX and remove placeholder curation by wiring reflection to actual session evidence."
+    },
+    {
+      "worker": "android_ide",
+      "task_file": "orchestration/tasks/20260305T003000Z.android-redirecting-phase25.task.json",
+      "scope_in": [
+        "OCR session-link payload alignment",
+        "auth continuity and universe regression safety",
+        "bridge-compliant artifact publication"
+      ],
+      "scope_out": [
+        "backend API redesign from Android lane",
+        "unapproved permission model changes",
+        "Phase 3-only native expansion"
+      ],
+      "prompt": "You are android_ide for Redirecting Phase 2.5. Ensure OCR uploads are session-linked and verifiable in same-window dual-device runs, then mirror artifacts into canonical orchestration paths."
+    }
+  ],
+  "ct_acceptance_rule": "CT accepts kickoff when all worker prompts are scope-locked to Phase 2.5 full-flow restoration and AC-01~AC-06 traceability is explicit."
+}
+

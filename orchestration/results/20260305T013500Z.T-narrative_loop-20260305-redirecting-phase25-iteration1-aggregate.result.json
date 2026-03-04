@@ -1,0 +1,76 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-rp25-it1-agg",
+  "worker": "docs_worker",
+  "status": "success",
+  "summary": "Phase 2.5 iteration-1 aggregation passed. Backend/frontend/android lane artifacts are schema-valid and AC-01~AC-06 are evidence-backed pass, so Phase 2.5 is close-ready.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T160727Z.T-narrative_loop-20260305-backend-redirecting-phase25.result.json",
+      "description": "Backend phase2.5 lane result."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T161031Z.T-narrative_loop-20260305-frontend-redirecting-phase25.result.json",
+      "description": "Frontend phase2.5 lane result."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/results/20260304T162920Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json",
+      "description": "Android phase2.5 lane result."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/handoff/20260305T013500Z.T-narrative_loop-20260305-redirecting-phase25-iteration1-aggregate.handoff.json",
+      "description": "Phase2.5 iteration-1 aggregate handoff."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "AC-01_plan_first_full_completion",
+      "status": "pass",
+      "note": "evidence_paths=orchestration/results/20260304T160727Z.T-narrative_loop-20260305-backend-redirecting-phase25.result.json,data/evidence/20260304T161031Z_frontend_phase25_flow_walkthrough.md"
+    },
+    {
+      "name": "AC-02_focus_first_retro_timebox",
+      "status": "pass",
+      "note": "evidence_paths=orchestration/results/20260304T161031Z.T-narrative_loop-20260305-frontend-redirecting-phase25.result.json,data/evidence/20260304T161031Z_frontend_phase25_flow_walkthrough.md"
+    },
+    {
+      "name": "AC-03_ocr_session_link_reflection_curation",
+      "status": "pass",
+      "note": "evidence_paths=orchestration/results/20260304T162920Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json,android/NarrativeLoopMobile/evidence/20260304T162920Z_android_phase25_ocr_session_link.log"
+    },
+    {
+      "name": "AC-04_journal_promote_core",
+      "status": "pass",
+      "note": "evidence_paths=orchestration/results/20260304T160727Z.T-narrative_loop-20260305-backend-redirecting-phase25.result.json,data/evidence/20260304T160727Z_backend_phase25_contract_transitions_pytest.log"
+    },
+    {
+      "name": "AC-05_non_blocking_under_ai_delay_failure",
+      "status": "pass",
+      "note": "evidence_path=data/evidence/20260304T160727Z_backend_phase25_nonblocking_pytest.log"
+    },
+    {
+      "name": "AC-06_universe_replay_regression",
+      "status": "pass",
+      "note": "evidence_paths=orchestration/results/20260304T161031Z.T-narrative_loop-20260305-frontend-redirecting-phase25.result.json,orchestration/results/20260304T162920Z.T-narrative_loop-20260305-android-redirecting-phase25.result.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "medium",
+      "description": "Backend in-memory runtime storage can reset session/job state on process restart.",
+      "mitigation": "Track as post-close hardening item and keep restart-aware operational runbook."
+    }
+  ],
+  "next_actions": [
+    "Publish Phase 2.5 close package artifacts.",
+    "Freeze scope and mark Phase 2.5 as full-flow completed baseline.",
+    "Open Phase 3 Go/No-Go decision only after user approval."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-05T01:35:00Z"
+}

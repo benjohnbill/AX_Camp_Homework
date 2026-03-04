@@ -1,0 +1,75 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-rp25-it2",
+  "task_id": "T-nl-20260305-rp25-it2-kickoff",
+  "owner": "control_tower",
+  "assigned_worker": "generic_worker",
+  "goal": "Re-open Redirecting Phase2.5 for iteration-2 to close Android E2E gaps (save/refine implementation, stage API chaining, desk read path) while preserving backend/frontend pass baselines.",
+  "inputs": [
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260304T160727Z.T-narrative_loop-20260305-backend-redirecting-phase25.result.json",
+      "description": "Backend phase2.5 iteration-1 pass baseline."
+    },
+    {
+      "kind": "artifact_ref",
+      "value": "orchestration/results/20260304T161031Z.T-narrative_loop-20260305-frontend-redirecting-phase25.result.json",
+      "description": "Frontend phase2.5 iteration-1 pass baseline."
+    },
+    {
+      "kind": "file",
+      "value": "android/NarrativeLoopMobile/evidence/20260304T163934Z_android_phase25_e2e_self_validation.md",
+      "description": "Android partial self-validation gap report."
+    },
+    {
+      "kind": "file",
+      "value": "orchestration/dispatch/20260304T163934Z-android-phase25-e2e-implementation-prompt.md",
+      "description": "Android E2E completion implementation prompt."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "android/NarrativeLoopMobile/",
+      "gateway_fastapi.py",
+      "app.py",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Stabilization-only. No Phase3 architecture expansion. Close is forbidden until Android E2E gaps are evidence-backed success."
+  },
+  "acceptance": [
+    "Android lane status must move from partial to success with schema-valid result and reproducible E2E evidence.",
+    "SC-A/SC-B/SC-C/SC-D scenarios must be evidence-backed pass.",
+    "Backend/frontend baselines must remain non-regressed.",
+    "CT iteration-2 aggregate must map AC-01~AC-06 with no unresolved critical blocker."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "False close risk if Android narrative claims are accepted without runtime evidence and Step A/B mirrored artifacts."
+  },
+  "next_actions": [
+    "Dispatch focused Android E2E implementation directives.",
+    "Collect backend/frontend quick guard reruns for drift check.",
+    "Publish iteration-2 aggregate and close only after Android success evidence."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T02:05:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+    "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+    "android/NarrativeLoopMobile/evidence/20260304T163934Z_android_phase25_e2e_self_validation.md"
+  ],
+  "metadata": {
+    "project": "narrative_loop",
+    "phase": "redirecting_phase25_iteration2",
+    "priority": "P0"
+  }
+}
+

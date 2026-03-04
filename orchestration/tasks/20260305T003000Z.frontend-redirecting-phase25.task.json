@@ -1,0 +1,67 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-frontend-redirecting-phase25",
+  "owner": "control_tower",
+  "assigned_worker": "frontend_ide",
+  "goal": "Complete Streamlit full user workflow in Phase 2.5 by implementing explicit Plan-first and Focus-first stage flows and replacing placeholder evidence curation with real session-linked evidence.",
+  "inputs": [
+    {
+      "kind": "file",
+      "value": "orchestration/tasks/20260305T003000Z.redirecting-phase25-kickoff.task.json",
+      "description": "Phase 2.5 kickoff baseline."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+      "description": "Phase 2.5 frontend scope and acceptance."
+    },
+    {
+      "kind": "file",
+      "value": "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+      "description": "Frontend checklist rows."
+    }
+  ],
+  "constraints": {
+    "allow_write": true,
+    "allow_execute": true,
+    "allowed_paths": [
+      "app.py",
+      "icons.py",
+      "tests/",
+      "orchestration/",
+      "integration_status.md"
+    ],
+    "forbidden_paths": [
+      ".git/",
+      ".env",
+      "secrets/"
+    ],
+    "notes": "Do not re-open Phase 3 stack migration. Keep changes within Streamlit full-flow restoration scope."
+  },
+  "acceptance": [
+    "Plan Start enters frog/timebox path instead of control-mode bypass.",
+    "Focus-first path includes retro_timebox stage before reflection.",
+    "Reflection evidence list uses actual session-linked evidence data, not fixed placeholders.",
+    "Schema-valid frontend phase2.5 result artifact with screenshots/logs is published."
+  ],
+  "risk": {
+    "level": "high",
+    "note": "UI can appear improved while critical flow-stage transitions remain disconnected from backend session state."
+  },
+  "next_actions": [
+    "Wire flow-stage transitions to full-path contract.",
+    "Replace placeholder curation with session evidence query path.",
+    "Publish evidence-driven frontend result and logs."
+  ],
+  "requires_human_approval": false,
+  "timestamp": "2026-03-05T00:30:00Z",
+  "context_docs": [
+    "redirecting/REDIRECTING_COMPONENT_PLAN_2026-03-03.md",
+    "redirecting/MVP_TIMEBOX_EXECUTION_REFLECTION_DESIGN_2026-03-03.md"
+  ],
+  "metadata": {
+    "domain": "frontend_phase25_full_flow",
+    "priority": "P0"
+  }
+}
+

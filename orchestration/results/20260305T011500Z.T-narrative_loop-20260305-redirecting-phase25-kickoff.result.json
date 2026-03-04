@@ -1,0 +1,82 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-redirecting-phase25-kickoff",
+  "worker": "docs_worker",
+  "status": "success",
+  "summary": "Redirecting Phase 2.5 kickoff is activated. Full-flow restoration scope, lane tasks, and dispatch directives are published for immediate worker execution.",
+  "outputs": [
+    {
+      "kind": "artifact",
+      "path": "orchestration/task.json",
+      "description": "Active Phase 2.5 kickoff task baseline."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/dispatch/20260305-redirecting-phase25-kickoff.worker-prompts.json",
+      "description": "Phase 2.5 kickoff dispatch package."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/dispatch/20260305-redirecting-phase25-l2-directives.md",
+      "description": "Copy/paste L2 directives for backend/frontend/android."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/tasks/20260305T003000Z.backend-redirecting-phase25.task.json",
+      "description": "Backend Phase 2.5 lane task."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/tasks/20260305T003000Z.frontend-redirecting-phase25.task.json",
+      "description": "Frontend Phase 2.5 lane task."
+    },
+    {
+      "kind": "artifact",
+      "path": "orchestration/tasks/20260305T003000Z.android-redirecting-phase25.task.json",
+      "description": "Android Phase 2.5 lane task."
+    },
+    {
+      "kind": "file",
+      "path": "redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md",
+      "description": "Phase 2.5 full-flow restoration plan."
+    },
+    {
+      "kind": "file",
+      "path": "redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md",
+      "description": "Phase 2.5 implementation and gate checklist."
+    }
+  ],
+  "evidence": [
+    {
+      "name": "phase25_plan_published",
+      "status": "pass",
+      "note": "evidence_path=redirecting/REDIRECTING_PHASE25_FULL_FLOW_PLAN_2026-03-05.md"
+    },
+    {
+      "name": "phase25_checklist_published",
+      "status": "pass",
+      "note": "evidence_path=redirecting/REDIRECTING_PHASE25_IMPLEMENTATION_CHECKLIST_2026-03-05.md"
+    },
+    {
+      "name": "phase25_dispatch_published",
+      "status": "pass",
+      "note": "evidence_path=orchestration/dispatch/20260305-redirecting-phase25-kickoff.worker-prompts.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Phase 2 demo-complete claims can mask missing full workflow paths if lane scope drifts.",
+      "mitigation": "Use AC-01~AC-06 gate criteria and reject narrative-only completion reports."
+    }
+  ],
+  "next_actions": [
+    "Dispatch backend/frontend/android Phase 2.5 directives.",
+    "Collect iteration-1 lane artifacts and run schema validation.",
+    "Publish Phase 2.5 iteration-1 aggregate with AC coverage matrix."
+  ],
+  "human_approval_needed": false,
+  "approval_reason": "",
+  "timestamp": "2026-03-05T01:15:00Z"
+}
+

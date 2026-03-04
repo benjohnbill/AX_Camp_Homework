@@ -12,6 +12,13 @@ object ApiClient {
 
     private val authInterceptor = AuthInterceptor()
     private val eventListener = ConnectionEventListener()
+    private fun normalizedBaseUrl(raw: String): String {
+        return if (raw.endsWith("/")) raw else "$raw/"
+    }
+
+    private val apiBaseUrl: String by lazy {
+        normalizedBaseUrl(BuildConfig.API_BASE_URL)
+    }
 
     private fun buildClient(disableRedirects: Boolean): OkHttpClient {
         val builder = OkHttpClient.Builder()
@@ -56,7 +63,7 @@ object ApiClient {
 
     val apiService: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://ax-camp-universe-gateway-staging.onrender.com/")
+            .baseUrl(apiBaseUrl)
             .client(defaultClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .build()
@@ -65,7 +72,7 @@ object ApiClient {
 
     val debugApiService: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://ax-camp-universe-gateway-staging.onrender.com/")
+            .baseUrl(apiBaseUrl)
             .client(debugClient)
             .addConverterFactory(ScalarsConverterFactory.create())
             .build()
@@ -74,7 +81,7 @@ object ApiClient {
 
     val narrativeApiService: NarrativeApiService by lazy {
         Retrofit.Builder()
-            .baseUrl("https://ax-camp-universe-gateway-staging.onrender.com/")
+            .baseUrl(apiBaseUrl)
             .client(defaultClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

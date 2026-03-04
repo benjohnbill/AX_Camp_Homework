@@ -1,0 +1,40 @@
+{
+  "trace_id": "trace-narrative_loop-20260305-redirecting-phase25",
+  "task_id": "T-narrative_loop-20260305-redirecting-phase25-kickoff",
+  "worker": "control_tower",
+  "what_changed": [
+    "Activated Redirecting Phase 2.5 kickoff from Phase 2 closure baseline.",
+    "Published Phase 2.5 plan/checklist, lane tasks, and worker dispatch directives.",
+    "Switched orchestration active task and channel pointers to Phase 2.5 kickoff state."
+  ],
+  "validation": [
+    {
+      "name": "phase25_task_activation",
+      "outcome": "pass",
+      "evidence_path": "orchestration/task.json"
+    },
+    {
+      "name": "phase25_dispatch_activation",
+      "outcome": "pass",
+      "evidence_path": "orchestration/dispatch/20260305-redirecting-phase25-kickoff.worker-prompts.json"
+    },
+    {
+      "name": "phase25_kickoff_result",
+      "outcome": "pass",
+      "evidence_path": "orchestration/results/20260305T011500Z.T-narrative_loop-20260305-redirecting-phase25-kickoff.result.json"
+    }
+  ],
+  "risks": [
+    {
+      "severity": "high",
+      "description": "Full workflow restoration can fail silently if placeholder UI paths remain while reports mark completion."
+    }
+  ],
+  "next_3_actions": [
+    "Dispatch Phase 2.5 lane prompts to backend/frontend/android immediately.",
+    "Collect iteration-1 evidence with AC-01~AC-06 trace links.",
+    "Publish iteration-1 aggregate and decide iteration-2 vs close."
+  ],
+  "timestamp": "2026-03-05T01:15:00Z"
+}
+

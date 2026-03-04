@@ -3,15 +3,15 @@
   "owner": "control_tower",
   "channel": "android",
   "mode": "channel_only",
-  "updated_at": "2026-03-04T18:05:00Z",
-  "trace_id": "trace-narrative_loop-20260304-redirecting-phase2",
+  "updated_at": "2026-03-05T02:40:00Z",
+  "trace_id": "trace-narrative_loop-20260305-rp25-close",
   "assigned_worker": "android_ide",
-  "active_dispatch_file": "orchestration/dispatch/20260304-redirecting-phase2-kickoff.worker-prompts.json",
-  "active_task_file": "orchestration/tasks/20260304T180500Z.redirecting-phase2-close.task.json",
+  "active_dispatch_file": "orchestration/dispatch/20260305-rp25-it2-kickoff.worker-prompts.json",
+  "active_task_file": "orchestration/tasks/20260305T024000Z.redirecting-phase25-close.task.json",
   "truth_priority_files": [
     "orchestration/handoff/latest.handoff.json",
     "orchestration/task.json",
-    "orchestration/results/20260304T180500Z.T-narrative_loop-20260304-redirecting-phase2-close.result.json",
+    "orchestration/results/20260305T024000Z.T-narrative_loop-20260305-redirecting-phase25-close.result.json",
     "integration_status.md"
   ],
   "must_read_docs_order": [
@@ -30,7 +30,7 @@
   ],
   "notes": [
     "This channel is the only CT-to-android pointer for chat operation.",
-    "Redirecting Phase 2 closed: keep bridge protocol active for artifact mirroring until repo topology is unified."
+    "rp25-it2 active: close E2E implementation gaps and submit success-grade mirrored artifacts."
   ],
   "assumptions": [
     "Android Studio workspace may use local alias path but evidence must include canonical repo path mapping.",

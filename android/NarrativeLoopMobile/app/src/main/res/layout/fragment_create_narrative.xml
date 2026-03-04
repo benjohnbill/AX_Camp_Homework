@@ -9,6 +9,55 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Execution Mode"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/radio_group_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <RadioButton
+                android:id="@+id/radio_mode_plan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Plan-first" />
+
+            <RadioButton
+                android:id="@+id/radio_mode_focus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:text="Focus-first" />
+        </RadioGroup>
+
+        <TextView
+            android:id="@+id/text_stage_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Stage: idle"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/text_action_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Status: Ready"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/text_evidence_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Evidence: No OCR evidence linked yet."
+            android:layout_marginBottom="8dp" />
+
         <EditText
             android:id="@+id/edit_text_narrative"
             android:layout_width="match_parent"
@@ -16,13 +65,14 @@
             android:layout_weight="1"
             android:gravity="top"
             android:hint="Write your narrative here..."
-            android:inputType="textMultiLine" />
+            android:inputType="textMultiLine"
+            android:minHeight="180dp" />
 
         <Button
             android:id="@+id/button_camera"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Camera" />
+            android:text="Capture OCR (Camera)" />
 
         <Button
             android:id="@+id/button_ai_refine"
@@ -34,8 +84,7 @@
             android:id="@+id/button_save_narrative"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Save Narrative" />
-
+            android:text="Run E2E Save" />
     </LinearLayout>
 
     <ProgressBar

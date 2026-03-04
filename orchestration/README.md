@@ -31,6 +31,7 @@ Optional single-file validation:
 When operating in chat-triggered CLI mode:
 - Use `orchestration/templates/chat_l1_worker_update.md` for quick status reports.
 - Use `orchestration/templates/chat_l2_ct_directive.md` for worker directives; include the `common_guard` line in each per-worker paste block.
+- Use `orchestration/templates/ct_phase25_iteration1_aggregation_checklist.md` when aggregating Redirecting Phase2.5 iteration-1 AC evidence.
 - Keep final decisions based on schema-valid `result/handoff` artifacts.
 - If Android worker is on a separate repo, apply:
   - `orchestration/ANDROID_EXTERNAL_REPO_ARTIFACT_BRIDGE_2026-03-04.md`
